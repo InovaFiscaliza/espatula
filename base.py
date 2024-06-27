@@ -15,7 +15,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 RECONNECT = 10
-TIMEOUT = 5
+TIMEOUT = 10
 SLEEP = 4
 KEYWORDS = [
     "smartphone",
