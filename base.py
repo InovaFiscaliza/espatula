@@ -133,15 +133,11 @@ class BaseScraper:
                 products = self.discover_product_urls(
                     Soup(driver.get_page_source()), keyword
                 )
-                print(f"Navegando página {page} da busca {keyword}...")
+                print(f"Navegando página {page} da busca '{keyword}'...")
                 for k, v in products.items():
                     results[k] = v
-
                 if not driver.is_element_present(self.next_page_button):
                     break
-                # driver.highlight(self.next_page_button) #can cause detection
-                # driver.slow_scrow_to(self.next_page_button)
-                # driver.scrow_to_bottom()
                 driver.uc_click(self.next_page_button, timeout=TIMEOUT)
                 page += 1
             if md:
