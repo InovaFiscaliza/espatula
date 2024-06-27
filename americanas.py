@@ -3,7 +3,7 @@ from datetime import datetime
 from dataclasses import dataclass
 
 import typer
-from base import BaseScraper
+from base import BaseScraper, KEYWORDS
 
 
 @dataclass
@@ -11,7 +11,7 @@ class AmericanasScraper(BaseScraper):
     name: str = "americanas"
     url: str = "https://www.americanas.com.br"
     input_field: str = 'input[placeholder="busque aqui seu produto"]'
-    next_page_button: str = 'a[class="src__PageLink-sc-82ugau-3 exDCiw"]'
+    next_page_button: str = 'svg[class="src__ArrowRotate-sc-82ugau-2 hWXbQX"]'
 
     def extract_product_data(self, produto):
         if relative_url := produto.find("a"):
@@ -70,6 +70,10 @@ if __name__ == "__main__":
         md: bool = False,
     ):
         scraper = AmericanasScraper(headless=headless)
-        scraper.search(keyword, screenshot, md)
+        if not keyword:
+            for keyword in KEYWORDS:
+                scraper.search(keyword, screenshot, md)
+        else:
+            scraper.search(keyword, screenshot, md)
 
     typer.run(main)
