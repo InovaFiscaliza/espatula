@@ -3,7 +3,7 @@ from datetime import datetime
 from dataclasses import dataclass
 
 import typer
-from base import BaseScraper
+from base import BaseScraper, KEYWORDS
 
 
 @dataclass
@@ -71,6 +71,10 @@ if __name__ == "__main__":
         md: bool = False,
     ):
         scraper = MagaluScraper(headless=headless)
-        scraper.search(keyword, screenshot, md)
+        if not keyword:
+            for keyword in KEYWORDS:
+                scraper.search(keyword, screenshot, md)
+        else:
+            scraper.search(keyword, screenshot, md)
 
     typer.run(main)
