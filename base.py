@@ -4,6 +4,7 @@ from pprint import pprint
 from datetime import datetime
 from dataclasses import dataclass
 from time import sleep
+import base64
 
 import requests
 import typer
@@ -70,6 +71,26 @@ class BaseScraper:
         return driver
 
     @staticmethod
+    def capture_full_page_screenshot(driver) -> bytes:
+        """Gets full page screenshot of the current window as a binary data."""
+        metrics = driver.execute_cdp_cmd("Page.getLayoutMetrics", {})
+        return base64.b64decode(
+            driver.execute_cdp_cmd(
+                "Page.captureScreenshot",
+                {
+                    "clip": {
+                        "x": 0,
+                        "y": 0,
+                        "width": metrics["contentSize"]["width"],
+                        "height": metrics["contentSize"]["height"],
+                        "scale": 1,
+                    },
+                    "captureBeyondViewport": True,
+                },
+            )["data"]
+        )
+
+    @staticmethod
     def get_md_from_url(url):
         url = "https://r.jina.ai/" + url
         response = requests.get(url)
@@ -127,9 +148,13 @@ class BaseScraper:
                 if screenshot:
                     screenshot_folder = folder / "screenshots"
                     screenshot_folder.mkdir(parents=True, exist_ok=True)
-                    driver.save_screenshot(
-                        screenshot_folder / f"{self.name}_{keyword}_{page}.png"
-                    )
+                    screenshot = self.capture_full_page_screenshot(driver)
+                    image_data = base64.b64decode(screenshot)
+                    with open(
+                        screenshot_folder / f"{self.name}_{keyword}_{page}.png", "wb"
+                    ) as f:
+                        f.write(image_data)
+
                 products = self.discover_product_urls(
                     Soup(driver.get_page_source()), keyword
                 )
