@@ -158,6 +158,7 @@ class BaseScraper:
                     results[k] = v
                 if not driver.is_element_present(self.next_page_button):
                     break
+                driver.highlight(self.next_page_button)
                 driver.uc_click(self.next_page_button, timeout=TIMEOUT)
                 page += 1
             if md:
