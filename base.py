@@ -1,22 +1,16 @@
 import json
-import random
-from pprint import pprint
-from datetime import datetime
 from dataclasses import dataclass
-from time import sleep
 import base64
 
 import requests
-import typer
 from fastcore.xtras import Path
 from fastcore.parallel import parallel
 from gazpacho import Soup
 from seleniumbase import Driver
-import pandas as pd
 from tqdm.auto import tqdm
 
 RECONNECT = 10
-TIMEOUT = 10
+TIMEOUT = 30
 SLEEP = 4
 KEYWORDS = [
     "smartphone",
@@ -62,6 +56,7 @@ class BaseScraper:
             incognito=True,
             do_not_track=True,
         )
+        driver.maximize_window()
         if self.turnstile:
             try:
                 open_the_turnstile_page(driver, self.url)
@@ -70,8 +65,9 @@ class BaseScraper:
                 pass
         return driver
 
+    # https://github.com/nirtal85/Selenium-Python-Example/blob/ee919911ca0837c8cb147f8b09b9a63a29215a77/tests/conftest.py#L374
     @staticmethod
-    def capture_full_page_screenshot(driver) -> bytes:
+    def capture_full_page_screenshot(driver) -> bytes:  #
         """Gets full page screenshot of the current window as a binary data."""
         metrics = driver.execute_cdp_cmd("Page.getLayoutMetrics", {})
         return base64.b64decode(
@@ -149,11 +145,10 @@ class BaseScraper:
                     screenshot_folder = folder / "screenshots"
                     screenshot_folder.mkdir(parents=True, exist_ok=True)
                     screenshot = self.capture_full_page_screenshot(driver)
-                    image_data = base64.b64decode(screenshot)
                     with open(
                         screenshot_folder / f"{self.name}_{keyword}_{page}.png", "wb"
                     ) as f:
-                        f.write(image_data)
+                        f.write(screenshot)
 
                 products = self.discover_product_urls(
                     Soup(driver.get_page_source()), keyword
