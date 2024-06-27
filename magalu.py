@@ -13,16 +13,6 @@ class MagaluScraper(BaseScraper):
     input_field: str = 'input[data-testid="input-search"]'
     next_page_button: str = 'button[aria-label="Go to next page"]'
 
-    @staticmethod
-    def find_single_url(text):
-        pattern = (
-            r"https://(?:produto\.|www\.)mercadolivre\.com\.br.*?(?:-_JM|(?=\?)|(?=#))"
-        )
-        match = re.search(pattern, text)
-
-        # Return the first non-empty match
-        return match[0] if match else text
-
     def extract_product_data(self, produto):
         relative_url = produto.attrs.get("href")
         if name := produto.find(
