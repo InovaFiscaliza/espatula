@@ -87,7 +87,7 @@ class BaseScraper:
     def update_links(self, keyword: str):
         folder = Path.cwd() / "data" / self.name
         folder.mkdir(parents=True, exist_ok=True)
-        output_file = folder / f"{self.name}_{keyword}.json"
+        output_file = folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
         if not output_file.is_file():
             links = {}
         else:
