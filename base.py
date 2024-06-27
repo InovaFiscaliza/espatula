@@ -137,6 +137,8 @@ class BaseScraper:
                 for k, v in products.items():
                     results[k] = v
 
+                driver.scrow_to_bottom()
+
                 if not driver.is_element_present(self.next_page_button):
                     break
                 driver.slow_scrow_to(self.next_page_button)
