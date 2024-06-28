@@ -12,7 +12,7 @@ from tqdm.auto import tqdm
 
 RECONNECT = 10
 TIMEOUT = 20
-SLEEP = 4
+SLEEP = 5
 KEYWORDS = [
     "smartphone",
     "carregador para smartphone",
@@ -132,6 +132,7 @@ class BaseScraper:
         try:
             for url, result in tqdm(links.items(), desc=f"{self.name} - {keyword}"):
                 driver.get(url)
+                driver.sleep(SLEEP)
                 result_page = self.extract_item_data(Soup(driver.get_page_source()))
                 result_page["Palavra_Chave"] = keyword
                 result.update(result_page)
