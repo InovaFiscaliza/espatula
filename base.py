@@ -1,3 +1,4 @@
+import re
 import json
 from dataclasses import dataclass
 import base64
@@ -10,7 +11,7 @@ from seleniumbase import Driver
 from tqdm.auto import tqdm
 
 RECONNECT = 10
-TIMEOUT = 30
+TIMEOUT = 20
 SLEEP = 4
 KEYWORDS = [
     "smartphone",
@@ -28,6 +29,8 @@ KEYWORDS = [
     "jammer",
     "flipper zero",
 ]
+
+CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*){12})$")
 
 
 def open_the_turnstile_page(driver, url):
@@ -95,13 +98,29 @@ class BaseScraper:
         else:
             return None
 
+    @staticmethod
+    def extrair_certificado(caracteristicas: dict) -> str | None:
+        chrs = caracteristicas.copy()
+        certificado = next(
+            (
+                caracteristicas.pop(k, "")
+                for k in chrs
+                if any(s in k.lower() for s in ("certifica", "homologação", "anatel"))
+            ),
+            "",
+        )
+        if match := re.search(CERTIFICADO, certificado):
+            # Remove all non-digit characters and check if there are exactly 12 digits
+            return re.sub(r"\D", "", match[2])
+        return None
+
     def extract_item_data(self, soup):
         raise NotImplementedError
 
     def discover_product_urls(self, soup, keyword):
         raise NotImplementedError
 
-    def update_links(self, keyword: str):
+    def inspect_pages(self, keyword: str):
         folder = Path.cwd() / "data" / self.name
         folder.mkdir(parents=True, exist_ok=True)
         output_file = folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
