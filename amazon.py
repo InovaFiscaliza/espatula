@@ -65,6 +65,32 @@ class AmazonScraper(BaseScraper):
             "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
+    @staticmethod
+    def parse_tables(soup) -> dict:
+        """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
+        table_data = {}
+        tables = soup.find("table", attrs={"id": "productDetails"}, mode="all")
+        for table in tables:
+            for row in table.find("tr", mode="all"):
+                key = row.find("th", mode="first")
+                value = row.find("td", mode="first")
+                table_data[getattr(key, "text", "")] = getattr(
+                    value, "text", ""
+                ).replace("\u200e", "")
+        if not tables:  # special pages like iphone
+            for table in soup.find(
+                "table", attrs={"class": "a-bordered"}, partial=False, mode="all"
+            ):
+                if rows := table.find("td", mode="all"):
+                    table_data.update(
+                        {
+                            k.strip(): v.strip()
+                            for k, v in zip(rows[::2], rows[1::2])
+                            if ("R$" not in k.strip() and "R$" not in v.strip())
+                        }
+                    )
+        return table_data
+
     def extract_item_data(self, soup):
         if nome := soup.find("span", attrs={"id": "productTitle"}, mode="first"):
             nome = nome.strip()
@@ -75,6 +101,8 @@ class AmazonScraper(BaseScraper):
             categoria = " | ".join(
                 s.text.strip() for s in categoria.find("a", mode="all")
             )
+        elif nome and "iphone" in nome.lower():
+            categoria = "Eletrônicos e Tecnologia | Celulares e Comunicação | Celulares e Smartphones | iPhone"
 
         if imagens := re.findall(
             r"colorImages':.*'initial':\s*(\[.+?\])},\n", soup.html
@@ -86,7 +114,7 @@ class AmazonScraper(BaseScraper):
             )
 
         if preço := soup.find("span", attrs={"class": "a-offscreen"}, mode="first"):
-            preço = preço.strip().replace(r"R$|\.|,", "", regex=True)
+            preço = re.sub(r"R\$|\.", "", preço.text.strip()).replace(",", ".")
 
         if nota := soup.find("i", attrs={"data-hook": "average-star-rating"}):
             nota = nota.strip()
@@ -95,15 +123,24 @@ class AmazonScraper(BaseScraper):
             "div", attrs={"data-hook": "total-review-count"}, mode="first"
         ):
             avaliações = "".join(re.findall(r"\d", avaliações.strip()))
+        elif avaliações := soup.find(
+            "span", attrs={"id": "acrCustomerReviewText"}, mode="first"
+        ):
+            avaliações = avaliações.strip()
 
         if marca := soup.find("a", attrs={"id": "bylineInfo"}, mode="first"):
-            marca = f'{marca.strip().replace(r"Marca: |Visite a loja ", "", regex=True)}'.title()
+            marca = (
+                f'{re.sub(r"Marca: |Visite a loja ", "", marca.text.strip())}'.title()
+            )
 
         if vendedor := soup.find(
             "a", attrs={"id": "sellerProfileTriggerId"}, mode="first"
         ):
-            vendedor = vendedor.strip()
             link_vendedor = f"{self.url}{vendedor.attrs.get('href')}"
+            vendedor = vendedor.strip()
+        elif vendedor := soup.find("a", attrs={"id": "bylineInfo"}, mode="first"):
+            link_vendedor = f"{self.url}{vendedor.attrs.get('href')}"
+            vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.text.strip())}'.title()
         else:
             link_vendedor = ""
 
@@ -141,6 +178,11 @@ class AmazonScraper(BaseScraper):
 
         modelo = extrair_modelo(características)
 
+        if vendas := soup.find(
+            "span", attrs={"id": "social-proofing-faceout-title-tk_bought"}
+        ):
+            vendas = vendas.strip()
+
         if not all([nome, categoria, preço, imagens]):
             return {}
 
@@ -159,6 +201,7 @@ class AmazonScraper(BaseScraper):
             "Certificado": certificado,
             "EAN": ean,
             "Modelo": modelo,
+            "Vendas": vendas,
         }
 
     def discover_product_urls(self, soup, keyword):
