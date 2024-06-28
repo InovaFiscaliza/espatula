@@ -2,6 +2,7 @@ import re
 import json
 from dataclasses import dataclass
 import base64
+from pprint import pprint
 
 import requests
 from fastcore.xtras import Path
@@ -10,7 +11,7 @@ from gazpacho import Soup
 from seleniumbase import Driver
 from tqdm.auto import tqdm
 
-RECONNECT = 10
+RECONNECT = 5
 TIMEOUT = 20
 SLEEP = 5
 KEYWORDS = [
@@ -60,6 +61,7 @@ class BaseScraper:
             do_not_track=True,
         )
         driver.maximize_window()
+
         if self.turnstile:
             try:
                 open_the_turnstile_page(driver, self.url)
@@ -82,7 +84,7 @@ class BaseScraper:
                         "y": 0,
                         "width": metrics["contentSize"]["width"],
                         "height": metrics["contentSize"]["height"],
-                        "scale": 1,
+                        "scale": 0.75,
                     },
                     "captureBeyondViewport": True,
                 },
@@ -120,7 +122,7 @@ class BaseScraper:
     def discover_product_urls(self, soup, keyword):
         raise NotImplementedError
 
-    def inspect_pages(self, keyword: str):
+    def inspect_pages(self, keyword: str, screenshot: bool = False):
         folder = Path.cwd() / "data" / self.name
         folder.mkdir(parents=True, exist_ok=True)
         output_file = folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
@@ -131,9 +133,14 @@ class BaseScraper:
         driver = self.init_driver()
         try:
             for url, result in tqdm(links.items(), desc=f"{self.name} - {keyword}"):
-                driver.get(url)
-                driver.sleep(SLEEP)
+                driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
+                # driver.sleep(SLEEP)
                 result_page = self.extract_item_data(Soup(driver.get_page_source()))
+                if screenshot and result_page:
+                    result_page["screenshot"] = self.capture_full_page_screenshot(
+                        driver
+                    )
+                pprint(result_page)
                 result_page["Palavra_Chave"] = keyword
                 result.update(result_page)
                 links[url].update(result)
