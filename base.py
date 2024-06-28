@@ -131,16 +131,15 @@ class BaseScraper:
         else:
             links = json.loads(output_file.read_text())
         driver = self.init_driver()
+        driver.get(self.url)
         try:
             for url, result in tqdm(links.items(), desc=f"{self.name} - {keyword}"):
                 driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
-                # driver.sleep(SLEEP)
                 result_page = self.extract_item_data(Soup(driver.get_page_source()))
                 if screenshot and result_page:
-                    result_page["screenshot"] = self.capture_full_page_screenshot(
-                        driver
-                    )
-                pprint(result_page)
+                    result_page["screenshot"] = base64.b64encode(
+                        self.capture_full_page_screenshot(driver)
+                    ).decode("utf-8")
                 result_page["Palavra_Chave"] = keyword
                 result.update(result_page)
                 links[url].update(result)
