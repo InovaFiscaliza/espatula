@@ -1,4 +1,5 @@
 import re
+import json
 from urllib.parse import unquote
 from datetime import datetime
 from dataclasses import dataclass
@@ -29,7 +30,7 @@ class AmazonScraper(BaseScraper):
             return match.group(1)
         return decoded_url
 
-    def extract_product_data(self, div):
+    def extract_search_results(self, div):
         header = div.find("h2")
         link_relativo = getattr(header.find("a"), "attrs", {}).get("href")
         nome = getattr(header.find("span"), "text", "")
@@ -64,6 +65,102 @@ class AmazonScraper(BaseScraper):
             "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
+    def extract_item_data(self, soup):
+        if nome := soup.find("span", attrs={"id": "productTitle"}, mode="first"):
+            nome = nome.strip()
+
+        if categoria := soup.find(
+            "div", attrs={"id": "wayfinding-breadcrumbs_feature_div"}, mode="first"
+        ):
+            categoria = " | ".join(
+                s.text.strip() for s in categoria.find("a", mode="all")
+            )
+
+        if imagens := re.findall(
+            r"colorImages':.*'initial':\s*(\[.+?\])},\n", soup.html
+        ):
+            imagens = "\n".join(
+                d.get("large", "")
+                for d in json.loads(imagens[0])
+                if isinstance(d, dict)
+            )
+
+        if preço := soup.find("span", attrs={"class": "a-offscreen"}, mode="first"):
+            preço = preço.strip().replace(r"R$|\.|,", "", regex=True)
+
+        if nota := soup.find("i", attrs={"data-hook": "average-star-rating"}):
+            nota = nota.strip()
+
+        if avaliações := soup.find(
+            "div", attrs={"data-hook": "total-review-count"}, mode="first"
+        ):
+            avaliações = "".join(re.findall(r"\d", avaliações.strip()))
+
+        if marca := soup.find("a", attrs={"id": "bylineInfo"}, mode="first"):
+            marca = f'{marca.strip().replace(r"Marca: |Visite a loja ", "", regex=True)}'.title()
+
+        if vendedor := soup.find(
+            "a", attrs={"id": "sellerProfileTriggerId"}, mode="first"
+        ):
+            vendedor = vendedor.strip()
+            link_vendedor = f"{self.url}{vendedor.attrs.get('href')}"
+        else:
+            link_vendedor = ""
+
+        descrição = ""
+
+        if descrição_principal := soup.find(
+            "div", attrs={"id": "feature-bullets"}, mode="first"
+        ):
+            descrição += "\n".join(
+                s.text.strip() for s in descrição_principal.find("span", mode="all")
+            )
+
+        if descrição_secundária := soup.find(
+            "div", attrs={"id": "productDescription"}, mode="first"
+        ):
+            descrição += "\n".join(
+                s.text.strip() for s in descrição_secundária.find("span", mode="all")
+            )
+
+        características = self.parse_tables(soup)
+
+        if not marca:
+            marca = características.pop("Marca", "")
+
+        certificado = self.extrair_certificado(características)
+
+        if not (ean := características.pop("EAN", "")):
+            ean = características.pop("GTIN", "")
+
+        def extrair_modelo(caracteristicas):
+            chrs = caracteristicas.copy()
+            return " | ".join(
+                caracteristicas.pop(k, "") for k in chrs if "modelo" in k.lower()
+            )
+
+        modelo = extrair_modelo(características)
+
+        if not all([nome, categoria, preço, imagens]):
+            return {}
+
+        return {
+            "Nome": nome,
+            "Categoria": categoria,
+            "Imagens": imagens,
+            "Preço": preço,
+            "Nota": nota,
+            "Avaliações": avaliações,
+            "Marca": marca,
+            "Vendedor": vendedor,
+            "Link_Vendedor": link_vendedor,
+            "Descrição": descrição,
+            "Características": características,
+            "Certificado": certificado,
+            "EAN": ean,
+            "Modelo": modelo,
+        }
+
     def discover_product_urls(self, soup, keyword):
         results = {}
         for div in soup.find(
@@ -72,7 +169,7 @@ class AmazonScraper(BaseScraper):
             mode="all",
             partial=True,
         ):
-            if product_data := self.extract_product_data(div):
+            if product_data := self.extract_search_results(div):
                 product_data["Palavra_Chave"] = keyword
                 results[product_data["Link"]] = product_data
         return results
@@ -84,13 +181,12 @@ if __name__ == "__main__":
         keyword: str = None,
         headless: bool = True,
         screenshot: bool = False,
-        md: bool = False,
     ):
         scraper = AmazonScraper(headless=headless)
         if not keyword:
             for keyword in KEYWORDS:
-                scraper.search(keyword, screenshot, md)
+                scraper.inspect_pages(keyword, screenshot)
         else:
-            scraper.search(keyword, screenshot, md)
+            scraper.inspect_pages(keyword, screenshot)
 
     typer.run(main)
