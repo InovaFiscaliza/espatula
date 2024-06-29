@@ -163,7 +163,7 @@ class BaseScraper:
         results = {}
         page = 1
         try:
-            driver.get(self.url)
+            driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
             driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
             while True:
                 driver.sleep(TIMEOUT)
