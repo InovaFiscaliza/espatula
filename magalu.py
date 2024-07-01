@@ -65,20 +65,17 @@ class MagaluScraper(BaseScraper):
     def parse_tables(self, soup) -> dict:
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
-        if conteiner := soup.find(
-            "div", attrs={"class": "sc-fqkvVR dESRav sc-czLspv jSiKdc"}, mode="first"
-        ):
-            for table in conteiner.find("table", mode="all"):
-                if rows := table.find("td", mode="all"):
-                    if rows[0].strip() == "Informações complementares":
-                        continue
-                    variant_data.update(
-                        {
-                            k.strip(): v.strip()
-                            for k, v in zip(rows[::2], rows[1::2])
-                            if ("R$" not in k.strip() and "R$" not in v.strip())
-                        }
-                    )
+        for table in soup.find("table", mode="all"):
+            if rows := table.find("td", mode="all"):
+                if rows[0].strip() == "Informações complementares":
+                    continue
+                variant_data.update(
+                    {
+                        k.strip(): v.strip()
+                        for k, v in zip(rows[::2], rows[1::2])
+                        if ("R$" not in k.strip() and "R$" not in v.strip())
+                    }
+                )
         return variant_data
 
     def extract_item_data(self, driver):
@@ -97,6 +94,10 @@ class MagaluScraper(BaseScraper):
         ):
             driver.highlight("h1[data-testid=heading-product-title]")
             nome = nome.text.strip()
+
+        if imgs := soup.find("img", {"data-testid": "media-gallery-image"}, mode="all"):
+            driver.highlight("div[data-testid=mod-mediagallery]")
+            imgs = [getattr(i, "attrs", {}).get("src") for i in imgs]
 
         nota, avaliações = None, None
         if popularidade := soup.find(
@@ -123,10 +124,6 @@ class MagaluScraper(BaseScraper):
             else:
                 preço = None
 
-        if imgs := soup.find("img", {"data-testid": "media-gallery-image"}, mode="all"):
-            # driver.highlight("img[data-testid=media-gallery-image]")
-            imgs = [getattr(i, "attrs", {}).get("src") for i in imgs]
-
         if descrição := soup.find(
             "div", attrs={"data-testid": "rich-content-container"}, mode="first"
         ):
@@ -150,12 +147,13 @@ class MagaluScraper(BaseScraper):
             "Preço": preço,
             "Nota": nota,
             "Avaliações": avaliações,
-            "Imagem": imgs,
+            "Imagens": imgs,
             "Descrição": descrição,
             "Marca": marca,
             "Modelo": modelo,
             "Certificado": certificado,
             "EAN": ean,
+            "Características": características,
             "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
