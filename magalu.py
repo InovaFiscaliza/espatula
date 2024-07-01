@@ -109,11 +109,19 @@ class MagaluScraper(BaseScraper):
                 nota, avaliações = popularidade.text.strip().split(" ")
                 avaliações = avaliações.replace("(", "").replace(")", "")
 
-        if preço := soup.find("p", attrs={"data-testid": "price-value"}, mode="first"):
-            driver.highlight("p[data-testid=price-value]")
-            preço = (
-                preço.text.strip().replace("R$", "").replace(".", "").replace(",", ".")
-            )
+        if preço := soup.find(
+            "div", attrs={"data-testid": "mod-productprice"}, mode="first"
+        ):
+            driver.highlight("div[data-testid=mod-productprice]")
+            if preço := preço.find("p", {"data-testid": "price-value"}, mode="first"):
+                preço = (
+                    preço.text.strip()
+                    .replace("R$", "")
+                    .replace(".", "")
+                    .replace(",", ".")
+                )
+            else:
+                preço = None
 
         if imgs := soup.find("img", {"data-testid": "media-gallery-image"}, mode="all"):
             driver.highlight("img[data-testid=media-gallery-image]")
@@ -127,7 +135,6 @@ class MagaluScraper(BaseScraper):
 
         marca, modelo, certificado, ean = None, None, None, None
         if características := self.parse_tables(soup):
-            driver.highlight("div[class=sc-fqkvVR dESRav sc-czLspv jSiKdc]")
             marca, modelo, certificado, ean = (
                 características.get("Marca"),
                 características.get("Modelo"),
