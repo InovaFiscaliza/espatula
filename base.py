@@ -4,6 +4,7 @@ import json
 import re
 from dataclasses import dataclass
 from pprint import pprint
+from datetime import datetime, timedelta
 
 import requests
 from dotenv import find_dotenv, load_dotenv
@@ -387,8 +388,8 @@ SMARTPHONES = [
     "iPhone SE",
 ]
 
-
 CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*){12})$")
+
 DATA = os.environ.get("FOLDER", f"{Path.cwd()}/data")
 
 
@@ -474,7 +475,7 @@ class BaseScraper:
             return re.sub(r"\D", "", match[2])
         return None
 
-    def extract_item_data(self, soup, driver=None):
+    def extract_item_data(self, driver):
         raise NotImplementedError
 
     def discover_product_urls(self, soup, keyword):
@@ -492,15 +493,19 @@ class BaseScraper:
         driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         try:
             for url, result in tqdm(links.items(), desc=f"{self.name} - {keyword}"):
+                if datetime.strptime(
+                    result["Data_Atualização"], "%Y-%m-%dT%H:%M:%S"
+                ) - datetime.now() < timedelta(os.environ.get("EXPIRE", 7)):
+                    continue
                 driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
-                result_page = self.extract_item_data(driver)
-                if screenshot and result_page:
-                    result_page["screenshot"] = base64.b64encode(
-                        self.capture_full_page_screenshot(driver)
-                    ).decode("utf-8")
-                result_page["Palavra_Chave"] = keyword
-                result.update(result_page)
-                links[url].update(result)
+                if result_page := self.extract_item_data(driver):
+                    # if screenshot:
+                    #     result_page["screenshot"] = base64.b64encode(
+                    #         self.capture_full_page_screenshot(driver)
+                    #     ).decode("utf-8")
+                    result_page["Palavra_Chave"] = keyword
+                    result.update(result_page)
+                    links[url].update(result)
         finally:
             json.dump(
                 links,
