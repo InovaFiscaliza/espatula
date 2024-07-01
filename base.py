@@ -1,12 +1,12 @@
-import re
-import json
-from dataclasses import dataclass
 import base64
+import json
+import re
+from dataclasses import dataclass
 from pprint import pprint
 
 import requests
-from fastcore.xtras import Path
 from fastcore.parallel import parallel
+from fastcore.xtras import Path
 from gazpacho import Soup
 from seleniumbase import Driver
 from tqdm.auto import tqdm
@@ -503,7 +503,7 @@ class BaseScraper:
             )
             driver.quit()
 
-    def search(self, keyword: str, screenshot: bool = False, md: bool = False):
+    def search(self, keyword: str, screenshot: bool = False):
         folder = Path.cwd() / "data" / self.name
         folder.mkdir(parents=True, exist_ok=True)
         output_file = folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
@@ -539,18 +539,6 @@ class BaseScraper:
                 driver.highlight(self.next_page_button)
                 driver.uc_click(self.next_page_button, timeout=TIMEOUT)
                 page += 1
-            if md:
-                mds = parallel(
-                    self.get_md_from_url,
-                    results.keys(),
-                    n_workers=4,
-                    pause=SLEEP,
-                    threadpool=True,
-                    progress=True,
-                )
-                for i, k in enumerate(results.keys()):
-                    results[k]["md"] = mds[i]
-
         finally:
             links.update(results)
             json.dump(
