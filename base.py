@@ -493,9 +493,11 @@ class BaseScraper:
         driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         try:
             for url, result in tqdm(links.items(), desc=f"{self.name} - {keyword}"):
-                if datetime.strptime(
-                    result["Data_Atualização"], "%Y-%m-%dT%H:%M:%S"
-                ) - datetime.now() < timedelta(os.environ.get("EXPIRE", 7)):
+                # if datetime.strptime(
+                #     result["Data_Atualização"], "%Y-%m-%dT%H:%M:%S"
+                # ) - datetime.now() < timedelta(os.environ.get("EXPIRE", 7)):
+                #     continue
+                if result.get("Certificado"):
                     continue
                 driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                 if result_page := self.extract_item_data(driver):
