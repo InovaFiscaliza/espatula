@@ -1,17 +1,21 @@
 import re
+import os
 import json
 from dataclasses import dataclass
 import base64
 from pprint import pprint
 
 import requests
+from dotenv import find_dotenv, load_dotenv
 from fastcore.xtras import Path
 from fastcore.parallel import parallel
 from gazpacho import Soup
 from seleniumbase import Driver
 from tqdm.auto import tqdm
 
-RECONNECT = 5
+load_dotenv(find_dotenv(), override=True)
+
+RECONNECT = int(os.environ.get("RECONNECT", 5))
 TIMEOUT = 20
 SLEEP = 5
 KEYWORDS = [
@@ -32,6 +36,7 @@ KEYWORDS = [
 ]
 
 CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*){12})$")
+DATA = os.environ.get("FOLDER", f"{Path.cwd()}/data")
 
 
 def open_the_turnstile_page(driver, url):
@@ -56,9 +61,9 @@ class BaseScraper:
         driver = Driver(
             headless=self.headless,
             uc=True,
-            ad_block_on=True,
-            incognito=True,
-            do_not_track=True,
+            ad_block_on=False,
+            incognito=False,
+            do_not_track=False,
         )
         driver.maximize_window()
 
@@ -123,7 +128,7 @@ class BaseScraper:
         raise NotImplementedError
 
     def inspect_pages(self, keyword: str, screenshot: bool = False):
-        folder = Path.cwd() / "data" / self.name
+        folder = Path(DATA) / self.name
         folder.mkdir(parents=True, exist_ok=True)
         output_file = folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
         if not output_file.is_file():
@@ -152,7 +157,7 @@ class BaseScraper:
             driver.quit()
 
     def search(self, keyword: str, screenshot: bool = False, md: bool = False):
-        folder = Path.cwd() / "data" / self.name
+        folder = Path(DATA) / self.name
         folder.mkdir(parents=True, exist_ok=True)
         output_file = folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
         if not output_file.is_file():
