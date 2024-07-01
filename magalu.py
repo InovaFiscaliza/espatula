@@ -139,8 +139,6 @@ class MagaluScraper(BaseScraper):
                 características.get("EAN"),
             )
 
-        if not all([nome, categoria, preço, imgs]):
-            return None
         return {
             "Nome": nome,
             "Categoria": categoria,
