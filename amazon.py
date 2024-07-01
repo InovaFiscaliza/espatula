@@ -5,6 +5,7 @@ from datetime import datetime
 from dataclasses import dataclass
 
 import typer
+from gazpacho import Soup
 from base import BaseScraper, KEYWORDS
 
 
@@ -91,7 +92,8 @@ class AmazonScraper(BaseScraper):
                     )
         return table_data
 
-    def extract_item_data(self, soup):
+    def extract_item_data(self, driver):
+        soup = Soup(driver.get_page_source())
         if nome := soup.find("span", attrs={"id": "productTitle"}, mode="first"):
             nome = nome.strip()
 
@@ -228,8 +230,8 @@ if __name__ == "__main__":
         scraper = AmazonScraper(headless=headless)
         if not keyword:
             for keyword in KEYWORDS:
-                scraper.inspect_pages(keyword, screenshot)
+                scraper.search(keyword, screenshot)
         else:
-            scraper.inspect_pages(keyword, screenshot)
+            scraper.search(keyword, screenshot)
 
     typer.run(main)

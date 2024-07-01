@@ -468,7 +468,7 @@ class BaseScraper:
             return re.sub(r"\D", "", match[2])
         return None
 
-    def extract_item_data(self, soup):
+    def extract_item_data(self, soup, driver=None):
         raise NotImplementedError
 
     def discover_product_urls(self, soup, keyword):
@@ -487,7 +487,7 @@ class BaseScraper:
         try:
             for url, result in tqdm(links.items(), desc=f"{self.name} - {keyword}"):
                 driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
-                result_page = self.extract_item_data(Soup(driver.get_page_source()))
+                result_page = self.extract_item_data(driver)
                 if screenshot and result_page:
                     result_page["screenshot"] = base64.b64encode(
                         self.capture_full_page_screenshot(driver)
