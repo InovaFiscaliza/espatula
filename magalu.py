@@ -87,7 +87,7 @@ class MagaluScraper(BaseScraper):
         if categoria := soup.find(
             "a", attrs={"data-testid": "breadcrumb-item"}, mode="all", partial=False
         ):
-            driver.highlight("a[data-testid=breadcrumb-item]")
+            driver.highlight("div[data-testid=breadcrumb-container]")
             categoria = " | ".join(
                 i.strip() for i in categoria if hasattr(i, "strip") and i.strip()
             )
@@ -124,7 +124,7 @@ class MagaluScraper(BaseScraper):
                 preço = None
 
         if imgs := soup.find("img", {"data-testid": "media-gallery-image"}, mode="all"):
-            driver.highlight("img[data-testid=media-gallery-image]")
+            # driver.highlight("img[data-testid=media-gallery-image]")
             imgs = [getattr(i, "attrs", {}).get("src") for i in imgs]
 
         if descrição := soup.find(
