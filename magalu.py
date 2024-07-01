@@ -164,7 +164,7 @@ if __name__ == "__main__":
         scraper = MagaluScraper(headless=headless)
 
         if not keyword:
-            for keyword in SMARTPHONES:
+            for keyword in KEYWORDS:
                 if search:
                     scraper.search(keyword, screenshot)
                 else:
