@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS
+from base import BaseScraper, KEYWORDS, SMARTPHONES
 
 
 @dataclass
@@ -156,17 +156,23 @@ class MagaluScraper(BaseScraper):
 if __name__ == "__main__":
 
     def main(
+        search: bool = True,
         keyword: str = None,
         headless: bool = True,
         screenshot: bool = False,
-        md: bool = False,
     ):
         scraper = MagaluScraper(headless=headless)
 
         if not keyword:
-            for keyword in KEYWORDS:
-                scraper.search(keyword, screenshot, md)
+            for keyword in SMARTPHONES:
+                if search:
+                    scraper.search(keyword, screenshot)
+                else:
+                    scraper.inspect_pages(keyword, screenshot)
         else:
-            scraper.search(keyword, screenshot, md)
+            if search:
+                scraper.search(keyword, screenshot)
+            else:
+                scraper.inspect_pages(keyword, screenshot)
 
     typer.run(main)
