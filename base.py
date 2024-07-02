@@ -505,7 +505,7 @@ class BaseScraper:
                         screenshot_folder = folder / "screenshots"
                         screenshot_folder.mkdir(parents=True, exist_ok=True)
                         screenshot = self.capture_full_page_screenshot(driver)
-                        filename = f"{screenshot_folder}/{self.name}_{keyword}_{i}.pdf"
+                        filename = f"{screenshot_folder}/{self.name}_{keyword}_{i}.png"
                         with open(filename, "wb") as f:
                             f.write(screenshot)
                         result_page["screenshot"] = filename
