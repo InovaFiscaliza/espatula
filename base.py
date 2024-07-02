@@ -20,8 +20,7 @@ from tqdm.auto import tqdm
 load_dotenv(find_dotenv(), override=True)
 
 RECONNECT = int(os.environ.get("RECONNECT", 5))
-TIMEOUT = 20
-SLEEP = 5
+TIMEOUT = int(os.environ.get("TIMEOUT", 20))
 KEYWORDS = [
     "smartphone",
     "carregador para smartphone",
@@ -199,6 +198,7 @@ class BaseScraper:
         page = 1
         try:
             driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
+            self.highlight_element(driver, self.input_field)
             driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
             while True:
                 driver.sleep(TIMEOUT)
@@ -206,10 +206,8 @@ class BaseScraper:
                     screenshot_folder = folder / "screenshots"
                     screenshot_folder.mkdir(parents=True, exist_ok=True)
                     screenshot = self.capture_full_page_screenshot(driver)
-                    with open(
-                        screenshot_folder / f"{self.name}_{keyword}_{page}.png", "wb"
-                    ) as f:
-                        f.write(screenshot)
+                    filename = screenshot_folder / f"{self.name}_{keyword}_{page}.pdf"
+                    Image.open(BytesIO(screenshot)).convert("RGB").save(filename)
 
                 products = self.discover_product_urls(
                     Soup(driver.get_page_source()), keyword
@@ -217,9 +215,10 @@ class BaseScraper:
                 print(f"Navegando página {page} da busca '{keyword}'...")
                 for k, v in products.items():
                     results[k] = v
+                    results["página"] = page
                 if not driver.is_element_present(self.next_page_button):
                     break
-                driver.highlight(self.next_page_button)
+                self.highlight_element(driver, self.next_page_button)
                 driver.uc_click(self.next_page_button, timeout=TIMEOUT)
                 page += 1
         finally:
