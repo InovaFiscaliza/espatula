@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS, SMARTPHONES
+from seleniumbase.common.exceptions import NoSuchElementException
+from base import BaseScraper, KEYWORDS
 
 
 @dataclass
@@ -78,13 +79,19 @@ class MagaluScraper(BaseScraper):
                 )
         return variant_data
 
+    def highlight_element(self, driver, element):
+        try:
+            driver.highlight(element)
+        except NoSuchElementException:
+            pass
+
     def extract_item_data(self, driver):
         soup = Soup(driver.get_page_source())
 
         if categoria := soup.find(
             "a", attrs={"data-testid": "breadcrumb-item"}, mode="all", partial=False
         ):
-            driver.highlight("div[data-testid=breadcrumb-container]")
+            self.highlight_element(driver, "div[data-testid=breadcrumb-container]")
             categoria = " | ".join(
                 i.strip() for i in categoria if hasattr(i, "strip") and i.strip()
             )
@@ -92,18 +99,18 @@ class MagaluScraper(BaseScraper):
         if nome := soup.find(
             "h1", attrs={"data-testid": "heading-product-title"}, mode="first"
         ):
-            driver.highlight("h1[data-testid=heading-product-title]")
+            self.highlight_element(driver, "h1[data-testid=heading-product-title]")
             nome = nome.text.strip()
 
         if imgs := soup.find("img", {"data-testid": "media-gallery-image"}, mode="all"):
-            driver.highlight("div[data-testid=mod-mediagallery]")
+            self.highlight_element(driver, "div[data-testid=media-gallery-image]")
             imgs = [getattr(i, "attrs", {}).get("src") for i in imgs]
 
         nota, avaliações = None, None
         if popularidade := soup.find(
             "div", attrs={"data-testid": "mod-row"}, mode="first"
         ):
-            driver.highlight("div[data-testid=mod-row]")
+            self.highlight_element(driver, "div[data-testid=mod-row]")
             if popularidade := popularidade.find(
                 "span", attrs={"format": "score-count"}, mode="first"
             ):
@@ -113,7 +120,7 @@ class MagaluScraper(BaseScraper):
         if preço := soup.find(
             "div", attrs={"data-testid": "mod-productprice"}, mode="first"
         ):
-            driver.highlight("div[data-testid=mod-productprice]")
+            self.highlight_element(driver, "div[data-testid=mod-productprice]")
             if preço := preço.find("p", {"data-testid": "price-value"}, mode="first"):
                 preço = (
                     preço.text.strip()
@@ -127,7 +134,7 @@ class MagaluScraper(BaseScraper):
         if descrição := soup.find(
             "div", attrs={"data-testid": "rich-content-container"}, mode="first"
         ):
-            driver.highlight("div[data-testid=rich-content-container]")
+            self.highlight_element(driver, "div[data-testid=rich-content-container]")
             descrição = descrição.text.strip()
 
         marca, modelo, certificado, ean = None, None, None, None
