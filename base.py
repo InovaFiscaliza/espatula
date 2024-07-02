@@ -2,6 +2,7 @@ import re
 import os
 import json
 import re
+import base64
 from dataclasses import dataclass
 from pprint import pprint
 from datetime import datetime, timedelta
@@ -447,7 +448,8 @@ class BaseScraper:
                     },
                     "captureBeyondViewport": True,
                 },
-            )["data"]
+            )["data"],
+            validate=True,
         )
 
     @staticmethod
@@ -492,19 +494,21 @@ class BaseScraper:
         driver = self.init_driver()
         driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         try:
-            for url, result in tqdm(links.items(), desc=f"{self.name} - {keyword}"):
-                # if datetime.strptime(
-                #     result["Data_Atualização"], "%Y-%m-%dT%H:%M:%S"
-                # ) - datetime.now() < timedelta(os.environ.get("EXPIRE", 7)):
-                #     continue
+            for i, (url, result) in enumerate(
+                tqdm(links.items(), desc=f"{self.name} - {keyword}")
+            ):
                 if result.get("Certificado"):
                     continue
                 driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                 if result_page := self.extract_item_data(driver):
-                    # if screenshot:
-                    #     result_page["screenshot"] = base64.b64encode(
-                    #         self.capture_full_page_screenshot(driver)
-                    #     ).decode("utf-8")
+                    if screenshot:
+                        screenshot_folder = folder / "screenshots"
+                        screenshot_folder.mkdir(parents=True, exist_ok=True)
+                        screenshot = self.capture_full_page_screenshot(driver)
+                        filename = f"{screenshot_folder}/{self.name}_{keyword}_{i}.pdf"
+                        with open(filename, "wb") as f:
+                            f.write(screenshot)
+                        result_page["screenshot"] = filename
                     result_page["Palavra_Chave"] = keyword
                     result.update(result_page)
                     links[url].update(result)
