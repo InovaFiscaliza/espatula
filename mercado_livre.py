@@ -220,7 +220,7 @@ class MercadoLivreScraper(BaseScraper):
 
         return {
             "categoria": categoria,
-            "imgs": imgs,
+            "imagens": imgs,
             "estado": estado,
             "vendas": vendas,
             "nome": nome,
