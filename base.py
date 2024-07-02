@@ -166,20 +166,16 @@ class BaseScraper:
             for i, (url, result) in enumerate(
                 tqdm(links.items(), desc=f"{self.name} - {keyword}")
             ):
-                # if result.get("certificado"):
-                #     continue
                 driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                 if result_page := self.extract_item_data(driver):
                     if screenshot:
                         screenshot_folder = folder / "screenshots"
                         screenshot_folder.mkdir(parents=True, exist_ok=True)
                         screenshot = self.capture_full_page_screenshot(driver)
-                        filename = f"{screenshot_folder}/{self.name}_{keyword}_{i}.pdf"
+                        filename = screenshot_folder / f"{self.name}_{keyword}_{i}.pdf"
                         Image.open(BytesIO(screenshot)).convert("RGB").save(filename)
-                        # with open(filename, "wb") as f:
-                        #     f.write(screenshot)
-                        result_page["screenshot"] = filename
-                    result_page["Palavra_Chave"] = keyword
+                        result_page["screenshot"] = filename.name
+                    result_page["palavra_busca"] = keyword
                     result.update(result_page)
                     links[url].update(result)
         finally:
