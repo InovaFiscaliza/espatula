@@ -1,3 +1,4 @@
+from io import BytesIO
 import re
 import os
 import json
@@ -7,7 +8,7 @@ from dataclasses import dataclass
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.xtras import Path
-from fastcore.xtras import Path
+from PIL import Image
 from gazpacho import Soup
 from seleniumbase import Driver
 from seleniumbase.common.exceptions import (
@@ -165,17 +166,18 @@ class BaseScraper:
             for i, (url, result) in enumerate(
                 tqdm(links.items(), desc=f"{self.name} - {keyword}")
             ):
-                if result.get("certificado"):
-                    continue
+                # if result.get("certificado"):
+                #     continue
                 driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                 if result_page := self.extract_item_data(driver):
                     if screenshot:
                         screenshot_folder = folder / "screenshots"
                         screenshot_folder.mkdir(parents=True, exist_ok=True)
                         screenshot = self.capture_full_page_screenshot(driver)
-                        filename = f"{screenshot_folder}/{self.name}_{keyword}_{i}.png"
-                        with open(filename, "wb") as f:
-                            f.write(screenshot)
+                        filename = f"{screenshot_folder}/{self.name}_{keyword}_{i}.pdf"
+                        Image.open(BytesIO(screenshot)).convert("RGB").save(filename)
+                        # with open(filename, "wb") as f:
+                        #     f.write(screenshot)
                         result_page["screenshot"] = filename
                     result_page["Palavra_Chave"] = keyword
                     result.update(result_page)
