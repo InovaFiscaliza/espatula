@@ -163,20 +163,31 @@ class BaseScraper:
         driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         try:
             for i, (url, result) in enumerate(
-                tqdm(links.items(), desc=f"{self.name} - {keyword}")
+                tqdm(links.copy().items(), desc=f"{self.name} - {keyword}")
             ):
-                driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
-                if result_page := self.extract_item_data(driver):
-                    if screenshot:
-                        screenshot_folder = folder / "screenshots"
-                        screenshot_folder.mkdir(parents=True, exist_ok=True)
-                        screenshot = self.capture_full_page_screenshot(driver)
-                        filename = screenshot_folder / f"{self.name}_{keyword}_{i}.pdf"
-                        Image.open(BytesIO(screenshot)).convert("RGB").save(filename)
-                        result_page["screenshot"] = filename.name
-                    result_page["palavra_busca"] = keyword
-                    result.update(result_page)
-                    links[url].update(result)
+                try:
+                    driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
+                    if result_page := self.extract_item_data(driver):
+                        if not result_page.get("categoria"):
+                            del links[url]
+                            continue
+                        if screenshot:
+                            screenshot_folder = folder / "screenshots"
+                            screenshot_folder.mkdir(parents=True, exist_ok=True)
+                            screenshot = self.capture_full_page_screenshot(driver)
+                            filename = (
+                                screenshot_folder / f"{self.name}_{keyword}_{i}.pdf"
+                            )
+                            Image.open(BytesIO(screenshot)).convert("RGB").save(
+                                filename
+                            )
+                            result_page["screenshot"] = filename.name
+                        result_page["palavra_busca"] = keyword
+                        result.update(result_page)
+                        links[url].update(result)
+                except Exception as e:
+                    print(e)
+                    print(f"Erro ao processar {url}")
         finally:
             json.dump(
                 links,
