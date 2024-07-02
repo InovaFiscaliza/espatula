@@ -197,6 +197,7 @@ class MercadoLivreScraper(BaseScraper):
         if soup.find("a", attrs={"data-testid": "action-collapsable-target"}):
             driver.uc_click("a[data-testid=action-collapsable-target]")
 
+        marca, modelo, ean, certificado = None, None, None, None
         if características := soup.find(
             "div",
             attrs={"class": "ui-vpp-highlighted-specs__striped-specs"},
@@ -206,6 +207,10 @@ class MercadoLivreScraper(BaseScraper):
                 driver, "div[class=ui-vpp-highlighted-specs__striped-specs]"
             )
             características = self.parse_specs(características)
+            marca = características.get("Marca")
+            modelo = características.get("Modelo")
+            ean = self.extrair_ean(características)
+            certificado = self.extrair_certificado(características)
 
         if descrição := soup.find(
             "p", attrs={"class": "ui-pdp-description__content"}, mode="first"
@@ -224,8 +229,10 @@ class MercadoLivreScraper(BaseScraper):
             "preço": preço,
             "estoque": estoque,
             "vendedor": vendedor,
-            "certificado": self.extrair_certificado(características),
-            "ean_gtin": self.extrair_ean(características),
+            "marca": marca,
+            "modelo": modelo,
+            "certificado": certificado,
+            "ean_gtin": ean,
             "características": características,
             "descrição": descrição,
             # "url": self.find_single_url(driver.get_current_url()),
