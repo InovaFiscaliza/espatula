@@ -79,12 +79,6 @@ class MagaluScraper(BaseScraper):
                 )
         return variant_data
 
-    def highlight_element(self, driver, element):
-        try:
-            driver.highlight(element)
-        except NoSuchElementException:
-            pass
-
     def extract_item_data(self, driver):
         soup = Soup(driver.get_page_source())
 
