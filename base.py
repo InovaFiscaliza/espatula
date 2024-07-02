@@ -10,7 +10,10 @@ from fastcore.xtras import Path
 from fastcore.xtras import Path
 from gazpacho import Soup
 from seleniumbase import Driver
-from seleniumbase.common.exceptions import NoSuchElementException
+from seleniumbase.common.exceptions import (
+    NoSuchElementException,
+    ElementNotVisibleException,
+)
 from tqdm.auto import tqdm
 
 load_dotenv(find_dotenv(), override=True)
@@ -67,7 +70,6 @@ class BaseScraper:
             do_not_track=True,
         )
         driver.maximize_window()
-
         if self.turnstile:
             try:
                 open_the_turnstile_page(driver, self.url)
@@ -90,7 +92,7 @@ class BaseScraper:
                         "y": 0,
                         "width": metrics["contentSize"]["width"],
                         "height": metrics["contentSize"]["height"],
-                        "scale": 0.75,
+                        "scale": 1,
                     },
                     "captureBeyondViewport": True,
                 },
@@ -123,6 +125,18 @@ class BaseScraper:
             return re.sub(r"\D", "", match[2])
         return None
 
+    @staticmethod
+    def extrair_ean(caracteristicas: dict) -> str:
+        chrs = caracteristicas.copy()
+        return next(
+            (
+                caracteristicas.pop(k, "")
+                for k in chrs
+                if any(s in k.lower() for s in ("ean", "gtin"))
+            ),
+            "",
+        )
+
     def extract_item_data(self, driver):
         raise NotImplementedError
 
@@ -130,9 +144,11 @@ class BaseScraper:
         raise NotImplementedError
 
     def highlight_element(self, driver, element):
+        if self.headless:
+            return
         try:
             driver.highlight(element)
-        except NoSuchElementException:
+        except (NoSuchElementException, ElementNotVisibleException):
             pass
 
     def inspect_pages(self, keyword: str, screenshot: bool = False):
@@ -149,7 +165,7 @@ class BaseScraper:
             for i, (url, result) in enumerate(
                 tqdm(links.items(), desc=f"{self.name} - {keyword}")
             ):
-                if result.get("Certificado"):
+                if result.get("certificado"):
                     continue
                 driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                 if result_page := self.extract_item_data(driver):
