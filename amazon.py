@@ -162,48 +162,45 @@ class AmazonScraper(BaseScraper):
                 s.text.strip() for s in descrição_secundária.find("span", mode="all")
             )
 
-        características = self.parse_tables(soup)
+        modelo, ean, certificado = None, None, None
 
-        if not marca:
-            marca = características.pop("Marca", "")
+        if características := self.parse_tables(soup):
+            if not marca:
+                marca = características.pop("Marca", "")
 
-        certificado = self.extrair_certificado(características)
+            ean = self.extrair_ean(características)
+            certificado = self.extrair_certificado(características)
 
-        if not (ean := características.pop("EAN", "")):
-            ean = características.pop("GTIN", "")
+            def extrair_modelo(caracteristicas):
+                chrs = caracteristicas.copy()
+                return " | ".join(
+                    caracteristicas.pop(k, "") for k in chrs if "modelo" in k.lower()
+                )
 
-        def extrair_modelo(caracteristicas):
-            chrs = caracteristicas.copy()
-            return " | ".join(
-                caracteristicas.pop(k, "") for k in chrs if "modelo" in k.lower()
-            )
-
-        modelo = extrair_modelo(características)
+            modelo = extrair_modelo(características)
 
         if vendas := soup.find(
             "span", attrs={"id": "social-proofing-faceout-title-tk_bought"}
         ):
             vendas = vendas.strip()
 
-        if not all([nome, categoria, preço, imagens]):
-            return {}
-
         return {
-            "Nome": nome,
-            "Categoria": categoria,
-            "Imagens": imagens,
-            "Preço": preço,
-            "Nota": nota,
-            "Avaliações": avaliações,
-            "Marca": marca,
-            "Vendedor": vendedor,
-            "Link_Vendedor": link_vendedor,
-            "Descrição": descrição,
-            "Características": características,
-            "Certificado": certificado,
-            "EAN": ean,
-            "Modelo": modelo,
-            "Vendas": vendas,
+            "nome": nome,
+            "categoria": categoria,
+            "imagens": imagens,
+            "preço": preço,
+            "nota": nota,
+            "avaliações": avaliações,
+            "marca": marca,
+            "vendedor": vendedor,
+            "link_vendedor": link_vendedor,
+            "descrição": descrição,
+            "características": características,
+            "certificado": certificado,
+            "ean_gtin": ean,
+            "modelo": modelo,
+            "vendas": vendas,
+            "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def discover_product_urls(self, soup, keyword):
@@ -223,15 +220,23 @@ class AmazonScraper(BaseScraper):
 if __name__ == "__main__":
 
     def main(
+        search: bool = True,
         keyword: str = None,
         headless: bool = True,
         screenshot: bool = False,
     ):
         scraper = AmazonScraper(headless=headless)
+
         if not keyword:
             for keyword in KEYWORDS:
-                scraper.search(keyword, screenshot)
+                if search:
+                    scraper.search(keyword, screenshot)
+                else:
+                    scraper.inspect_pages(keyword, screenshot)
         else:
-            scraper.search(keyword, screenshot)
+            if search:
+                scraper.search(keyword, screenshot)
+            else:
+                scraper.inspect_pages(keyword, screenshot)
 
     typer.run(main)
