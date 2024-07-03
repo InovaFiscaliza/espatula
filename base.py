@@ -40,7 +40,7 @@ KEYWORDS = [
 
 CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*){12})$")
 
-DATA = os.environ.get("FOLDER", f"{Path.cwd()}/data")
+DATA = Path(os.environ.get("FOLDER", f"{Path.cwd()}/data"))
 
 
 def open_the_turnstile_page(driver, url):
@@ -118,7 +118,7 @@ class BaseScraper:
                 for k in chrs
                 if any(s in k.lower() for s in ("certifica", "homologação", "anatel"))
             ),
-            "",
+            None,
         )
         if match := re.search(CERTIFICADO, certificado):
             # Remove all non-digit characters and check if there are exactly 12 digits
@@ -134,7 +134,7 @@ class BaseScraper:
                 for k in chrs
                 if any(s in k.lower() for s in ("ean", "gtin"))
             ),
-            "",
+            None,
         )
 
     def extract_item_data(self, driver):
@@ -150,6 +150,12 @@ class BaseScraper:
             driver.highlight(element)
         except (NoSuchElementException, ElementNotVisibleException):
             pass
+
+    def take_screenshot(self, driver, filename):
+        folder = DATA / "screenshots"
+        folder.mkdir(parents=True, exist_ok=True)
+        screenshot = self.capture_full_page_screenshot(driver)
+        Image.open(BytesIO(screenshot)).convert("RGB").save(folder / filename)
 
     def inspect_pages(self, keyword: str, screenshot: bool = False):
         folder = Path(DATA) / self.name
@@ -172,16 +178,9 @@ class BaseScraper:
                             del links[url]
                             continue
                         if screenshot:
-                            screenshot_folder = folder / "screenshots"
-                            screenshot_folder.mkdir(parents=True, exist_ok=True)
-                            screenshot = self.capture_full_page_screenshot(driver)
-                            filename = (
-                                screenshot_folder / f"{self.name}_{keyword}_{i}.pdf"
-                            )
-                            Image.open(BytesIO(screenshot)).convert("RGB").save(
-                                filename
-                            )
-                            result_page["screenshot"] = filename.name
+                            filename = f"{self.name}_{keyword}_{i}.pdf"
+                            self.take_screenshot(driver, filename)
+                            result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
                         result.update(result_page)
                         links[url].update(result)
@@ -214,11 +213,8 @@ class BaseScraper:
             while True:
                 driver.sleep(TIMEOUT)
                 if screenshot:
-                    screenshot_folder = folder / "screenshots"
-                    screenshot_folder.mkdir(parents=True, exist_ok=True)
-                    screenshot = self.capture_full_page_screenshot(driver)
-                    filename = screenshot_folder / f"{self.name}_{keyword}_{page}.pdf"
-                    Image.open(BytesIO(screenshot)).convert("RGB").save(filename)
+                    filename = f"busca_{self.name}_{keyword}_{page}.pdf"
+                    self.take_screenshot(driver, filename)
 
                 products = self.discover_product_urls(
                     Soup(driver.get_page_source()), keyword
