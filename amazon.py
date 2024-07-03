@@ -100,11 +100,11 @@ class AmazonScraper(BaseScraper):
         if categoria := soup.find(
             "div", attrs={"id": "wayfinding-breadcrumbs_feature_div"}, mode="first"
         ):
-            categoria = " | ".join(
+            categoria = "|".join(
                 s.text.strip() for s in categoria.find("a", mode="all")
             )
         elif nome and "iphone" in nome.lower():
-            categoria = "Eletrônicos e Tecnologia | Celulares e Comunicação | Celulares e Smartphones | iPhone"
+            categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
 
         if imagens := re.findall(
             r"colorImages':.*'initial':\s*(\[.+?\])},\n", soup.html
