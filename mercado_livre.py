@@ -136,7 +136,7 @@ class MercadoLivreScraper(BaseScraper):
             "a", attrs={"class": "andes-breadcrumb__link"}, mode="all"
         ):
             self.highlight_element(driver, "div[id=breadcrumb]")
-            categoria = " | ".join(
+            categoria = "|".join(
                 i.strip() for i in categoria if hasattr(i, "strip") and i.strip()
             )
 
