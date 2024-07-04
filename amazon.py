@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS
+from base import BaseScraper, KEYWORDS, TIMEOUT
 
 
 @dataclass
@@ -215,6 +215,16 @@ class AmazonScraper(BaseScraper):
                 product_data["Palavra_Chave"] = keyword
                 results[product_data["Link"]] = product_data
         return results
+
+    def input_search_params(self, driver, keyword):
+        section = "select[id=searchDropdownBox]"
+        self.highlight_element(driver, section)
+        category = driver.find_element(section)
+        category.uc_click()
+        electronics = driver.find_element('option[value="search-alias=electronics"]')
+        electronics.uc_click()
+        self.highlight_element(driver, self.input_field)
+        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
 
 if __name__ == "__main__":
