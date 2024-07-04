@@ -61,6 +61,10 @@ class BaseScraper:
     headless: bool = True
     turnstile: bool = False
 
+    @property
+    def folder(self):
+        return DATA / self.name
+
     def init_driver(self):
         driver = Driver(
             headless=self.headless,
@@ -196,9 +200,10 @@ class BaseScraper:
             driver.quit()
 
     def search(self, keyword: str, screenshot: bool = False):
-        folder = Path.cwd() / "data" / self.name
-        folder.mkdir(parents=True, exist_ok=True)
-        output_file = folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
+        self.folder.mkdir(parents=True, exist_ok=True)
+        output_file = (
+            self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
+        )
         if not output_file.is_file():
             links = {}
         else:
@@ -221,8 +226,8 @@ class BaseScraper:
                 )
                 print(f"Navegando página {page} da busca '{keyword}'...")
                 for k, v in products.items():
+                    v["página_de_busca"] = page
                     results[k] = v
-                    results["página"] = page
                 if not driver.is_element_present(self.next_page_button):
                     break
                 self.highlight_element(driver, self.next_page_button)
