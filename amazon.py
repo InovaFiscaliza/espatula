@@ -8,6 +8,8 @@ import typer
 from gazpacho import Soup
 from base import BaseScraper, KEYWORDS, TIMEOUT
 
+CATEGORIES = {"smartphone": 'li[id="n/16243803011"] a'}
+
 
 @dataclass
 class AmazonScraper(BaseScraper):
@@ -223,6 +225,9 @@ class AmazonScraper(BaseScraper):
         category.uc_click()
         electronics = driver.find_element('option[value="search-alias=electronics"]')
         electronics.uc_click()
+        if department := CATEGORIES.get(keyword):
+            subcategory = driver.find_element(department)
+            subcategory.uc_click()
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
