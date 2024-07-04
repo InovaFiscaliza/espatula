@@ -63,7 +63,9 @@ class BaseScraper:
 
     @property
     def folder(self):
-        return DATA / self.name
+        folder = DATA / self.name
+        folder.mkdir(parents=True, exist_ok=True)
+        return folder
 
     def init_driver(self):
         driver = Driver(
@@ -80,6 +82,7 @@ class BaseScraper:
                 click_turnstile_and_verify(driver)
             except Exception:
                 pass
+        driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         return driver
 
     # https://github.com/nirtal85/Selenium-Python-Example/blob/ee919911ca0837c8cb147f8b09b9a63a29215a77/tests/conftest.py#L374
@@ -162,15 +165,14 @@ class BaseScraper:
         Image.open(BytesIO(screenshot)).convert("RGB").save(folder / filename)
 
     def inspect_pages(self, keyword: str, screenshot: bool = False):
-        folder = Path(DATA) / self.name
-        folder.mkdir(parents=True, exist_ok=True)
-        output_file = folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
+        output_file = (
+            self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
+        )
         if not output_file.is_file():
             links = {}
         else:
             links = json.loads(output_file.read_text())
         driver = self.init_driver()
-        driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         try:
             for i, (url, result) in enumerate(
                 tqdm(links.copy().items(), desc=f"{self.name} - {keyword}")
@@ -199,8 +201,11 @@ class BaseScraper:
             )
             driver.quit()
 
+    def input_search_params(self, driver, keyword):
+        self.highlight_element(driver, self.input_field)
+        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+
     def search(self, keyword: str, screenshot: bool = False):
-        self.folder.mkdir(parents=True, exist_ok=True)
         output_file = (
             self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
         )
@@ -212,9 +217,7 @@ class BaseScraper:
         results = {}
         page = 1
         try:
-            driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
-            self.highlight_element(driver, self.input_field)
-            driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+            self.input_search_params(driver, keyword)
             while True:
                 driver.sleep(TIMEOUT)
                 if screenshot:
