@@ -6,9 +6,9 @@ from dataclasses import dataclass
 
 import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS, TIMEOUT
+from base import BaseScraper, KEYWORDS, TIMEOUT, RECONNECT
 
-CATEGORIES = {"smartphone": 'li[id="n/16243803011"] a'}
+CATEGORIES = {"smartphone": ['li[id="n/16243803011"] a', 'li[id="n/16243890011"] a']}
 
 
 @dataclass
@@ -225,19 +225,23 @@ class AmazonScraper(BaseScraper):
             self.highlight_element(driver, section)
             category = driver.find_element(section)
             category.uc_click()
-            electronics = driver.find_element('option[value="search-alias=electronics"]')
+            electronics = driver.find_element(
+                'option[value="search-alias=electronics"]'
+            )
             electronics.uc_click()
         except Exception as e:
             print(e)
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
         if department := CATEGORIES.get(keyword):
-            try:
-                subcategory = driver.find_element(department)
-                subcategory.uc_click()
-            except Exception as e:
-                print(e)
-            
+            for subcategory in department:
+                try:
+                    subcategory = driver.find_element(department)
+                    subcategory.uc_click()
+                    driver.sleep(RECONNECT)
+                except Exception as e:
+                    print(e)
+
 
 if __name__ == "__main__":
 
