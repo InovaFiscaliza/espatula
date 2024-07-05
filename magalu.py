@@ -4,8 +4,11 @@ from dataclasses import dataclass
 
 import typer
 from gazpacho import Soup
-from seleniumbase.common.exceptions import NoSuchElementException
-from base import BaseScraper, KEYWORDS
+from base import BaseScraper, KEYWORDS, TIMEOUT, RECONNECT
+
+CATEGORIES = {
+    "smartphone": 'a[href="/busca/smartphone/?from=submit&filters=category---TE"]'
+}
 
 
 @dataclass
@@ -155,6 +158,12 @@ class MagaluScraper(BaseScraper):
             "Características": características,
             "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
+
+    def input_search_params(self, driver, keyword):
+        self.highlight_element(driver, self.input_field)
+        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        if department := CATEGORIES.get(keyword):
+            driver.uc_click(department, timeout=TIMEOUT)
 
 
 if __name__ == "__main__":
