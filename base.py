@@ -228,6 +228,8 @@ class BaseScraper:
                     Soup(driver.get_page_source()), keyword
                 )
                 print(f"Navegando página {page} da busca '{keyword}'...")
+                driver.set_messenger_theme(location="bottom_center")
+                driver.post_message(f"🕷️ Raspando links da página {page}! 🕸️")
                 for k, v in products.items():
                     v["página_de_busca"] = page
                     results[k] = v
