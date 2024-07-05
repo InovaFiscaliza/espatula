@@ -157,7 +157,14 @@ class MercadoLivreScraper(BaseScraper):
             "span", attrs={"class": "ui-pdp-subtitle"}, mode="first"
         ):
             self.highlight_element(driver, "span[class=ui-pdp-subtitle]")
-            estado, vendas = info_vendas.strip().split(" | ")
+            if len(info_vendas := info_vendas.strip().split(" | ")) == 2:
+                estado, vendas = info_vendas.strip().split(" | ")
+            elif len(info_vendas) == 1:
+                vendas = info_vendas.strip()
+                if estado := soup.find(
+                    "p", attrs={"class": "andes-badge__content"}, mode="first"
+                ):
+                    estado = estado.strip()
 
         if nome := soup.find("h1", attrs={"class": "ui-pdp-title"}, mode="first"):
             self.highlight_element(driver, "h1[class=ui-pdp-title]")
