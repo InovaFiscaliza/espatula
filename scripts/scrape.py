@@ -23,7 +23,7 @@ SCRAPER = {
 if __name__ == "__main__":
 
     def main(
-        scraper: str = "amazon",
+        scraper: str,
         search: bool = True,
         keyword: str = None,
         headless: bool = True,
