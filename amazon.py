@@ -219,18 +219,25 @@ class AmazonScraper(BaseScraper):
         return results
 
     def input_search_params(self, driver, keyword):
-        section = "select[id=searchDropdownBox]"
-        self.highlight_element(driver, section)
-        category = driver.find_element(section)
-        category.uc_click()
-        electronics = driver.find_element('option[value="search-alias=electronics"]')
-        electronics.uc_click()
-        if department := CATEGORIES.get(keyword):
-            subcategory = driver.find_element(department)
-            subcategory.uc_click()
+        breakpoint()
+        try:
+            section = "select[id=searchDropdownBox]"
+            self.highlight_element(driver, section)
+            category = driver.find_element(section)
+            category.uc_click()
+            electronics = driver.find_element('option[value="search-alias=electronics"]')
+            electronics.uc_click()
+        except Exception as e:
+            print(e)
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
-
+        if department := CATEGORIES.get(keyword):
+            try:
+                subcategory = driver.find_element(department)
+                subcategory.uc_click()
+            except Exception as e:
+                print(e)
+            
 
 if __name__ == "__main__":
 
