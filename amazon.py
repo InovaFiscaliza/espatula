@@ -59,13 +59,13 @@ class AmazonScraper(BaseScraper):
             return False
         Link = self.transform_url(link_produto)
         return {
-            "Nome": nome,
-            "Preço": preço,
-            "Nota": stars,
-            "Avaliações": evals,
-            "Imagem": imgs,
-            "Link": Link,
-            "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "nome": nome,
+            "preço": preço,
+            "nota": stars,
+            "avaliações": evals,
+            "imagem": imgs,
+            "url": Link,
+            "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     @staticmethod
