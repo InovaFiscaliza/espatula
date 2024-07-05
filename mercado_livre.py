@@ -4,7 +4,11 @@ from dataclasses import dataclass
 
 import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS
+from base import BaseScraper, KEYWORDS, RECONNECT, TIMEOUT
+
+CATEGORIES = {
+    "smartphone": "https://www.mercadolivre.com.br/c/celulares-e-telefones#menu=categories"
+}
 
 
 @dataclass
@@ -238,6 +242,12 @@ class MercadoLivreScraper(BaseScraper):
             # "url": self.find_single_url(driver.get_current_url()),
             "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
+
+    def input_search_params(self, driver, keyword):
+        if department := CATEGORIES.get(keyword):
+            driver.uc_open_with_reconnect(department, reconnect_time=RECONNECT)
+        self.highlight_element(driver, self.input_field)
+        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
 
 if __name__ == "__main__":
