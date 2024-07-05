@@ -3,6 +3,7 @@ import re
 import os
 import json
 import base64
+import random
 from dataclasses import dataclass
 
 import requests
@@ -164,7 +165,7 @@ class BaseScraper:
         screenshot = self.capture_full_page_screenshot(driver)
         Image.open(BytesIO(screenshot)).convert("RGB").save(folder / filename)
 
-    def inspect_pages(self, keyword: str, screenshot: bool = False):
+    def inspect_pages(self, keyword: str, sample: int = 65, screenshot: bool = False):
         output_file = (
             self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
         )
@@ -173,9 +174,12 @@ class BaseScraper:
         else:
             links = json.loads(output_file.read_text())
         driver = self.init_driver()
+        sample_idxs = random.sample(range(len(links)), sample)
+        keys = [links.keys()[i] for i in sample_idxs]
+        sample_links = {k: links[k] for k in keys}
         try:
             for i, (url, result) in enumerate(
-                tqdm(links.copy().items(), desc=f"{self.name} - {keyword}")
+                tqdm(sample_links.items(), desc=f"{self.name} - {keyword}")
             ):
                 try:
                     driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
