@@ -82,13 +82,13 @@ class MercadoLivreScraper(BaseScraper):
             return False
 
         return {
-            "Nome": nome,
-            "Preço": preço,
-            "Avaliações": evals,
-            "Nota": nota,
-            "Imagem": img,
-            "Link": link,
-            "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "nome": nome,
+            "preço": preço,
+            "avaliações": evals,
+            "nota": nota,
+            "imagem": img,
+            "link": link,
+            "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def discover_product_urls(self, soup, keyword):

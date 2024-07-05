@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 from dataclasses import dataclass
 
@@ -163,7 +162,7 @@ class MagaluScraper(BaseScraper):
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
         if department := CATEGORIES.get(keyword):
-            driver.uc_click(department, timeout=TIMEOUT)
+            driver.uc_click(department, timeout=RECONNECT)
 
 
 if __name__ == "__main__":

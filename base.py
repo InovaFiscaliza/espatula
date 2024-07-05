@@ -4,6 +4,7 @@ import os
 import json
 import base64
 import random
+from datetime import datetime
 from dataclasses import dataclass
 
 import requests
@@ -100,7 +101,7 @@ class BaseScraper:
                         "y": 0,
                         "width": metrics["contentSize"]["width"],
                         "height": metrics["contentSize"]["height"],
-                        "scale": 1,
+                        "scale": 1.5,
                     },
                     "captureBeyondViewport": True,
                 },
@@ -166,13 +167,13 @@ class BaseScraper:
         Image.open(BytesIO(screenshot)).convert("RGB").save(folder / filename)
 
     def inspect_pages(self, keyword: str, sample: int = 65, screenshot: bool = False):
-        output_file = (
+        links_file = (
             self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
         )
-        if not output_file.is_file():
+        if not links_file.is_file():
             links = {}
         else:
-            links = json.loads(output_file.read_text())
+            links = json.loads(links_file.read_text())
         driver = self.init_driver()
         sample_idxs = random.sample(range(len(links)), sample)
         keys = [links.keys()[i] for i in sample_idxs]
@@ -193,14 +194,16 @@ class BaseScraper:
                             result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
                         result.update(result_page)
-                        links[url].update(result)
+                        sample_links[url].update(result)
                 except Exception as e:
                     print(e)
                     print(f"Erro ao processar {url}")
         finally:
             json.dump(
-                links,
-                output_file.open("w"),
+                sample_links,
+                links_file.with_name(
+                    f"{self.name}_{datetime.today().strftime("%Y%m%d")}_{keyword.lower().replace(' ', '_')}.json"
+                ).open("w"),
                 ensure_ascii=False,
             )
             driver.quit()
@@ -232,8 +235,8 @@ class BaseScraper:
                     Soup(driver.get_page_source()), keyword
                 )
                 print(f"Navegando página {page} da busca '{keyword}'...")
-                driver.set_messenger_theme(location="bottom_center")
-                driver.post_message(f"🕷️ Raspando links da página {page}! 🕸️")
+                # driver.set_messenger_theme(location="bottom_center")
+                # driver.post_message(f"🕷️ Raspando links da página {page}! 🕸️")
                 for k, v in products.items():
                     v["página_de_busca"] = page
                     results[k] = v
