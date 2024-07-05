@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.xtras import Path
+from fastcore.foundation import L
 from PIL import Image
 from gazpacho import Soup
 from seleniumbase import Driver
@@ -166,7 +167,7 @@ class BaseScraper:
         screenshot = self.capture_full_page_screenshot(driver)
         Image.open(BytesIO(screenshot)).convert("RGB").save(folder / filename)
 
-    def inspect_pages(self, keyword: str, sample: int = 65, screenshot: bool = False):
+    def inspect_pages(self, keyword: str, screenshot: bool = False, sample: int = 65):
         links_file = (
             self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
         )
@@ -175,9 +176,8 @@ class BaseScraper:
         else:
             links = json.loads(links_file.read_text())
         driver = self.init_driver()
-        sample_idxs = random.sample(range(len(links)), sample)
-        keys = [links.keys()[i] for i in sample_idxs]
-        sample_links = {k: links[k] for k in keys}
+        sample_keys = L(links.keys()).shuffle()[:sample]
+        sample_links = {k: links[k] for k in sample_keys}
         try:
             for i, (url, result) in enumerate(
                 tqdm(sample_links.items(), desc=f"{self.name} - {keyword}")
@@ -189,7 +189,7 @@ class BaseScraper:
                             del links[url]
                             continue
                         if screenshot:
-                            filename = f"{self.name}_{keyword}_{i}.pdf"
+                            filename = f"{self.name}_{datetime.today().strftime("%Y%m%d")}_{keyword}_{i}.pdf"
                             self.take_screenshot(driver, filename)
                             result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
