@@ -219,7 +219,6 @@ class AmazonScraper(BaseScraper):
         return results
 
     def input_search_params(self, driver, keyword):
-        breakpoint()
         try:
             section = "select[id=searchDropdownBox]"
             self.highlight_element(driver, section)
@@ -236,8 +235,8 @@ class AmazonScraper(BaseScraper):
         if department := CATEGORIES.get(keyword):
             for subcategory in department:
                 try:
-                    subcategory = driver.find_element(department)
-                    subcategory.uc_click()
+                    subcategory_tag = driver.find_element(subcategory)
+                    subcategory_tag.uc_click()
                     driver.sleep(RECONNECT)
                 except Exception as e:
                     print(e)
