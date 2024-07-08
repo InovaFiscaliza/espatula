@@ -113,7 +113,7 @@ class AmericanasScraper(BaseScraper):
                 características.get("Marca"),
                 características.get("Modelo"),
                 self.extrair_certificado(características),
-                características.get("EAN"),
+                self.extrair_ean(características),
                 características.get("Código"),
             )
 
