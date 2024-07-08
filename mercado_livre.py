@@ -4,7 +4,7 @@ from datetime import datetime
 
 from gazpacho import Soup
 
-from base import RECONNECT, TIMEOUT, BaseScraper
+from base import RECONNECT, TIMEOUT, TIMEZONE, BaseScraper
 
 CATEGORIES = {
     "smartphone": "https://www.mercadolivre.com.br/c/celulares-e-telefones#menu=categories"
@@ -88,7 +88,7 @@ class MercadoLivreScraper(BaseScraper):
             "nota": nota,
             "imagem": imagem,
             "url": url,
-            "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def discover_product_urls(self, soup, keyword):
@@ -246,8 +246,7 @@ class MercadoLivreScraper(BaseScraper):
             "ean_gtin": ean,
             "características": características,
             "descrição": descrição,
-            # "url": self.find_single_url(driver.get_current_url()),
-            "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def input_search_params(self, driver, keyword):
