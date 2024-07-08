@@ -88,7 +88,7 @@ class BaseScraper:
         url = f"{driver.command_executor._url}/session/{driver.session_id}/chromium/send_command_and_get_result"
         params = {
             "displayHeaderFooter": True,
-            "printBackground": False,
+            "printBackground": True,
             "preferCSSPageSize": True,
             "scale": 0.75,
         }
@@ -181,9 +181,9 @@ class BaseScraper:
                             del links[url]
                             continue
                         if screenshot:
-                            filename = f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}"
+                            filename = f'{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{i}.pdf'
                             if product_id := result_page.get("product_id"):
-                                filename = f"{filename}_{product_id}.pdf"
+                                filename = f"{filename[:-4]}_{product_id}.pdf"
                             # else:
                             #     filename = f"{filename}_{url.split("/")[-1]}.pdf"
                             result_page["screenshot"] = self.take_screenshot(
