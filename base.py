@@ -156,7 +156,11 @@ class BaseScraper:
             pass
 
     def take_screenshot(self, driver, filename):
-        folder = DATA / "screenshots"
+        folder = (
+            DATA
+            / "screenshots"
+            / datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
+        )
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
         with open(folder / filename, "wb") as f:
@@ -187,7 +191,8 @@ class BaseScraper:
                             if product_id := result_page.get("product_id"):
                                 filename = f"{self.name}_{product_id}.pdf"
                             else:
-                                filename = f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{keyword}_{i}.pdf"
+                                filename = f"{self.name}_{url.split("/")[-1]}.pdf"
+                                # filename = f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{keyword}_{i}.pdf"
                             self.take_screenshot(driver, filename)
                             result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
