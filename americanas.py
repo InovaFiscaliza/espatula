@@ -61,11 +61,10 @@ class AmericanasScraper(BaseScraper):
 
     def extract_item_data(self, driver):
         soup = Soup(driver.get_page_source())
-
         if categoria := soup.find(
-            "div", attrs={"data-testid": "breadcrumb"}, mode="first", partial=False
+            "div", attrs={"class": "breadcrumb"}, mode="first", partial=True
         ):
-            self.highlight_element(driver, "div:contains(breadcrumb)")
+            # self.highlight_element(driver, "div:contains(breadcrumb)")
             categoria = " | ".join(
                 i.strip()
                 for i in categoria.find("a", mode="all")
@@ -73,7 +72,7 @@ class AmericanasScraper(BaseScraper):
             )
 
         if nome := soup.find("h1", attrs={"class": "product-title"}, mode="first"):
-            self.highlight_element(driver, 'h1:contains("product-title")')
+            # self.highlight_element(driver, 'h1:contains("product-title")')
             nome = nome.strip()
 
         # if imagens := soup.find("div", {"class": "Gallery"}, mode="first"):
@@ -96,7 +95,7 @@ class AmericanasScraper(BaseScraper):
 
         if preço := soup.find("div", attrs={"class": "priceSales"}, mode="first"):
             # self.highlight_element(driver, "div[data-testid=mod-productprice]")
-            preço.text.strip().replace("R$", "").replace(".", "").replace(",", ".")
+            preço = preço.strip().replace("R$", "").replace(".", "").replace(",", ".")
 
         else:
             preço = None
@@ -109,6 +108,7 @@ class AmericanasScraper(BaseScraper):
 
         marca, modelo, certificado, ean, product_id = None, None, None, None, None
         if características := self.parse_tables(soup):
+            driver.uc_click('button[aria-expanded="false"]')
             marca, modelo, certificado, ean, product_id = (
                 características.get("Marca"),
                 características.get("Modelo"),
