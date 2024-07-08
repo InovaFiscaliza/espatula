@@ -184,8 +184,8 @@ class BaseScraper:
                             filename = f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}"
                             if product_id := result_page.get("product_id"):
                                 filename = f"{filename}_{product_id}.pdf"
-                            else:
-                                filename = f"{filename}_{url.split("/")[-1]}.pdf"
+                            # else:
+                            #     filename = f"{filename}_{url.split("/")[-1]}.pdf"
                             result_page["screenshot"] = self.take_screenshot(
                                 driver, filename
                             )
