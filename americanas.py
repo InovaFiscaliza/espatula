@@ -1,9 +1,7 @@
-import re
 from datetime import datetime
 from dataclasses import dataclass
 
-import typer
-from base import BaseScraper, KEYWORDS
+from base import BaseScraper, TIMEZONE
 
 
 @dataclass
@@ -13,36 +11,36 @@ class AmericanasScraper(BaseScraper):
     input_field: str = 'input[placeholder="busque aqui seu produto"]'
     next_page_button: str = 'svg[class="src__ArrowRotate-sc-82ugau-2 hWXbQX"]'
 
-    def extract_product_data(self, produto):
+    def extract_search_data(self, produto):
         if relative_url := produto.find("a"):
             relative_url = relative_url.attrs.get("href")
-        if name := produto.find("h3", mode="first"):
-            name = name.strip()
-        if evals := produto.find(
+        if nome := produto.find("h3", mode="first"):
+            nome = nome.strip()
+        if avaliações := produto.find(
             "span", attrs={"class": "src__Count-sc-r5o9d7-1 eDRxIY"}, mode="first"
         ):
-            evals = evals.strip()
-        if price_lower := produto.find("span", {"class": "list-price"}, mode="first"):
-            price_lower = price_lower.strip()
+            avaliações = avaliações.strip()
+        if preço := produto.find("span", {"class": "list-price"}, mode="first"):
+            preço = preço.strip()
 
-        if price_higher := produto.find("span", {"class": "sales-price"}, mode="first"):
-            price_higher = price_higher.strip()
+        if preço_original := produto.find(
+            "span", {"class": "sales-price"}, mode="first"
+        ):
+            preço_original = preço_original.strip()
 
         if hasattr(
-            imgs := produto.find("img", mode="first"),
+            imagens := produto.find("img", mode="first"),
             "attrs",
         ):
-            imgs = imgs.attrs.get("src")
-        if not all([name, price_lower, imgs, relative_url]):
-            return None
+            imagens = imagens.attrs.get("src")
         return {
-            "Nome": name,
-            "Preço": price_lower,
-            "Preço_Original": price_higher,
-            "Avaliações": evals,
-            "Imagem": imgs,
-            "Link": self.url + relative_url,
-            "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "nome": nome,
+            "preço": preço,
+            "preço_Original": preço_original,
+            "avaliações": avaliações,
+            "imagem": imagens,
+            "url": self.url + relative_url,
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def discover_product_urls(self, soup, keyword):
@@ -55,25 +53,7 @@ class AmericanasScraper(BaseScraper):
             partial=True,
             mode="all",
         ):
-            if product_data := self.extract_product_data(item):
-                product_data["Palavra_Chave"] = keyword
-                results[product_data["Link"]] = product_data
+            if product_data := self.extract_search_data(item):
+                product_data["palavra_busca"] = keyword
+                results[product_data["url"]] = product_data
         return results
-
-
-if __name__ == "__main__":
-
-    def main(
-        keyword: str = None,
-        headless: bool = True,
-        screenshot: bool = False,
-        md: bool = False,
-    ):
-        scraper = AmericanasScraper(headless=headless)
-        if not keyword:
-            for keyword in KEYWORDS:
-                scraper.search(keyword, screenshot, md)
-        else:
-            scraper.search(keyword, screenshot, md)
-
-    typer.run(main)
