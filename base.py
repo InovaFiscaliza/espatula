@@ -163,8 +163,10 @@ class BaseScraper:
         )
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
-        with open(folder / filename, "wb") as f:
+        filename = folder / filename
+        with open(filename, "wb") as f:
             f.write(screenshot)
+        return str(filename)
 
     def inspect_pages(self, keyword: str, screenshot: bool = False, sample: int = 65):
         links_file = (
@@ -192,9 +194,9 @@ class BaseScraper:
                                 filename = f"{self.name}_{product_id}.pdf"
                             else:
                                 filename = f"{self.name}_{url.split("/")[-1]}.pdf"
-                                # filename = f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{keyword}_{i}.pdf"
-                            self.take_screenshot(driver, filename)
-                            result_page["screenshot"] = filename
+                            result_page["screenshot"] = self.take_screenshot(
+                                driver, filename
+                            )
                         result_page["palavra_busca"] = keyword
                         result.update(result_page)
                         sample_links[url].update(result)
@@ -215,7 +217,7 @@ class BaseScraper:
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
-    def search(self, keyword: str, screenshot: bool = False):
+    def search(self, keyword: str):
         output_file = (
             self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
         )
@@ -230,9 +232,6 @@ class BaseScraper:
             self.input_search_params(driver, keyword)
             while True:
                 driver.sleep(TIMEOUT)
-                if screenshot:
-                    filename = f"busca_{self.name}_{keyword}_{page}.pdf"
-                    self.take_screenshot(driver, filename)
                 products = self.discover_product_urls(
                     Soup(driver.get_page_source()), keyword
                 )
