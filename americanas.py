@@ -109,7 +109,7 @@ class AmericanasScraper(BaseScraper):
 
         marca, modelo, certificado, ean, product_id = None, None, None, None, None
         if características := self.parse_tables(soup):
-            marca, modelo, certificado, ean = (
+            marca, modelo, certificado, ean, product_id = (
                 características.get("Marca"),
                 características.get("Modelo"),
                 self.extrair_certificado(características),
