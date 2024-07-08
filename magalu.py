@@ -1,9 +1,10 @@
+import re
 from datetime import datetime
 from dataclasses import dataclass
 
 import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS, TIMEOUT, RECONNECT
+from base import BaseScraper, KEYWORDS, TIMEOUT, RECONNECT, TIMEZONE
 
 CATEGORIES = {
     "smartphone": 'a[href="/busca/smartphone/?from=submit&filters=category---TE"]'
@@ -43,13 +44,13 @@ class MagaluScraper(BaseScraper):
         if not all([name, price_lower, imgs]):
             return None
         return {
-            "Nome": name,
-            "Preço": price_lower,
-            "Preço_Original": price_higher,
-            "Avaliações": evals,
-            "Imagem": imgs,
-            "Link": self.url + relative_url,
-            "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "nome": name,
+            "preço": price_lower,
+            "preço_Original": price_higher,
+            "avaliações": evals,
+            "imagem": imgs,
+            "url": self.url + relative_url,
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def discover_product_urls(self, soup, keyword):
@@ -61,8 +62,8 @@ class MagaluScraper(BaseScraper):
             mode="all",
         ):
             if product_data := self.extract_search_data(item):
-                product_data["Palavra_Chave"] = keyword
-                results[product_data["Link"]] = product_data
+                product_data["palavra_busca"] = keyword
+                results[product_data["url"]] = product_data
         return results
 
     def parse_tables(self, soup) -> dict:
@@ -98,9 +99,11 @@ class MagaluScraper(BaseScraper):
             self.highlight_element(driver, "h1[data-testid=heading-product-title]")
             nome = nome.text.strip()
 
-        if imgs := soup.find("img", {"data-testid": "media-gallery-image"}, mode="all"):
+        if imagens := soup.find(
+            "img", {"data-testid": "media-gallery-image"}, mode="all"
+        ):
             self.highlight_element(driver, "div[data-testid=media-gallery-image]")
-            imgs = [getattr(i, "attrs", {}).get("src") for i in imgs]
+            imagens = [getattr(i, "attrs", {}).get("src") for i in imagens]
 
         nota, avaliações = None, None
         if popularidade := soup.find(
@@ -142,20 +145,26 @@ class MagaluScraper(BaseScraper):
                 características.get("EAN"),
             )
 
+        if match := re.search(r"/p/([\w\d]+)/", driver.current_url):
+            product_id = match.group(1)
+        else:
+            product_id = None
+
         return {
-            "Nome": nome,
-            "Categoria": categoria,
-            "Preço": preço,
-            "Nota": nota,
-            "Avaliações": avaliações,
-            "Imagens": imgs,
-            "Descrição": descrição,
-            "Marca": marca,
-            "Modelo": modelo,
-            "Certificado": certificado,
-            "EAN": ean,
-            "Características": características,
-            "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "nome": nome,
+            "categoria": categoria,
+            "preço": preço,
+            "nota": nota,
+            "avaliações": avaliações,
+            "imagens": imagens,
+            "descrição": descrição,
+            "marca": marca,
+            "modelo": modelo,
+            "certificado": certificado,
+            "ean_gtin": ean,
+            "características": características,
+            "product_id": product_id,
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def input_search_params(self, driver, keyword):
