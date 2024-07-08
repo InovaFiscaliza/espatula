@@ -151,11 +151,7 @@ class BaseScraper:
             pass
 
     def take_screenshot(self, driver, filename):
-        folder = (
-            DATA
-            / "screenshots"
-            / datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
-        )
+        folder = DATA / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
         filename = folder / filename
@@ -185,10 +181,11 @@ class BaseScraper:
                             del links[url]
                             continue
                         if screenshot:
+                            filename = f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}"
                             if product_id := result_page.get("product_id"):
-                                filename = f"{self.name}_{product_id}.pdf"
+                                filename = f"{filename}_{product_id}.pdf"
                             else:
-                                filename = f"{self.name}_{url.split("/")[-1]}.pdf"
+                                filename = f"{filename}_{url.split("/")[-1]}.pdf"
                             result_page["screenshot"] = self.take_screenshot(
                                 driver, filename
                             )
