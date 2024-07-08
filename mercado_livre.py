@@ -30,13 +30,13 @@ class MercadoLivreScraper(BaseScraper):
 
     def extract_search_data(self, item):
         if hasattr(
-            link := item.find("a", attrs={"class": "ui-search-link"}, mode="first"),
+            url := item.find("a", attrs={"class": "ui-search-link"}, mode="first"),
             "attrs",
         ):
-            link = self.find_single_url(link.attrs.get("href"))
+            url = self.find_single_url(url.attrs.get("href"))
 
         if hasattr(
-            img := item.find(
+            imagem := item.find(
                 "img",
                 attrs={"class": "ui-search-result"},
                 partial=True,
@@ -44,7 +44,7 @@ class MercadoLivreScraper(BaseScraper):
             ),
             "attrs",
         ):
-            img = img.attrs.get("src")
+            imagem = imagem.attrs.get("src")
 
         if nome := item.find(
             "h2",
@@ -62,13 +62,13 @@ class MercadoLivreScraper(BaseScraper):
         ):
             preço = preço.strip()
 
-        if evals := item.find(
+        if avaliações := item.find(
             "span",
             attrs={"class": "ui-search-reviews__amount"},
             partial=True,
             mode="first",
         ):
-            evals = evals.strip()
+            avaliações = avaliações.strip()
 
         if nota := item.find(
             "span",
@@ -78,16 +78,16 @@ class MercadoLivreScraper(BaseScraper):
         ):
             nota = nota.strip()
 
-        if not all([nome, preço, img]):
+        if not all([nome, preço, imagem]):
             return False
 
         return {
             "nome": nome,
             "preço": preço,
-            "avaliações": evals,
+            "avaliações": avaliações,
             "nota": nota,
-            "imagem": img,
-            "link": link,
+            "imagem": imagem,
+            "url": url,
             "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
