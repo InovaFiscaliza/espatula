@@ -142,7 +142,7 @@ class MagaluScraper(BaseScraper):
                 características.get("Marca"),
                 características.get("Modelo"),
                 self.extrair_certificado(características),
-                características.get("EAN"),
+                self.extrair_ean(características),
             )
 
         if match := re.search(r"/p/([\w\d]+)/", driver.current_url):
