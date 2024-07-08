@@ -4,20 +4,19 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from io import BytesIO
 
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path
 from gazpacho import Soup
-from PIL import Image
 from seleniumbase import Driver
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
 )
 from tqdm.auto import tqdm
+from zoneinfo import ZoneInfo
 
 load_dotenv(find_dotenv(), override=True)
 
@@ -41,8 +40,8 @@ KEYWORDS = [
 ]
 
 CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*){12})$")
-
 DATA = Path(os.environ.get("FOLDER", f"{Path.cwd()}/data"))
+TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Sao_Paulo"))
 
 
 def open_the_turnstile_page(driver, url):
@@ -99,8 +98,9 @@ class BaseScraper:
             "scale": 0.75,
         }
         body = json.dumps({"cmd": "Page.printToPDF", "params": params})
+        response = driver.command_executor._request("POST", url, body).get("value")
         return base64.b64decode(
-            driver.command_executor._request("POST", url, body)["data"],
+            response.get("data"),
             validate=True,
         )
 
@@ -184,7 +184,10 @@ class BaseScraper:
                             del links[url]
                             continue
                         if screenshot:
-                            filename = f"{self.name}_{datetime.today().strftime("%Y%m%d")}_{keyword}_{i}.pdf"
+                            if product_id := result_page.get("product_id"):
+                                filename = f"{self.name}_{product_id}.pdf"
+                            else:
+                                filename = f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{keyword}_{i}.pdf"
                             self.take_screenshot(driver, filename)
                             result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
@@ -197,7 +200,7 @@ class BaseScraper:
             json.dump(
                 sample_links,
                 links_file.with_name(
-                    f"{self.name}_{datetime.today().strftime("%Y%m%d")}_{keyword.lower().replace(' ', '_')}.json"
+                    f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{keyword.lower().replace(' ', '_')}.json"
                 ).open("w"),
                 ensure_ascii=False,
             )
