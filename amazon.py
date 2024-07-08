@@ -6,7 +6,7 @@ from urllib.parse import unquote
 
 from gazpacho import Soup
 
-from base import RECONNECT, TIMEOUT, BaseScraper
+from base import RECONNECT, TIMEOUT, TIMEZONE, BaseScraper
 
 CATEGORIES = {"smartphone": ['li[id="n/16243803011"] a', 'li[id="n/16243890011"] a']}
 
@@ -65,7 +65,7 @@ class AmazonScraper(BaseScraper):
             "avaliações": evals,
             "imagem": imgs,
             "url": Link,
-            "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     @staticmethod
@@ -164,7 +164,7 @@ class AmazonScraper(BaseScraper):
                 s.text.strip() for s in descrição_secundária.find("span", mode="all")
             )
 
-        modelo, ean, certificado = None, None, None
+        modelo, ean, certificado, asin = None, None, None, None
 
         if características := self.parse_tables(soup):
             if not marca:
@@ -180,6 +180,7 @@ class AmazonScraper(BaseScraper):
                 )
 
             modelo = extrair_modelo(características)
+            asin = características.pop("ASIN", None)
 
         if vendas := soup.find(
             "span", attrs={"id": "social-proofing-faceout-title-tk_bought"}
@@ -202,7 +203,8 @@ class AmazonScraper(BaseScraper):
             "ean_gtin": ean,
             "modelo": modelo,
             "vendas": vendas,
-            "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "product_id": asin,
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def discover_product_urls(self, soup, keyword):
