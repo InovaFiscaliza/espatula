@@ -44,10 +44,6 @@ DATA = Path(os.environ.get("FOLDER", f"{Path.cwd()}/data"))
 TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Sao_Paulo"))
 
 
-def open_the_turnstile_page(driver, url):
-    driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
-
-
 def click_turnstile_and_verify(driver):
     driver.switch_to_frame("iframe")
     driver.uc_click("span.mark")
@@ -77,13 +73,12 @@ class BaseScraper:
             do_not_track=True,
         )
         driver.maximize_window()
+        driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         if self.turnstile:
             try:
-                open_the_turnstile_page(driver, self.url)
                 click_turnstile_and_verify(driver)
             except Exception:
                 pass
-        driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         return driver
 
     # https://chromedevtools.github.io/devtools-protocol/tot/Page#method-printToPDF
@@ -166,7 +161,7 @@ class BaseScraper:
         filename = folder / filename
         with open(filename, "wb") as f:
             f.write(screenshot)
-        return str(filename)
+        return f"{filename.parent.name}/{filename.name}"
 
     def inspect_pages(self, keyword: str, screenshot: bool = False, sample: int = 65):
         links_file = (
