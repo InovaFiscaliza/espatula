@@ -1,10 +1,10 @@
 import re
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 
-import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS, RECONNECT, TIMEOUT
+
+from base import RECONNECT, TIMEOUT, BaseScraper
 
 CATEGORIES = {
     "smartphone": "https://www.mercadolivre.com.br/c/celulares-e-telefones#menu=categories"
@@ -97,8 +97,8 @@ class MercadoLivreScraper(BaseScraper):
             "li", attrs={"class": "ui-search-layout__item"}, partial=True, mode="all"
         ):
             if product_data := self.extract_search_data(item):
-                product_data["Palavra_Chave"] = keyword
-                results[product_data["Link"]] = product_data
+                product_data["palavra_busca"] = keyword
+                results[product_data["url"]] = product_data
         return results
 
     def parse_specs(self, element) -> dict:
@@ -255,28 +255,3 @@ class MercadoLivreScraper(BaseScraper):
             driver.uc_open_with_reconnect(department, reconnect_time=RECONNECT)
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
-
-
-if __name__ == "__main__":
-
-    def main(
-        search: bool = True,
-        keyword: str = None,
-        headless: bool = True,
-        screenshot: bool = False,
-    ):
-        scraper = MercadoLivreScraper(headless=headless)
-
-        if not keyword:
-            for keyword in KEYWORDS:
-                if search:
-                    scraper.search(keyword, screenshot)
-                else:
-                    scraper.inspect_pages(keyword, screenshot)
-        else:
-            if search:
-                scraper.search(keyword, screenshot)
-            else:
-                scraper.inspect_pages(keyword, screenshot)
-
-    typer.run(main)
