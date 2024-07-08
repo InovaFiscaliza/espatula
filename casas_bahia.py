@@ -1,9 +1,7 @@
-import re
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 
-import typer
-from base import BaseScraper, KEYWORDS
+from base import TIMEZONE, BaseScraper
 
 
 @dataclass
@@ -47,13 +45,13 @@ class CasasBahiaScraper(BaseScraper):
         if not all([name, price_lower, imgs, relative_url]):
             return None
         return {
-            "Nome": name,
-            "Preço": price_lower,
-            "Preço_Original": price_higher,
-            "Avaliações": evals,
-            "Imagem": imgs,
-            "Link": self.url + relative_url,
-            "Data_Atualização": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "nome": name,
+            "preço": price_lower,
+            "preço_Original": price_higher,
+            "avaliações": evals,
+            "imagem": imgs,
+            "url": self.url + relative_url,
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def discover_product_urls(self, soup, keyword):
@@ -65,24 +63,6 @@ class CasasBahiaScraper(BaseScraper):
             mode="all",
         ):
             if product_data := self.extract_product_data(item):
-                product_data["Palavra_Chave"] = keyword
-                results[product_data["Link"]] = product_data
+                product_data["palavra_busca"] = keyword
+                results[product_data["url"]] = product_data
         return results
-
-
-if __name__ == "__main__":
-
-    def main(
-        keyword: str = None,
-        headless: bool = True,
-        screenshot: bool = False,
-        md: bool = False,
-    ):
-        scraper = CasasBahiaScraper(headless=headless)
-        if not keyword:
-            for keyword in KEYWORDS:
-                scraper.search(keyword, screenshot, md)
-        else:
-            scraper.search(keyword, screenshot, md)
-
-    typer.run(main)
