@@ -28,6 +28,7 @@ if __name__ == "__main__":
         keyword: str = None,
         headless: bool = True,
         screenshot: bool = False,
+        sample: int = 78,
     ):
         if scraper not in SCRAPER:
             print("Invalid scraper")
@@ -38,13 +39,13 @@ if __name__ == "__main__":
         if not keyword:
             for keyword in KEYWORDS:
                 if search:
-                    scraper.search(keyword, screenshot)
+                    scraper.search(keyword)
                 else:
-                    scraper.inspect_pages(keyword, screenshot)
+                    scraper.inspect_pages(keyword, screenshot, sample=sample)
         else:
             if search:
-                scraper.search(keyword, screenshot)
+                scraper.search(keyword)
             else:
-                scraper.inspect_pages(keyword, screenshot)
+                scraper.inspect_pages(keyword, screenshot, sample=sample)
 
     typer.run(main)
