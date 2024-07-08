@@ -1,12 +1,12 @@
-import re
 import json
-from urllib.parse import unquote
-from datetime import datetime
+import re
 from dataclasses import dataclass
+from datetime import datetime
+from urllib.parse import unquote
 
-import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS, TIMEOUT, RECONNECT
+
+from base import RECONNECT, TIMEOUT, BaseScraper
 
 CATEGORIES = {"smartphone": ['li[id="n/16243803011"] a', 'li[id="n/16243890011"] a']}
 
@@ -214,8 +214,8 @@ class AmazonScraper(BaseScraper):
             partial=True,
         ):
             if product_data := self.extract_search_results(div):
-                product_data["Palavra_Chave"] = keyword
-                results[product_data["Link"]] = product_data
+                product_data["palavra_busca"] = keyword
+                results[product_data["url"]] = product_data
         return results
 
     def input_search_params(self, driver, keyword):
@@ -240,28 +240,3 @@ class AmazonScraper(BaseScraper):
                     driver.sleep(RECONNECT)
                 except Exception as e:
                     print(e)
-
-
-if __name__ == "__main__":
-
-    def main(
-        search: bool = True,
-        keyword: str = None,
-        headless: bool = True,
-        screenshot: bool = False,
-    ):
-        scraper = AmazonScraper(headless=headless)
-
-        if not keyword:
-            for keyword in KEYWORDS:
-                if search:
-                    scraper.search(keyword, screenshot)
-                else:
-                    scraper.inspect_pages(keyword, screenshot)
-        else:
-            if search:
-                scraper.search(keyword, screenshot)
-            else:
-                scraper.inspect_pages(keyword, screenshot)
-
-    typer.run(main)

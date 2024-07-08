@@ -1,22 +1,21 @@
-from io import BytesIO
-import re
-import os
-import json
 import base64
-import random
-from datetime import datetime
+import json
+import os
+import re
 from dataclasses import dataclass
+from datetime import datetime
+from io import BytesIO
 
 import requests
 from dotenv import find_dotenv, load_dotenv
-from fastcore.xtras import Path
 from fastcore.foundation import L
-from PIL import Image
+from fastcore.xtras import Path
 from gazpacho import Soup
+from PIL import Image
 from seleniumbase import Driver
 from seleniumbase.common.exceptions import (
-    NoSuchElementException,
     ElementNotVisibleException,
+    NoSuchElementException,
 )
 from tqdm.auto import tqdm
 
@@ -230,7 +229,6 @@ class BaseScraper:
                 if screenshot:
                     filename = f"busca_{self.name}_{keyword}_{page}.pdf"
                     self.take_screenshot(driver, filename)
-
                 products = self.discover_product_urls(
                     Soup(driver.get_page_source()), keyword
                 )
