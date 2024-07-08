@@ -87,25 +87,20 @@ class BaseScraper:
         driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
         return driver
 
-    # https://github.com/nirtal85/Selenium-Python-Example/blob/ee919911ca0837c8cb147f8b09b9a63a29215a77/tests/conftest.py#L374
+    # https://chromedevtools.github.io/devtools-protocol/tot/Page#method-printToPDF
     @staticmethod
     def capture_full_page_screenshot(driver) -> bytes:  #
-        """Gets full page screenshot of the current window as a binary data."""
-        metrics = driver.execute_cdp_cmd("Page.getLayoutMetrics", {})
+        """Gets full page screenshot as a pdf searchable."""
+        url = f"{driver.command_executor._url}/session/{driver.session_id}/chromium/send_command_and_get_result"
+        params = {
+            "displayHeaderFooter": True,
+            "printBackground": True,
+            "preferCSSPageSize": True,
+            "scale": 0.75,
+        }
+        body = json.dumps({"cmd": "Page.printToPDF", "params": params})
         return base64.b64decode(
-            driver.execute_cdp_cmd(
-                "Page.captureScreenshot",
-                {
-                    "clip": {
-                        "x": 0,
-                        "y": 0,
-                        "width": metrics["contentSize"]["width"],
-                        "height": metrics["contentSize"]["height"],
-                        "scale": 1.5,
-                    },
-                    "captureBeyondViewport": True,
-                },
-            )["data"],
+            driver.command_executor._request("POST", url, body)["data"],
             validate=True,
         )
 
@@ -164,7 +159,8 @@ class BaseScraper:
         folder = DATA / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
-        Image.open(BytesIO(screenshot)).convert("RGB").save(folder / filename)
+        with open(folder / filename, "wb") as f:
+            f.write(screenshot)
 
     def inspect_pages(self, keyword: str, screenshot: bool = False, sample: int = 65):
         links_file = (
