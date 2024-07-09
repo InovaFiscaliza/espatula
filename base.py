@@ -4,6 +4,7 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
+from pprint import pprint
 
 import requests
 from dotenv import find_dotenv, load_dotenv
@@ -193,6 +194,7 @@ class BaseScraper:
                             result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
                         result_page["index"] = i
+                        pprint(result_page)
                         sample_links[url].update(result_page)
                 except Exception as e:
                     print(e)
