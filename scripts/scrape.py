@@ -13,30 +13,31 @@ from americanas import AmericanasScraper
 
 # from casas_bahia import CasasBahiaScraper
 from carrefour import CarrefourScraper
-from base import KEYWORDS, FOLDER
+from base import KEYWORDS, FOLDER, TODAY
 
 PREFIX = "https://anatel365.sharepoint.com/sites/Desenvolvimentodeappfiscalizaoe-commerce/Documentos%20Compartilhados/General/Resultados/screenshots/"
 
 
 COLUNAS = [
     "Item",
+    "Página",
     "Texto da Busca",
-    "Arquivo da Página",
-    "Data da Coleta",
-    "Endereço eletrônico (URL)",
-    "Descrição do produto no anúncio",
-    "Tipo do Produto",
+    "Arquivo",
+    "Data",
+    "URL",
+    "Título",
+    "Categoria",
     "Fabricante",
-    "Modelo do Produto",
-    "Valor do Produto (R$)",
-    "Número de Unidades à Venda",
-    "Existe o campo código de homologação no anúncio? (Sim ou Não)",
-    "O código de homologação foi fornecido? (Sim ou Não)",
-    "O produto é homologado? (Sim, Não e N.A.)",
-    "Validação do código de homologação - O código de homologação fornecido é o do produto anunciado? (Sim, Não, N.A.)",
-    "O código EAN foi fornecido? (Sim ou Não) - Apenas para Smartphones.",
-    "O código EAN fornecido corresponde ao produto? (Sim ou Não) -  Apenas para Smartphones.",
-    "Observação 1 - Qual Código de Homologação fornecido no anúncio?",
+    "Modelo",
+    "Preço",
+    "Unidades à Venda",
+    "Existe campo código SCH?",
+    "Código SCH foi fornecido?",
+    "O produto é homologado?",
+    "Código SCH é o do produto?",
+    "O código EAN foi fornecido?",
+    "Código EAN é o do produto?",
+    "Código de Homologação",
 ]
 
 
@@ -84,6 +85,29 @@ SUBCATEGORIES = {
         "philco",
         "lenovo",
     ],
+    "carrefour": [
+        "xiaomi",
+        "celular básico",
+        "galaxy",
+        "smartphone",
+        "motorola",
+        "carregador de celular",
+        "moto",
+        "multilaser",
+        "poco",
+        "iphone",
+        "positivo",
+        "lg",
+        "infinix",
+        "nokia",
+        "redmi",
+        "tcl",
+        "oppo",
+        "asus",
+        "philco",
+        "lenovo",
+        "android os",
+    ],
 }
 
 
@@ -110,6 +134,24 @@ def split_categories(df):
 
 
 def write_excel(df, output_file, sheet_name):
+    df.rename(
+        columns={
+            "palavra_busca": "Texto da Busca",
+            "página_de_busca": "Página",
+            "index": "Item",
+            "screenshot": "Arquivo",
+            "url": "URL",
+            "nome": "Título",
+            "subcategoria": "Categoria",
+            "marca": "Fabricante",
+            "modelo": "Modelo",
+            "preço": "Preço",
+            "certificado": "Código de Homologação",
+        },
+        inplace=True,
+    )
+
+    df = df[COLUNAS]
     writer = pd.ExcelWriter(
         output_file,
         engine="xlsxwriter",
@@ -122,9 +164,9 @@ def write_excel(df, output_file, sheet_name):
     worksheet.set_default_row(hide_unused_rows=True)
     # Freeze the first row
     worksheet.freeze_panes(1, 0)
-    for i, link in enumerate(df["Arquivo da Página"], start=2):
+    for i, link in enumerate(df["Arquivo"], start=2):
         pdf = PREFIX + link
-        worksheet.write_url(f"C{i}", pdf, string=link)
+        worksheet.write_url(f"D{i}", pdf, string=link)
     writer.close()
 
 
@@ -133,100 +175,78 @@ def process_amazon(output_file, category="Celulares e Smartphones"):
     df = split_categories(df)
     df = df.loc[df["subcategoria"] == category]
     df["Item"] = df.index.to_list()
-    df["Data da Coleta"] = pd.to_datetime(df["data"], format="mixed").dt.strftime(
-        "%d/%m/%Y"
-    )
+    df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["amazon"])
     df = df.loc[~discard]
-    df["Número de Unidades à Venda"] = "Não Informado"
+    df["Unidades à Venda"] = "Não Informado"
     columns = [
-        "Existe o campo código de homologação no anúncio? (Sim ou Não)",
-        "O código de homologação foi fornecido? (Sim ou Não)",
+        "Existe campo código SCH?",
+        "Código SCH foi fornecido?",
     ]
     for column in columns:
         df[column] = "Sim"
         df.loc[df["certificado"].isna(), column] = "Não"
     columns = [
-        "O produto é homologado? (Sim, Não e N.A.)",
-        "Validação do código de homologação - O código de homologação fornecido é o do produto anunciado? (Sim, Não, N.A.)",
-        "O código EAN fornecido corresponde ao produto? (Sim ou Não) -  Apenas para Smartphones.",
+        "O produto é homologado?",
+        "Código SCH é o do produto?",
+        "Código EAN é o do produto?",
     ]
     for column in columns:
         df[column] = ""
 
-    column = "O código EAN foi fornecido? (Sim ou Não) - Apenas para Smartphones."
+    column = "O código EAN foi fornecido?"
     df[column] = "Sim"
     df.loc[df["ean_gtin"].isna(), column] = "Não"
-    df.rename(
-        columns={
-            "palavra_busca": "Texto da Busca",
-            "screenshot": "Arquivo da Página",
-            "url": "Endereço eletrônico (URL)",
-            "nome": "Descrição do produto no anúncio",
-            "subcategoria": "Tipo do Produto",
-            "marca": "Fabricante",
-            "modelo": "Modelo do Produto",
-            "preço": "Valor do Produto (R$)",
-            "certificado": "Observação 1 - Qual Código de Homologação fornecido no anúncio?",
-        },
-        inplace=True,
-    )
-
-    df = df[COLUNAS]
     write_excel(df, output_file.with_suffix(".xlsx"), "amazon-smartphone")
 
 
 def process_ml(output_file, category="Celulares e Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    for column in ["nome", "categoria", "url"]:
+        for row in df[df[column].isna()].itertuples():
+            if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
+                print(f"Deleting {file}")
+                file.unlink()
+        df = df.dropna(subset=column).reset_index(drop=True)
+
     df = split_categories(df)
     df["subcategoria"] = df["categoria_1"]
     df = df.loc[df["subcategoria"] == category]
     df["Item"] = df.index.to_list()
-    df["Data da Coleta"] = pd.to_datetime(df["data"], format="mixed").dt.strftime(
-        "%d/%m/%Y"
-    )
+    df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["ml"])
     df = df.loc[~discard]
-    df["Número de Unidades à Venda"] = df["estoque"]
+    df["Unidades à Venda"] = df["estoque"]
     columns = [
-        "Existe o campo código de homologação no anúncio? (Sim ou Não)",
-        "O código de homologação foi fornecido? (Sim ou Não)",
+        "Existe campo código SCH?",
+        "Código SCH foi fornecido?",
     ]
     for column in columns:
         df[column] = "Sim"
         df.loc[df["certificado"].isna(), column] = "Não"
     columns = [
-        "O produto é homologado? (Sim, Não e N.A.)",
-        "Validação do código de homologação - O código de homologação fornecido é o do produto anunciado? (Sim, Não, N.A.)",
-        "O código EAN fornecido corresponde ao produto? (Sim ou Não) -  Apenas para Smartphones.",
+        "O produto é homologado?",
+        "Código SCH é o do produto?",
+        "Código EAN é o do produto?",
     ]
     for column in columns:
         df[column] = ""
 
-    column = "O código EAN foi fornecido? (Sim ou Não) - Apenas para Smartphones."
+    column = "O código EAN foi fornecido?"
     df[column] = "Sim"
     df.loc[df["ean_gtin"].isna(), column] = "Não"
-    df.rename(
-        columns={
-            "palavra_busca": "Texto da Busca",
-            "screenshot": "Arquivo da Página",
-            "url": "Endereço eletrônico (URL)",
-            "nome": "Descrição do produto no anúncio",
-            "subcategoria": "Tipo do Produto",
-            "marca": "Fabricante",
-            "modelo": "Modelo do Produto",
-            "preço": "Valor do Produto (R$)",
-            "certificado": "Observação 1 - Qual Código de Homologação fornecido no anúncio?",
-        },
-        inplace=True,
-    )
-
-    df = df[COLUNAS]
     write_excel(df, output_file.with_suffix(".xlsx"), "ml-smartphone")
 
 
 def process_magalu(output_file, category="Celulares e Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    for column in ["nome", "categoria", "url"]:
+        for row in df[df[column].isna()].itertuples():
+            if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
+                print(f"Deleting {file}")
+                file.unlink()
+        df = df.dropna(subset=column).reset_index(drop=True)
+
     df = split_categories(df)
     for cat in SUBCATEGORIES["magalu"]:
         df.loc[df["subcategoria"].str.lower().str.contains(cat), "subcategoria"] = (
@@ -234,61 +254,37 @@ def process_magalu(output_file, category="Celulares e Smartphones"):
         )
 
     df = df.loc[df["subcategoria"] == category]
-    columns = ["nome", "categoria", "url"]
-    for column in columns:
-        for row in df[df[column].isna()].itertuples():
-            if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-                print(f"Deleting {file}")
-                file.unlink()
-        df = df.dropna(subset=column).reset_index(drop=True)
-
-    df["Item"] = df.index.to_list()
-    df["Data da Coleta"] = pd.to_datetime(df["data"], format="mixed").dt.strftime(
-        "%d/%m/%Y"
-    )
+    df["Item"] = df.index.to_list()  # TODO: mudar para index
+    df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["amazon"])
     df = df.loc[~discard]
-    df["Número de Unidades à Venda"] = "Não Informado"
+    df["Unidades à Venda"] = "Não Informado"
     columns = [
-        "Existe o campo código de homologação no anúncio? (Sim ou Não)",
-        "O código de homologação foi fornecido? (Sim ou Não)",
+        "Existe campo código SCH?",
+        "Código SCH foi fornecido?",
     ]
     for column in columns:
         df[column] = "Sim"
         df.loc[df["certificado"].isna(), column] = "Não"
     columns = [
-        "O produto é homologado? (Sim, Não e N.A.)",
-        "Validação do código de homologação - O código de homologação fornecido é o do produto anunciado? (Sim, Não, N.A.)",
-        "O código EAN fornecido corresponde ao produto? (Sim ou Não) -  Apenas para Smartphones.",
+        "O produto é homologado?",
+        "Código SCH é o do produto?",
+        "Código EAN é o do produto?",
     ]
     for column in columns:
         df[column] = ""
 
-    column = "O código EAN foi fornecido? (Sim ou Não) - Apenas para Smartphones."
+    column = "O código EAN foi fornecido?"
     df[column] = "Sim"
     df.loc[df["ean_gtin"].isna(), column] = "Não"
-    df.rename(
-        columns={
-            "palavra_busca": "Texto da Busca",
-            "screenshot": "Arquivo da Página",
-            "url": "Endereço eletrônico (URL)",
-            "nome": "Descrição do produto no anúncio",
-            "subcategoria": "Tipo do Produto",
-            "marca": "Fabricante",
-            "modelo": "Modelo do Produto",
-            "preço": "Valor do Produto (R$)",
-            "certificado": "Observação 1 - Qual Código de Homologação fornecido no anúncio?",
-        },
-        inplace=True,
-    )
 
-    df = df[COLUNAS]
     write_excel(df, output_file.with_suffix(".xlsx"), "magalu-smartphone")
 
 
 def run_inspection(scraper, keyword, headless, screenshot, sample):
     site = SCRAPER[scraper](headless=headless)
     output_file = site.inspect_pages(keyword, screenshot, sample)
+    # output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
     if scraper == "amazon":
         process_amazon(output_file)
     elif scraper == "ml":
