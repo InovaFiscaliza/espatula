@@ -174,18 +174,17 @@ class BaseScraper:
         else:
             links = json.loads(links_file.read_text())
         driver = self.init_driver()
-        sample_keys = L(links.keys()).shuffle()[:sample]
-        sample_links = {k: links[k] for k in sample_keys}
+        sample_keys = L((i, k) for i, k in enumerate(links.keys())).shuffle()[:sample]
+        sample_links = {}
         try:
-            for i, (url, result) in enumerate(
-                tqdm(sample_links.items(), desc=f"{self.name} - {keyword}")
-            ):
+            for i, url in tqdm(sample_keys, desc=f"{self.name} - {keyword}"):
                 try:
                     driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                     if result_page := self.extract_item_data(driver):
                         if not result_page.get("categoria"):
                             del links[url]
                             continue
+                        sample_links[url] = links[url]
                         if screenshot:
                             filename = f"{self.name}_{TODAY}_{i}.pdf"
                             if product_id := result_page.get("product_id"):
@@ -193,8 +192,8 @@ class BaseScraper:
                             self.take_screenshot(driver, filename)
                             result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
-                        result.update(result_page)
-                        sample_links[url].update(result)
+                        result_page["index"] = i
+                        sample_links[url].update(result_page)
                 except Exception as e:
                     print(e)
                     print(f"Erro ao processar {url}")
