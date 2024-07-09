@@ -58,6 +58,9 @@ TO_DISCARD = {
         "Suportes de Cabeceira e Mesa",
     ],
     "ml": [],
+    "magalu": [],
+    "americanas": [],
+    "carrefour": [],
 }
 
 SUBCATEGORIES = {
@@ -86,6 +89,29 @@ SUBCATEGORIES = {
         "lenovo",
     ],
     "carrefour": [
+        "xiaomi",
+        "celular básico",
+        "galaxy",
+        "smartphone",
+        "motorola",
+        "carregador de celular",
+        "moto",
+        "multilaser",
+        "poco",
+        "iphone",
+        "positivo",
+        "lg",
+        "infinix",
+        "nokia",
+        "redmi",
+        "tcl",
+        "oppo",
+        "asus",
+        "philco",
+        "lenovo",
+        "android os",
+    ],
+    "americanas": [
         "xiaomi",
         "celular básico",
         "galaxy",
@@ -278,6 +304,7 @@ def process_magalu(output_file, category="Celulares e Smartphones"):
 
 def process_carrefour(output_file, category="Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    df["ean_gtin"] = ""
     df.loc[df["nome"].str.lower().str.contains("smartphone"), "categoria"] = category
     df = preprocess(df)
     for cat in SUBCATEGORIES["carrefour"]:
@@ -311,6 +338,42 @@ def process_carrefour(output_file, category="Smartphones"):
     write_excel(df, output_file.with_suffix(".xlsx"), "carrefour-smartphone")
 
 
+def process_americanas(output_file, category="Celulares e Smartphones"):
+    df = preprocess(output_file)
+    for cat in SUBCATEGORIES["americanas"]:
+        df.loc[df["subcategoria"].str.lower().str.contains(cat), "subcategoria"] = (
+            category
+        )
+
+    df = df.loc[df["subcategoria"] == category]
+    df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
+    discard = df["certificado"].isna() & df["subcategoria"].isin(
+        TO_DISCARD["americanas"]
+    )
+    df = df.loc[~discard]
+    df["Unidades à Venda"] = "Não Informado"
+    columns = [
+        "Existe campo código SCH?",
+        "Código SCH foi fornecido?",
+    ]
+    for column in columns:
+        df[column] = "Sim"
+        df.loc[df["certificado"].isna(), column] = "Não"
+    columns = [
+        "O produto é homologado?",
+        "Código SCH é o do produto?",
+        "Código EAN é o do produto?",
+    ]
+    for column in columns:
+        df[column] = ""
+
+    column = "O código EAN foi fornecido?"
+    df[column] = "Sim"
+    df.loc[df["ean_gtin"].isna(), column] = "Não"
+
+    write_excel(df, output_file.with_suffix(".xlsx"), "americanas-smartphone")
+
+
 def run_inspection(scraper, keyword, headless, screenshot, sample):
     site = SCRAPER[scraper](headless=headless)
     output_file = site.inspect_pages(keyword, screenshot, sample)
@@ -323,6 +386,8 @@ def run_inspection(scraper, keyword, headless, screenshot, sample):
         process_magalu(output_file)
     elif scraper == "carrefour":
         process_carrefour(output_file)
+    elif scraper == "americanas":
+        process_americanas(output_file)
 
 
 if __name__ == "__main__":
