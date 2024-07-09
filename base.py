@@ -39,7 +39,14 @@ KEYWORDS = [
     "flipper zero",
 ]
 
-CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*))$")
+"""
+Defines a regular expression pattern to match Anatel certification numbers, and a path for storing data files.
+
+The `CERTIFICADO` regular expression pattern matches strings that start with "Anatel:" or "Anatel", ignoring the case, followed by a space, and then a sequence of digits separated by hyphens or spaces.
+
+The `DATA` variable defines a path for storing data files, using the value of the `FOLDER` environment variable if it is set, or defaulting to a `data` subdirectory in the current working directory.
+"""
+CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*)+)$")
 DATA = Path(os.environ.get("FOLDER", f"{Path.cwd()}/data"))
 TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Sao_Paulo"))
 
