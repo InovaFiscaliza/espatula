@@ -39,7 +39,7 @@ KEYWORDS = [
     "flipper zero",
 ]
 
-CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*){12})$")
+CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*))$")
 DATA = Path(os.environ.get("FOLDER", f"{Path.cwd()}/data"))
 TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Sao_Paulo"))
 
@@ -120,7 +120,7 @@ class BaseScraper:
             None,
         )
         if match := re.search(CERTIFICADO, certificado):
-            # Remove all non-digit characters and check if there are exactly 12 digits
+            # Remove all non-digit characters
             return re.sub(r"\D", "", match[2])
         return None
 
