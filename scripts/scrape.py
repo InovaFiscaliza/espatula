@@ -11,7 +11,7 @@ from mercado_livre import MercadoLivreScraper
 from magalu import MagaluScraper
 from americanas import AmericanasScraper
 
-# from casas_bahia import CasasBahiaScraper
+from casas_bahia import CasasBahiaScraper
 from carrefour import CarrefourScraper
 from base import KEYWORDS, FOLDER, TODAY
 
@@ -33,11 +33,12 @@ COLUNAS = [
     "Unidades à Venda",
     "Existe campo código SCH?",
     "Código SCH foi fornecido?",
-    "O produto é homologado?",
+    "Código de Homologação",
     "Código SCH é o do produto?",
+    "O produto é homologado?",
     "O código EAN foi fornecido?",
     "Código EAN é o do produto?",
-    "Código de Homologação",
+    "Código EAN-GTIN",
 ]
 
 
@@ -133,6 +134,7 @@ SUBCATEGORIES = {
         "philco",
         "lenovo",
         "android os",
+        "realme",
     ],
 }
 
@@ -142,7 +144,7 @@ SCRAPER = {
     "ml": MercadoLivreScraper,
     "magalu": MagaluScraper,
     "americanas": AmericanasScraper,
-    # "casas_bahia": CasasBahiaScraper,
+    "casasbahia": CasasBahiaScraper,
     "carrefour": CarrefourScraper,
 }
 
@@ -185,6 +187,7 @@ def write_excel(df, output_file, sheet_name):
             "modelo": "Modelo",
             "preço": "Preço",
             "certificado": "Código de Homologação",
+            "ean_gtin": "Código EAN-GTIN",
         },
         inplace=True,
     )
@@ -209,7 +212,8 @@ def write_excel(df, output_file, sheet_name):
 
 
 def process_amazon(output_file, category="Celulares e Smartphones"):
-    df = preprocess(output_file)
+    df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    df = preprocess(df)
     df = df.loc[df["subcategoria"] == category]
     df["Item"] = df.index.to_list()
     df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
@@ -238,7 +242,8 @@ def process_amazon(output_file, category="Celulares e Smartphones"):
 
 
 def process_ml(output_file, category="Celulares e Smartphones"):
-    df = preprocess(output_file)
+    df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    df = preprocess(df)
     df["subcategoria"] = df["categoria_1"]
     df = df.loc[df["subcategoria"] == category]
     df["Item"] = df.index.to_list()
@@ -268,14 +273,15 @@ def process_ml(output_file, category="Celulares e Smartphones"):
 
 
 def process_magalu(output_file, category="Celulares e Smartphones"):
-    df = preprocess(output_file)
+    df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    df = preprocess(df)
     for cat in SUBCATEGORIES["magalu"]:
         df.loc[df["subcategoria"].str.lower().str.contains(cat), "subcategoria"] = (
             category
         )
 
     df = df.loc[df["subcategoria"] == category]
-    df["Item"] = df.index.to_list()  # TODO: mudar para index
+    df["Item"] = df.index.to_list()
     df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["magalu"])
     df = df.loc[~discard]
@@ -304,7 +310,7 @@ def process_magalu(output_file, category="Celulares e Smartphones"):
 
 def process_carrefour(output_file, category="Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
-    df["ean_gtin"] = ""
+    df["ean_gtin"] = pd.NA
     df.loc[df["nome"].str.lower().str.contains("smartphone"), "categoria"] = category
     df = preprocess(df)
     for cat in SUBCATEGORIES["carrefour"]:
@@ -338,8 +344,13 @@ def process_carrefour(output_file, category="Smartphones"):
     write_excel(df, output_file.with_suffix(".xlsx"), "carrefour-smartphone")
 
 
-def process_americanas(output_file, category="Celulares e Smartphones"):
-    df = preprocess(output_file)
+def process_americanas(output_file, category="smartphone"):
+    df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    for row in df.itertuples():
+        chrs = eval(row.características)
+        df.loc[row.Index, "ean_gtin"] = chrs.get("Código de barras", "")
+    df = preprocess(df)
+    df["subcategoria"] = df["categoria_2"]
     for cat in SUBCATEGORIES["americanas"]:
         df.loc[df["subcategoria"].str.lower().str.contains(cat), "subcategoria"] = (
             category
@@ -374,10 +385,39 @@ def process_americanas(output_file, category="Celulares e Smartphones"):
     write_excel(df, output_file.with_suffix(".xlsx"), "americanas-smartphone")
 
 
+def process_casasbahia(output_file, category="Celulares e Smartphones"):
+    df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    for col in COLUNAS[11:]:
+        df[col] = ""
+    df["Item"] = df.index.to_list()
+    for col in ["Arquivo", "Fabricante", "Modelo"]:
+        df[col] = ""
+    df["Categoria"] = category
+    # df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
+    df["Data"] = "09/07/2024"
+    df = df.sample(65)
+    write_excel(df, output_file.with_suffix(".xlsx"), "casasbahia-smartphone")
+
+
+def process_shopee(output_file, category="Celulares e Smartphones"):
+    df = pd.DataFrame(output_file.read_json(), dtype="string")
+    for col in COLUNAS[11:]:
+        df[col] = ""
+    df["Item"] = df.index.to_list()
+    for col in ["Arquivo", "Fabricante", "Modelo", "Página"]:
+        df[col] = ""
+    df["Categoria"] = category
+    df["Texto da Busca"] = "smartphone"
+    # df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
+    df["Data"] = "09/07/2024"
+    df = df.sample(65)
+    write_excel(df, output_file.with_suffix(".xlsx"), "casasbahia-smartphone")
+
+
 def run_inspection(scraper, keyword, headless, screenshot, sample):
-    site = SCRAPER[scraper](headless=headless)
-    output_file = site.inspect_pages(keyword, screenshot, sample)
-    # output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
+    # site = SCRAPER[scraper](headless=headless)
+    # output_file = site.inspect_pages(keyword, screenshot, sample)
+    output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
     if scraper == "amazon":
         process_amazon(output_file)
     elif scraper == "ml":
@@ -388,6 +428,10 @@ def run_inspection(scraper, keyword, headless, screenshot, sample):
         process_carrefour(output_file)
     elif scraper == "americanas":
         process_americanas(output_file)
+    elif scraper == "casasbahia":
+        process_casasbahia(output_file)
+    elif scraper == "shopee":
+        process_shopee(output_file)
 
 
 if __name__ == "__main__":
