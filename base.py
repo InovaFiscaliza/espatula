@@ -154,10 +154,8 @@ class BaseScraper:
         folder = DATA / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
-        filename = folder / filename
-        with open(filename, "wb") as f:
+        with open(folder / filename, "wb") as f:
             f.write(screenshot)
-        return f"{filename.parent.name}/{filename.name}"
 
     def inspect_pages(self, keyword: str, screenshot: bool = False, sample: int = 65):
         links_file = (
@@ -184,9 +182,8 @@ class BaseScraper:
                             filename = f'{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{i}.pdf'
                             if product_id := result_page.get("product_id"):
                                 filename = f'{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{product_id}.pdf'
-                            result_page["screenshot"] = self.take_screenshot(
-                                driver, filename
-                            )
+                            self.take_screenshot(driver, filename)
+                            result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
                         result.update(result_page)
                         sample_links[url].update(result)
