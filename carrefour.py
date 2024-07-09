@@ -121,14 +121,16 @@ class CarrefourScraper(BaseScraper):
         ):
             imagens = [i.attrs.get("src") for i in imagens if hasattr(i, "attrs")]
 
-        certificado, ean = None, None
+        certificado, ean, modelo = None, None, None
         if características := self.parse_tables(soup):
             certificado = self.extrair_certificado(características)
             ean = self.extrair_ean(características)
+            modelo = características.get("Modelo")
 
         return {
             "categoria": categoria,
             "marca": marca,
+            "modelo": modelo,
             "vendedor": vendedor,
             "desconto": desconto,
             "product_id": cod_produto,
@@ -137,7 +139,7 @@ class CarrefourScraper(BaseScraper):
             "descrição": descrição,
             "características": características,
             "imagens": imagens,
-            "data": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def parse_tables(self, soup):
