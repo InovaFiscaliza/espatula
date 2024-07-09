@@ -120,7 +120,7 @@ class BaseScraper:
         chrs = caracteristicas.copy()
         certificado = next(
             (
-                caracteristicas.pop(k, "")
+                caracteristicas.get(k, "")
                 for k in chrs
                 if any(s in k.lower() for s in ("certifica", "homologação", "anatel"))
             ),
