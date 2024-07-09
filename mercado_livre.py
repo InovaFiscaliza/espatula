@@ -246,6 +246,7 @@ class MercadoLivreScraper(BaseScraper):
             "ean_gtin": ean,
             "características": características,
             "descrição": descrição,
+            "product_id": driver.current_url.split("/")[-1],
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
