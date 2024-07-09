@@ -201,6 +201,11 @@ class BaseScraper:
             output_file = links_file.with_name(
                 f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
             )
+            if output_file.is_file():
+                old_links = output_file.read_json()
+                old_links.update(sample_links)
+                sample_links = old_links
+
             json.dump(
                 sample_links,
                 output_file.open("w"),
