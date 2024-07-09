@@ -47,8 +47,9 @@ The `CERTIFICADO` regular expression pattern matches strings that start with "An
 The `DATA` variable defines a path for storing data files, using the value of the `FOLDER` environment variable if it is set, or defaulting to a `data` subdirectory in the current working directory.
 """
 CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*)+)$")
-DATA = Path(os.environ.get("FOLDER", f"{Path.cwd()}/data"))
+FOLDER = Path(os.environ.get("FOLDER", f"{Path.cwd()}/data"))
 TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Sao_Paulo"))
+TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
 
 
 def click_turnstile_and_verify(driver):
@@ -67,7 +68,7 @@ class BaseScraper:
 
     @property
     def folder(self):
-        folder = DATA / self.name
+        folder = FOLDER / self.name
         folder.mkdir(parents=True, exist_ok=True)
         return folder
 
@@ -158,7 +159,7 @@ class BaseScraper:
             pass
 
     def take_screenshot(self, driver, filename):
-        folder = DATA / "screenshots"
+        folder = FOLDER / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
         with open(folder / filename, "wb") as f:
@@ -186,9 +187,9 @@ class BaseScraper:
                             del links[url]
                             continue
                         if screenshot:
-                            filename = f'{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{i}.pdf'
+                            filename = f"{self.name}_{TODAY}_{i}.pdf"
                             if product_id := result_page.get("product_id"):
-                                filename = f'{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{product_id}.pdf'
+                                filename = f"{self.name}_{TODAY}_{product_id}.pdf"
                             self.take_screenshot(driver, filename)
                             result_page["screenshot"] = filename
                         result_page["palavra_busca"] = keyword
@@ -198,14 +199,16 @@ class BaseScraper:
                     print(e)
                     print(f"Erro ao processar {url}")
         finally:
+            output_file = links_file.with_name(
+                f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
+            )
             json.dump(
                 sample_links,
-                links_file.with_name(
-                    f"{self.name}_{datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")}_{keyword.lower().replace(' ', '_')}.json"
-                ).open("w"),
+                output_file.open("w"),
                 ensure_ascii=False,
             )
             driver.quit()
+        return output_file
 
     def input_search_params(self, driver, keyword):
         self.highlight_element(driver, self.input_field)
