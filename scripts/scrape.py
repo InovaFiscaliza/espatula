@@ -62,6 +62,28 @@ TO_DISCARD = {
 SUBCATEGORIES = {
     "amazon": ["Celulares e Smartphones"],
     "ml": ["Celulares e Smartphones"],
+    "magalu": [
+        "xiaomi",
+        "celular básico",
+        "galaxy",
+        "smartphone",
+        "motorola",
+        "carregador de celular",
+        "moto",
+        "multilaser",
+        "poco",
+        "iphone",
+        "positivo",
+        "lg",
+        "infinix",
+        "nokia",
+        "redmi",
+        "tcl",
+        "oppo",
+        "asus",
+        "philco",
+        "lenovo",
+    ],
 }
 
 
@@ -203,6 +225,67 @@ def process_ml(output_file, category="Celulares e Smartphones"):
     write_excel(df, output_file.with_suffix(".xlsx"), "ml-smartphone")
 
 
+def process_magalu(output_file, category="Celulares e Smartphones"):
+    df = pd.DataFrame(output_file.read_json().values(), dtype="string")
+    df = split_categories(df)
+    for cat in SUBCATEGORIES["magalu"]:
+        df.loc[df["subcategoria"].str.lower().str.contains(cat), "subcategoria"] = (
+            category
+        )
+
+    df = df.loc[df["subcategoria"] == category]
+    columns = ["nome", "categoria", "url"]
+    for column in columns:
+        for row in df[df[column].isna()].itertuples():
+            if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
+                print(f"Deleting {file}")
+                file.unlink()
+        df = df.dropna(subset=column).reset_index(drop=True)
+
+    df["Item"] = df.index.to_list()
+    df["Data da Coleta"] = pd.to_datetime(df["data"], format="mixed").dt.strftime(
+        "%d/%m/%Y"
+    )
+    discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["amazon"])
+    df = df.loc[~discard]
+    df["Número de Unidades à Venda"] = "Não Informado"
+    columns = [
+        "Existe o campo código de homologação no anúncio? (Sim ou Não)",
+        "O código de homologação foi fornecido? (Sim ou Não)",
+    ]
+    for column in columns:
+        df[column] = "Sim"
+        df.loc[df["certificado"].isna(), column] = "Não"
+    columns = [
+        "O produto é homologado? (Sim, Não e N.A.)",
+        "Validação do código de homologação - O código de homologação fornecido é o do produto anunciado? (Sim, Não, N.A.)",
+        "O código EAN fornecido corresponde ao produto? (Sim ou Não) -  Apenas para Smartphones.",
+    ]
+    for column in columns:
+        df[column] = ""
+
+    column = "O código EAN foi fornecido? (Sim ou Não) - Apenas para Smartphones."
+    df[column] = "Sim"
+    df.loc[df["ean_gtin"].isna(), column] = "Não"
+    df.rename(
+        columns={
+            "palavra_busca": "Texto da Busca",
+            "screenshot": "Arquivo da Página",
+            "url": "Endereço eletrônico (URL)",
+            "nome": "Descrição do produto no anúncio",
+            "subcategoria": "Tipo do Produto",
+            "marca": "Fabricante",
+            "modelo": "Modelo do Produto",
+            "preço": "Valor do Produto (R$)",
+            "certificado": "Observação 1 - Qual Código de Homologação fornecido no anúncio?",
+        },
+        inplace=True,
+    )
+
+    df = df[COLUNAS]
+    write_excel(df, output_file.with_suffix(".xlsx"), "magalu-smartphone")
+
+
 def run_inspection(scraper, keyword, headless, screenshot, sample):
     site = SCRAPER[scraper](headless=headless)
     output_file = site.inspect_pages(keyword, screenshot, sample)
@@ -210,6 +293,8 @@ def run_inspection(scraper, keyword, headless, screenshot, sample):
         process_amazon(output_file)
     elif scraper == "ml":
         process_ml(output_file)
+    elif scraper == "magalu":
+        process_magalu(output_file)
 
 
 if __name__ == "__main__":
