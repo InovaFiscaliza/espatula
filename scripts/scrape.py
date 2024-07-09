@@ -208,6 +208,8 @@ def run_inspection(scraper, keyword, headless, screenshot, sample):
     output_file = site.inspect_pages(keyword, screenshot, sample)
     if scraper == "amazon":
         process_amazon(output_file)
+    elif scraper == "ml":
+        process_ml(output_file)
 
 
 if __name__ == "__main__":
