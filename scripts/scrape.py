@@ -66,8 +66,8 @@ SUBCATEGORIES = {
 
 
 SCRAPER = {
-    "amazon": {"scraper": AmazonScraper, "processor": None},
-    "mercado_livre": MercadoLivreScraper,
+    "amazon": AmazonScraper,
+    "ml": MercadoLivreScraper,
     "magalu": MagaluScraper,
     "americanas": AmericanasScraper,
     # "casas_bahia": CasasBahiaScraper,
