@@ -1,5 +1,5 @@
 $WORKING_DIR = "C:\Users\rsilva\code\espatula"
-$PYTHON_EXE = "D:\Applications\Scoop\apps\miniconda3\current\envs\sb\python.exe"
+$PYTHON_EXE = "C:\Users\rsilva\scoop\apps\mambaforge\current\envs\espatulapython.exe"
 $SCRIPT_PATH = ".\scripts\scrape.py"
 
 Set-Location $WORKING_DIR
