@@ -119,11 +119,10 @@ class BaseScraper:
 
     @staticmethod
     def extrair_certificado(caracteristicas: dict) -> str | None:
-        chrs = caracteristicas.copy()
         certificado = next(
             (
                 caracteristicas.get(k, "")
-                for k in chrs
+                for k in caracteristicas
                 if any(s in k.lower() for s in ("certifica", "homologa", "anatel"))
             ),
             None,
@@ -135,11 +134,10 @@ class BaseScraper:
 
     @staticmethod
     def extrair_ean(caracteristicas: dict) -> str:
-        chrs = caracteristicas.copy()
         return next(
             (
-                caracteristicas.pop(k, "")
-                for k in chrs
+                caracteristicas.get(k, "")
+                for k in caracteristicas
                 if any(s in k.lower() for s in ("ean", "gtin", "digo de barras"))
             ),
             None,
