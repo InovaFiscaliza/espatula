@@ -95,7 +95,13 @@ class AmericanasScraper(BaseScraper):
 
         if preço := soup.find("div", attrs={"class": "priceSales"}, mode="first"):
             # self.highlight_element(driver, "div[data-testid=mod-productprice]")
-            preço = preço.strip().replace("R$", "").replace(".", "").replace(",", ".")
+            preço = (
+                preço.strip()
+                .replace("R$", "")
+                .replace(".", "")
+                .replace(",", ".")
+                .strip()
+            )
 
         else:
             preço = None
