@@ -144,21 +144,25 @@ SCRAPER = {
     "ml": MercadoLivreScraper,
     "magalu": MagaluScraper,
     "americanas": AmericanasScraper,
-    "casasbahia": CasasBahiaScraper,
+    # "casasbahia": CasasBahiaScraper,
     "carrefour": CarrefourScraper,
 }
 
 
+def delete_files(df: pd.DataFrame, filter: pd.Series) -> None:
+    for row in df[filter].itertuples():
+        if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
+            print(f"Deleting {file}")
+            file.unlink()
+
+
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     for column in ["nome", "categoria", "url"]:
-        for row in df[df[column].isna()].itertuples():
-            if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-                print(f"Deleting {file}")
-                file.unlink()
+        delete_files(df, df[column].isna())
         df = df.dropna(subset=column).reset_index(drop=True)
 
     for row in df.itertuples():
-        if not (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
+        if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
             print(f"Missing file, deleting row {row.screenshot}")
             df = df.drop(index=row.Index)
 
@@ -214,10 +218,11 @@ def write_excel(df, output_file, sheet_name):
 def process_amazon(output_file, category="Celulares e Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
     df = preprocess(df)
+    delete_files(df, df["subcategoria"] != category)
     df = df.loc[df["subcategoria"] == category]
-    df["Item"] = df.index.to_list()
     df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["amazon"])
+    delete_files(df, discard)
     df = df.loc[~discard]
     df["Unidades à Venda"] = "Não Informado"
     columns = [
@@ -245,10 +250,11 @@ def process_ml(output_file, category="Celulares e Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
     df = preprocess(df)
     df["subcategoria"] = df["categoria_1"]
+    delete_files(df, df["subcategoria"] != category)
     df = df.loc[df["subcategoria"] == category]
-    df["Item"] = df.index.to_list()
     df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["ml"])
+    delete_files(df, discard)
     df = df.loc[~discard]
     df["Unidades à Venda"] = df["estoque"]
     columns = [
@@ -281,9 +287,9 @@ def process_magalu(output_file, category="Celulares e Smartphones"):
         )
 
     df = df.loc[df["subcategoria"] == category]
-    df["Item"] = df.index.to_list()
     df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["magalu"])
+    delete_files(df, discard)
     df = df.loc[~discard]
     df["Unidades à Venda"] = "Não Informado"
     columns = [
@@ -310,7 +316,6 @@ def process_magalu(output_file, category="Celulares e Smartphones"):
 
 def process_carrefour(output_file, category="Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
-    df["ean_gtin"] = pd.NA
     df.loc[df["nome"].str.lower().str.contains("smartphone"), "categoria"] = category
     df = preprocess(df)
     for cat in SUBCATEGORIES["carrefour"]:
@@ -320,6 +325,7 @@ def process_carrefour(output_file, category="Smartphones"):
     df = df.loc[df["subcategoria"] == category]
     df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     discard = df["certificado"].isna() & df["subcategoria"].isin(TO_DISCARD["amazon"])
+    delete_files(df, discard)
     df = df.loc[~discard]
     df["Unidades à Venda"] = "Não Informado"
     columns = [
@@ -361,6 +367,7 @@ def process_americanas(output_file, category="smartphone"):
     discard = df["certificado"].isna() & df["subcategoria"].isin(
         TO_DISCARD["americanas"]
     )
+    delete_files(df, discard)
     df = df.loc[~discard]
     df["Unidades à Venda"] = "Não Informado"
     columns = [
@@ -394,7 +401,7 @@ def process_casasbahia(output_file, category="Celulares e Smartphones"):
         df[col] = ""
     df["Categoria"] = category
     # df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
-    df["Data"] = "09/07/2024"
+    df["Data"] = TODAY
     df = df.sample(65)
     write_excel(df, output_file.with_suffix(".xlsx"), "casasbahia-smartphone")
 
@@ -409,15 +416,15 @@ def process_shopee(output_file, category="Celulares e Smartphones"):
     df["Categoria"] = category
     df["Texto da Busca"] = "smartphone"
     # df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
-    df["Data"] = "09/07/2024"
+    df["Data"] = TODAY
     df = df.sample(65)
     write_excel(df, output_file.with_suffix(".xlsx"), "casasbahia-smartphone")
 
 
 def run_inspection(scraper, keyword, headless, screenshot, sample):
-    # site = SCRAPER[scraper](headless=headless)
-    # output_file = site.inspect_pages(keyword, screenshot, sample)
-    output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
+    site = SCRAPER[scraper](headless=headless)
+    output_file = site.inspect_pages(keyword, screenshot, sample)
+    # output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
     if scraper == "amazon":
         process_amazon(output_file)
     elif scraper == "ml":
