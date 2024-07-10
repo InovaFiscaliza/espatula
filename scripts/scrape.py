@@ -148,6 +148,8 @@ SCRAPER = {
     "carrefour": CarrefourScraper,
 }
 
+COUNT = 65
+
 
 def delete_files(df: pd.DataFrame, filter: pd.Series) -> None:
     for row in df[filter].itertuples():
@@ -197,6 +199,7 @@ def write_excel(df, output_file, sheet_name):
     )
 
     df = df[COLUNAS]
+    df = df[df.index[:COUNT]]
     writer = pd.ExcelWriter(
         output_file,
         engine="xlsxwriter",
