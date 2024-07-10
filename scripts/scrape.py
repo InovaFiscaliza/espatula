@@ -402,6 +402,9 @@ def process_casasbahia(output_file, category="Celulares e Smartphones"):
     df["Categoria"] = category
     # df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     df["Data"] = TODAY
+    df["preço"] = (
+        df["preço"].str.replace("R$", "").str.replace(".", "").str.replace(",", ".")
+    )
     df = df.sample(65)
     write_excel(df, output_file.with_suffix(".xlsx"), "casasbahia-smartphone")
 
@@ -417,6 +420,9 @@ def process_shopee(output_file, category="Celulares e Smartphones"):
     df["Texto da Busca"] = "smartphone"
     # df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
     df["Data"] = TODAY
+    df["preço"] = (
+        df["preço"].str.replace("R$", "").str.replace(".", "").str.replace(",", ".")
+    )
     df = df.sample(65)
     write_excel(df, output_file.with_suffix(".xlsx"), "casasbahia-smartphone")
 
