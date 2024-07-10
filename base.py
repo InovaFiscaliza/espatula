@@ -124,7 +124,7 @@ class BaseScraper:
             (
                 caracteristicas.get(k, "")
                 for k in chrs
-                if any(s in k.lower() for s in ("certifica", "homologação", "anatel"))
+                if any(s in k.lower() for s in ("certifica", "homologa", "anatel"))
             ),
             None,
         )
@@ -140,7 +140,7 @@ class BaseScraper:
             (
                 caracteristicas.pop(k, "")
                 for k in chrs
-                if any(s in k.lower() for s in ("ean", "gtin"))
+                if any(s in k.lower() for s in ("ean", "gtin", "digo de barras"))
             ),
             None,
         )
