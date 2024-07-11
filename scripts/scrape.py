@@ -41,6 +41,21 @@ COLUNAS = [
     "Código EAN-GTIN",
 ]
 
+RENAME = {
+    "palavra_busca": "Texto da Busca",
+    "página_de_busca": "Página",
+    "index": "Item",
+    "screenshot": "Arquivo",
+    "url": "URL",
+    "nome": "Título",
+    "subcategoria": "Categoria",
+    "marca": "Fabricante",
+    "modelo": "Modelo",
+    "preço": "Preço",
+    "certificado": "Código de Homologação",
+    "ean_gtin": "Código EAN-GTIN",
+}
+
 
 TO_DISCARD = {
     "amazon": [
@@ -181,20 +196,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
 def write_excel(df, output_file, sheet_name):
     df.rename(
-        columns={
-            "palavra_busca": "Texto da Busca",
-            "página_de_busca": "Página",
-            "index": "Item",
-            "screenshot": "Arquivo",
-            "url": "URL",
-            "nome": "Título",
-            "subcategoria": "Categoria",
-            "marca": "Fabricante",
-            "modelo": "Modelo",
-            "preço": "Preço",
-            "certificado": "Código de Homologação",
-            "ean_gtin": "Código EAN-GTIN",
-        },
+        columns=RENAME,
         inplace=True,
     )
 
@@ -355,9 +357,6 @@ def process_carrefour(output_file, category="Smartphones"):
 
 def process_americanas(output_file, category="smartphone"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
-    for row in df.itertuples():
-        chrs = eval(row.características)
-        df.loc[row.Index, "ean_gtin"] = chrs.get("Código de barras", "")
     df = preprocess(df)
     df["subcategoria"] = df["categoria_2"]
     for cat in SUBCATEGORIES["americanas"]:
@@ -431,9 +430,9 @@ def process_shopee(output_file, category="Celulares e Smartphones"):
 
 
 def run_inspection(scraper, keyword, headless, screenshot, sample):
-    site = SCRAPER[scraper](headless=headless)
-    output_file = site.inspect_pages(keyword, screenshot, sample)
-    # output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
+    # site = SCRAPER[scraper](headless=headless)
+    # output_file = site.inspect_pages(keyword, screenshot, sample)
+    output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
     if scraper == "amazon":
         process_amazon(output_file)
     elif scraper == "ml":
