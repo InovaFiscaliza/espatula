@@ -7,7 +7,7 @@ from base import TIMEZONE, BaseScraper
 
 @dataclass
 class CasasBahiaScraper(BaseScraper):
-    name: str = "casas_bahia"
+    name: str = "casasbahia"
     url: str = "https://www.casasbahia.com.br"
     input_field: str = 'input[id="search-form-input"]'
     next_page_button: str = 'a[aria-label="Próxima página"]'
@@ -83,6 +83,17 @@ class CasasBahiaScraper(BaseScraper):
         if nome := soup.find("h1", attrs={"class": "heading"}, mode="first"):
             # self.highlight_element(driver, 'h1:contains("product-title")')
             nome = nome.strip()
+        if not all([nome, categoria]):
+            return None
+
+        product_id, marca = None, None
+        if origem := soup.find(
+            "div", attrs={"class": "dsvia-flex css-uoygdh"}, mode="first"
+        ):
+            if product_id := origem.find("p", mode="first"):
+                product_id = "".join(d for d in product_id.strip() if d.isdigit())
+            if origem := origem.find("a", mode="first"):
+                marca = origem.strip()
 
         # if imagens := soup.find("div", {"class": "Gallery"}, mode="first"):
         #     self.highlight_element(driver, 'div:contains("Gallery")')
@@ -91,16 +102,19 @@ class CasasBahiaScraper(BaseScraper):
         #         for i in imagens.find("img", mode="all")
         #     ]
 
-        # nota, avaliações = None, None
-        # if popularidade := soup.find(
-        #     "div", attrs={"data-testid": "mod-row"}, mode="first"
-        # ):
-        #     self.highlight_element(driver, "div[data-testid=mod-row]")
-        #     if popularidade := popularidade.find(
-        #         "span", attrs={"format": "score-count"}, mode="first"
-        #     ):
-        #         nota, avaliações = popularidade.text.strip().split(" ")
-        #         avaliações = avaliações.replace("(", "").replace(")", "")
+        nota, avaliações = None, None
+        if popularidade := soup.find(
+            "div", attrs={"data-testid": "star-rating"}, mode="first"
+        ):
+            # self.highlight_element(driver, "div[data-testid=mod-row]")
+            if nota := popularidade.find(
+                "p", attrs={"data-testid": "product-rating-value"}, mode="first"
+            ):
+                nota = nota.strip()
+            # if avaliações := popularidade.find(
+            #     "p", attrs={"data-testid": "product-rating-count"}, mode="first"
+            # ):
+            #     avaliações = avaliações.strip()
 
         if preço := soup.find("p", attrs={"id": "product-price"}, mode="first"):
             # self.highlight_element(driver, "div[data-testid=mod-productprice]")
@@ -114,35 +128,54 @@ class CasasBahiaScraper(BaseScraper):
         else:
             preço = None
 
+        if vendedor := soup.find("p", attrs={"data-testid": "sold-by"}, mode="first"):
+            if vendedor := vendedor.find("a", mode="first"):
+                vendedor = vendedor.strip()
+            else:
+                vendedor = None
+
         # if descrição := soup.find(
         #     "div", attrs={"data-testid": "rich-content-container"}, mode="first"
         # ):
         #     self.highlight_element(driver, "div[data-testid=rich-content-container]")
         #     descrição = descrição.text.strip()
 
+        características, modelo, certificado, ean = {}, None, None, None
         try:
-            driver.uc_click('svg[data-testid="Especificações Técnicas"]')
-        except:
-            pass
+            tag = 'p:contains("Características")'
+            self.highlight_element(driver, tag)
+            driver.uc_click(tag)
+            soup = Soup(driver.get_page_source())
+            características.update(self.parse_tables(soup, "Características"))
+            driver.uc_click('button[aria-label="Fechar"]')
+        except Exception as e:
+            print(e)
+        try:
+            tag = 'p:contains("Especificações Técnicas")'
+            self.highlight_element(driver, tag)
+            driver.uc_click(tag)
+            soup = Soup(driver.get_page_source())
+            características.update(self.parse_tables(soup, "Especificações Técnicas"))
 
-        marca, modelo, certificado, ean, product_id = None, None, None, None, None
-        if características := self.parse_tables(soup):
-            marca, modelo, certificado, ean, product_id = (
-                características.get("Marca"),
-                características.get("Modelo"),
+        except Exception as e:
+            print(e)
+
+        if características:
+            modelo, certificado, ean = (
+                características.get("Código de Referência"),
                 self.extrair_certificado(características),
                 self.extrair_ean(características),
-                características.get("Código"),
             )
 
         return {
             "nome": nome,
             "categoria": categoria,
             "preço": preço,
-            # "nota": nota,
-            # "avaliações": avaliações,
+            "nota": nota,
+            "avaliações": avaliações,
             # "imagens": imagens,
             # "descrição": descrição,
+            "vendedor": vendedor,
             "marca": marca,
             "modelo": modelo,
             "certificado": certificado,
@@ -152,16 +185,15 @@ class CasasBahiaScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def parse_tables(self, soup) -> dict:
+    def parse_tables(self, soup, id) -> dict:
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
-        if table := soup.find(
-            "div", attrs={"id": "Especificações Técnicas"}, mode="first"
-        ):
-            if rows := table.find(
-                "div", attrs={"data-testid": "dsvia-base-div"}, mode="all"
-            ):
-                variant_data.update(
-                    {row.find("p").strip(): row.find("span").strip() for row in rows}
-                )
+        if table := soup.find("div", attrs={"id": id}, mode="first"):
+            for rows in table.find("div", attrs={"class": "css-cs5a0t"}, mode="all"):
+                if (key := rows.find("p", mode="first")) and (
+                    value := rows.find("span", mode="first")
+                ):
+                    key = key.strip()
+                    value = value.strip()
+                    variant_data[key] = value
         return variant_data

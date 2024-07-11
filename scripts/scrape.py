@@ -11,7 +11,7 @@ from mercado_livre import MercadoLivreScraper
 from magalu import MagaluScraper
 from americanas import AmericanasScraper
 
-from casas_bahia import CasasBahiaScraper
+from casasbahia import CasasBahiaScraper
 from carrefour import CarrefourScraper
 from base import KEYWORDS, FOLDER, TODAY
 
@@ -144,7 +144,7 @@ SCRAPER = {
     "ml": MercadoLivreScraper,
     "magalu": MagaluScraper,
     "americanas": AmericanasScraper,
-    # "casasbahia": CasasBahiaScraper,
+    "casasbahia": CasasBahiaScraper,
     "carrefour": CarrefourScraper,
 }
 
@@ -199,7 +199,7 @@ def write_excel(df, output_file, sheet_name):
     )
 
     df = df[COLUNAS]
-    df = df[df.index[:COUNT]]
+    df = df.loc[df.index[:COUNT]]
     writer = pd.ExcelWriter(
         output_file,
         engine="xlsxwriter",
