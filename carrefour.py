@@ -14,6 +14,7 @@ class CarrefourScraper(BaseScraper):
         "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
     )
     turnstile: bool = True
+    pages: int = 3
 
     def input_search_params(self, driver, keyword):
         driver.uc_open_with_reconnect(

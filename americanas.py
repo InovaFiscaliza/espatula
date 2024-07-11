@@ -11,6 +11,7 @@ class AmericanasScraper(BaseScraper):
     url: str = "https://www.americanas.com.br"
     input_field: str = 'input[placeholder="busque aqui seu produto"]'
     next_page_button: str = 'svg[class="src__ArrowRotate-sc-82ugau-2 hWXbQX"]'
+    pages: int = 2
 
     def extract_search_data(self, produto):
         if relative_url := produto.find("a"):

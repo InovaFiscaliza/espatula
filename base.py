@@ -66,6 +66,7 @@ class BaseScraper:
     next_page_button: str
     headless: bool = True
     turnstile: bool = False
+    pages: int = None
 
     @property
     def folder(self):
@@ -91,8 +92,7 @@ class BaseScraper:
         return driver
 
     # https://chromedevtools.github.io/devtools-protocol/tot/Page#method-printToPDF
-    @staticmethod
-    def capture_full_page_screenshot(driver) -> bytes:  #
+    def capture_full_page_screenshot(self, driver) -> bytes:  #
         """Gets full page screenshot as a pdf searchable."""
         url = f"{driver.command_executor._url}/session/{driver.session_id}/chromium/send_command_and_get_result"
         params = {
@@ -101,6 +101,9 @@ class BaseScraper:
             "preferCSSPageSize": True,
             "scale": 0.75,
         }
+        if self.pages:
+            params["pageRanges"] = f"1-{self.pages}"
+
         body = json.dumps({"cmd": "Page.printToPDF", "params": params})
         response = driver.command_executor._request("POST", url, body).get("value")
         return base64.b64decode(
@@ -181,6 +184,7 @@ class BaseScraper:
                     driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                     if result_page := self.extract_item_data(driver):
                         if not result_page.get("categoria"):
+                            print(f"Deletando {url} - sem categoria")
                             del links[url]
                             continue
                         sample_links[url] = links[url]
@@ -212,6 +216,11 @@ class BaseScraper:
                 ensure_ascii=False,
             )
             driver.quit()
+            json.dump(
+                links,
+                links_file.open("w"),
+                ensure_ascii=False,
+            )
         return output_file
 
     def input_search_params(self, driver, keyword):
