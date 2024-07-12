@@ -151,6 +151,11 @@ SUBCATEGORIES = {
         "android os",
         "realme",
     ],
+    "casasbahia": [
+        "celulares",
+        "android",
+        "iphone",
+    ],
 }
 
 
@@ -167,7 +172,7 @@ COUNT = 65
 
 
 def delete_files(df: pd.DataFrame, filter: pd.Series) -> None:
-    for row in df[filter].itertuples():
+    for row in df.loc[filter].itertuples():
         if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
             print(f"Deleting {file}")
             file.unlink()
@@ -178,10 +183,10 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         delete_files(df, df[column].isna())
         df = df.dropna(subset=column).reset_index(drop=True)
 
-    for row in df.itertuples():
-        if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-            print(f"Missing file, deleting row {row.screenshot}")
-            df = df.drop(index=row.Index)
+    # for row in df.itertuples():
+    #     if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
+    #         print(f"Missing file, deleting row {row.screenshot}")
+    #         # df = df.drop(index=row.Index)
 
     categories = df["categoria"].str.split("|", expand=True)
     categories.columns = [f"categoria_{c}" for c in categories.columns]
@@ -201,6 +206,7 @@ def write_excel(df, output_file, sheet_name):
     )
 
     df = df[COLUNAS]
+    delete_files(df, df.index[65:])
     df = df.loc[df.index[:COUNT]]
     writer = pd.ExcelWriter(
         output_file,
@@ -396,18 +402,40 @@ def process_americanas(output_file, category="smartphone"):
 
 def process_casasbahia(output_file, category="Celulares e Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
-    for col in COLUNAS[11:]:
-        df[col] = ""
-    df["Item"] = df.index.to_list()
-    for col in ["Arquivo", "Fabricante", "Modelo"]:
-        df[col] = ""
-    df["Categoria"] = category
-    # df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
-    df["Data"] = TODAY
-    df["preço"] = (
-        df["preço"].str.replace("R$", "").str.replace(".", "").str.replace(",", ".")
+    df["screenshot"] = ""
+    df = preprocess(df)
+    for cat in SUBCATEGORIES["casasbahia"]:
+        df.loc[df["subcategoria"].str.lower().str.contains(cat), "subcategoria"] = (
+            category
+        )
+
+    df = df.loc[df["subcategoria"] == category]
+    df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
+    discard = df["certificado"].isna() & df["subcategoria"].isin(
+        TO_DISCARD["americanas"]
     )
-    df = df.sample(65)
+    delete_files(df, discard)
+    df = df.loc[~discard]
+    df["Unidades à Venda"] = "Não Informado"
+    columns = [
+        "Existe campo código SCH?",
+        "Código SCH foi fornecido?",
+    ]
+    for column in columns:
+        df[column] = "Sim"
+        df.loc[df["certificado"].isna(), column] = "Não"
+    columns = [
+        "O produto é homologado?",
+        "Código SCH é o do produto?",
+        "Código EAN é o do produto?",
+    ]
+    for column in columns:
+        df[column] = ""
+
+    column = "O código EAN foi fornecido?"
+    df[column] = "Sim"
+    df.loc[df["ean_gtin"].isna(), column] = "Não"
+
     write_excel(df, output_file.with_suffix(".xlsx"), "casasbahia-smartphone")
 
 
@@ -421,7 +449,7 @@ def process_shopee(output_file, category="Celulares e Smartphones"):
     df["Categoria"] = category
     df["Texto da Busca"] = "smartphone"
     # df["Data"] = pd.to_datetime(df["data"], format="mixed").dt.strftime("%d/%m/%Y")
-    df["Data"] = TODAY
+    df["Data"] = "11/07/2024"
     df["preço"] = (
         df["preço"].str.replace("R$", "").str.replace(".", "").str.replace(",", ".")
     )
