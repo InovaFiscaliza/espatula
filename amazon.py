@@ -17,6 +17,7 @@ class AmazonScraper(BaseScraper):
     url: str = "https://www.amazon.com.br"
     input_field: str = 'input[id="twotabsearchtextbox"]'
     next_page_button: str = 'a[class="s-pagination-item s-pagination-next s-pagination-button s-pagination-separator"]'
+    pages: int = 2
 
     @staticmethod
     def transform_url(source_url):

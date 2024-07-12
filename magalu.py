@@ -17,6 +17,7 @@ class MagaluScraper(BaseScraper):
     url: str = "https://www.magazineluiza.com.br"
     input_field: str = 'input[data-testid="input-search"]'
     next_page_button: str = 'button[aria-label="Go to next page"]'
+    pages: int = 3
 
     def extract_search_data(self, produto):
         relative_url = produto.attrs.get("href")
