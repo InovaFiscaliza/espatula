@@ -178,15 +178,16 @@ def delete_files(df: pd.DataFrame, filter: pd.Series) -> None:
             file.unlink()
 
 
-def preprocess(df: pd.DataFrame) -> pd.DataFrame:
+def preprocess(df: pd.DataFrame, delete: bool = True) -> pd.DataFrame:
     for column in ["nome", "categoria", "url"]:
         delete_files(df, df[column].isna())
         df = df.dropna(subset=column).reset_index(drop=True)
 
-    # for row in df.itertuples():
-    #     if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-    #         print(f"Missing file, deleting row {row.screenshot}")
-    #         # df = df.drop(index=row.Index)
+    if delete:
+        for row in df.itertuples():
+            if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
+                print(f"Missing file, deleting row {row.screenshot}")
+                df = df.drop(index=row.Index)
 
     categories = df["categoria"].str.split("|", expand=True)
     categories.columns = [f"categoria_{c}" for c in categories.columns]
@@ -200,14 +201,14 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def write_excel(df, output_file, sheet_name):
+    delete_files(df, df.index[COUNT:])
+    df = df.loc[df.index[:COUNT]]
     df.rename(
         columns=RENAME,
         inplace=True,
     )
 
     df = df[COLUNAS]
-    delete_files(df, df.index[65:])
-    df = df.loc[df.index[:COUNT]]
     writer = pd.ExcelWriter(
         output_file,
         engine="xlsxwriter",
@@ -403,7 +404,7 @@ def process_americanas(output_file, category="smartphone"):
 def process_casasbahia(output_file, category="Celulares e Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
     df["screenshot"] = ""
-    df = preprocess(df)
+    df = preprocess(df, False)
     for cat in SUBCATEGORIES["casasbahia"]:
         df.loc[df["subcategoria"].str.lower().str.contains(cat), "subcategoria"] = (
             category
@@ -458,9 +459,9 @@ def process_shopee(output_file, category="Celulares e Smartphones"):
 
 
 def run_inspection(scraper, keyword, headless, screenshot, sample):
-    # site = SCRAPER[scraper](headless=headless)
-    # output_file = site.inspect_pages(keyword, screenshot, sample)
-    output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
+    site = SCRAPER[scraper](headless=headless)
+    output_file = site.inspect_pages(keyword, screenshot, sample)
+    # output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
     if scraper == "amazon":
         process_amazon(output_file)
     elif scraper == "ml":
@@ -485,7 +486,7 @@ if __name__ == "__main__":
         search: bool = True,
         headless: bool = True,
         screenshot: bool = False,
-        sample: int = 78,
+        sample: int = 100,
     ):
         if not scraper:
             for scraper in SCRAPER:
