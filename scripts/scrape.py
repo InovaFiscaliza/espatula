@@ -483,9 +483,9 @@ if __name__ == "__main__":
     def main(
         scraper: str = None,
         keyword: str = KEYWORDS[0],
-        search: bool = True,
+        search: bool = False,
         headless: bool = True,
-        screenshot: bool = False,
+        screenshot: bool = True,
         sample: int = 100,
     ):
         if not scraper:
