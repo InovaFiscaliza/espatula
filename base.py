@@ -97,8 +97,10 @@ class BaseScraper:
         url = f"{driver.command_executor._url}/session/{driver.session_id}/chromium/send_command_and_get_result"
         params = {
             "displayHeaderFooter": True,
-            "printBackground": True,
+            "printBackground": False,
             "preferCSSPageSize": True,
+            "marginLeft": 0,
+            "marginRight": 0,
             "scale": 0.75,
         }
         if self.pages:
