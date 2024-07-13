@@ -17,7 +17,7 @@ class MercadoLivreScraper(BaseScraper):
     url: str = "https://www.mercadolivre.com.br"
     input_field: str = 'input[id="cb1-edit"]'
     next_page_button: str = 'a[title="Seguinte"]'
-    pages: int = 3
+    pages: int = None
 
     @staticmethod
     def find_single_url(text):
