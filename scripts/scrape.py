@@ -404,7 +404,7 @@ def process_americanas(output_file, category="smartphone"):
 def process_casasbahia(output_file, category="Celulares e Smartphones"):
     df = pd.DataFrame(output_file.read_json().values(), dtype="string")
     df["screenshot"] = ""
-    df = preprocess(df, False)
+    df = preprocess(df)
     for cat in SUBCATEGORIES["casasbahia"]:
         df.loc[df["subcategoria"].str.lower().str.contains(cat), "subcategoria"] = (
             category
