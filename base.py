@@ -99,8 +99,7 @@ class BaseScraper:
             "displayHeaderFooter": True,
             "printBackground": True,
             "preferCSSPageSize": False,
-            "scale": 1,
-            "footerTemplate": "<span class=url></span>",
+            "scale": 0.5,
         }
         if self.pages:
             params["pageRanges"] = f"1-{self.pages}"
