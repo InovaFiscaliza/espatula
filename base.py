@@ -5,13 +5,14 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from pprint import pprint
+from contextlib import contextmanager
 
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
 from gazpacho import Soup
-from seleniumbase import Driver
+from seleniumbase import Driver, SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
@@ -97,22 +98,24 @@ class BaseScraper:
             return {}
         return loads(links_file.read_text())
 
-    def init_driver(self):
-        driver = Driver(
+    @contextmanager
+    def browser(self):
+        with SB(
             headless=self.headless,
             uc=True,  # Always true
             ad_block_on=self.ad_block_on,
             incognito=self.incognito,
             do_not_track=self.do_not_track,
-        )
-        driver.maximize_window()
-        driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
-        if self.turnstile:
-            try:
-                click_turnstile_and_verify(driver)
-            except Exception:
-                pass
-        return driver
+        ) as sb:
+            sb.driver.maximize_window()
+            sb.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
+            if self.turnstile:
+                try:
+                    sb.switch_to_frame("iframe")
+                    sb.uc_click("span.mark")
+                except Exception:
+                    pass
+            yield sb
 
     # https://chromedevtools.github.io/devtools-protocol/tot/Page#method-printToPDF
     def capture_full_page_screenshot(self, driver) -> bytes:  #
@@ -198,7 +201,7 @@ class BaseScraper:
             links = {}
         else:
             links = json.loads(links_file.read_text())
-        driver = self.init_driver()
+        driver = self.browser()
         sample_keys = L((i, k) for i, k in enumerate(links.keys())).shuffle()[:sample]
         sample_links = {}
         try:
@@ -250,35 +253,41 @@ class BaseScraper:
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
-    def search(self, keyword: str):
+    def search(self, keyword: str, max_pages: int = 10):
         links = self.get_links(keyword)
-        driver = self.init_driver()
         results = {}
         page = 1
-        try:
-            self.input_search_params(driver, keyword)
-            while True:
-                driver.sleep(TIMEOUT)
-                products = self.discover_product_urls(
-                    Soup(driver.get_page_source()), keyword
+        with self.browser() as driver:
+            try:
+                self.input_search_params(driver, keyword)
+                while True:
+                    driver.sleep(TIMEOUT)
+                    products = self.discover_product_urls(
+                        Soup(driver.get_page_source()), keyword
+                    )
+                    print(f"Navegando página {page} da busca '{keyword}'...")
+                    driver.set_messenger_theme(location="bottom_center")
+                    driver.post_message(f"🕷️ Links da página {page} coletados! 🕸️")
+                    for k, v in products.items():
+                        v["página_de_busca"] = page
+                        results[k] = v
+                    if page >= max_pages:
+                        driver.post_message(
+                            f"Número máximo de páginas atingido - {max_pages}!"
+                        )
+                        driver.sleep(TIMEOUT)
+                        break
+                    if not driver.is_element_present(self.next_page_button):
+                        break
+                    self.highlight_element(driver, self.next_page_button)
+                    driver.uc_click(self.next_page_button, timeout=TIMEOUT)
+                    page += 1
+            finally:
+                links.update(results)
+                json.dump(
+                    links,
+                    self.links_file(keyword).open("w"),
+                    ensure_ascii=False,
                 )
-                print(f"Navegando página {page} da busca '{keyword}'...")
-                # driver.set_messenger_theme(location="bottom_center")
-                # driver.post_message(f"🕷️ Raspando links da página {page}! 🕸️")
-                for k, v in products.items():
-                    v["página_de_busca"] = page
-                    results[k] = v
-                if not driver.is_element_present(self.next_page_button):
-                    break
-                self.highlight_element(driver, self.next_page_button)
-                driver.uc_click(self.next_page_button, timeout=TIMEOUT)
-                page += 1
-        finally:
-            links.update(results)
-            json.dump(
-                links,
-                self.links_file(keyword).open("w"),
-                ensure_ascii=False,
-            )
-            driver.quit()
-            return results
+                # driver.quit()
+                return results
