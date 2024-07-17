@@ -260,13 +260,13 @@ class BaseScraper:
         with self.browser() as driver:
             try:
                 self.input_search_params(driver, keyword)
+                driver.set_messenger_theme(location="bottom_center")
                 while True:
                     driver.sleep(TIMEOUT)
                     products = self.discover_product_urls(
                         Soup(driver.get_page_source()), keyword
                     )
                     print(f"Navegando página {page} da busca '{keyword}'...")
-                    driver.set_messenger_theme(location="bottom_center")
                     driver.post_message(f"🕷️ Links da página {page} coletados! 🕸️")
                     for k, v in products.items():
                         v["página_de_busca"] = page
@@ -289,5 +289,4 @@ class BaseScraper:
                     self.links_file(keyword).open("w"),
                     ensure_ascii=False,
                 )
-                # driver.quit()
                 return results
