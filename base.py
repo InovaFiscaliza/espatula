@@ -47,8 +47,19 @@ The `CERTIFICADO` regular expression pattern matches strings that start with "An
 
 The `DATA` variable defines a path for storing data files, using the value of the `FOLDER` environment variable if it is set, or defaulting to a `data` subdirectory in the current working directory.
 """
-CERTIFICADO = re.compile(r"(?i)^(Anatel[:\s]*)?((\d[-\s]*)+)$")
-FOLDER = Path(os.environ.get("FOLDER", f"{Path.cwd()}/data"))
+CERTIFICADO = re.compile(
+    r"""
+    (?ix)                  # Case-insensitive and verbose mode
+    ^                      # Start of the string
+    (Anatel[:\s]*)?        # Optional "Anatel" followed by colon or spaces
+    (                      # Start of main capturing group
+        (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
+    )
+    $                      # End of the string
+""",
+    re.VERBOSE,
+)
+FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
 TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Sao_Paulo"))
 TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
 
