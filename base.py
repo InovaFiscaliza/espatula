@@ -4,7 +4,7 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from pprint import pprint
+from pprint import pprint as print
 from contextlib import contextmanager
 
 import requests
@@ -193,22 +193,27 @@ class BaseScraper:
         with open(folder / filename, "wb") as f:
             f.write(screenshot)
 
-    def inspect_pages(self, keyword: str, screenshot: bool = False, sample: int = 65):
+    def inspect_pages(
+        self,
+        keyword: str,
+        screenshot: bool = False,
+        shuffle: bool = True,
+        sample: int = 65,
+    ) -> Path:
         links = self.get_links(keyword)
         with self.browser() as driver:
-            if sample:
-                sample_keys = L((i, k) for i, k in enumerate(links.keys())).shuffle()[
-                    :sample
-                ]
-            else:
-                sample_keys = L(links.keys()).shuffle()
+            keys = L((i, k) for i, k in enumerate(links.keys()))
+            if shuffle:
+                keys = keys.shuffle()
             pages_to_sample = {}
             try:
-                for i, url in tqdm(sample_keys, desc=f"{self.name} - {keyword}"):
+                driver.set_messenger_theme(location="bottom_center")
+                for i, url in tqdm(keys, desc=f"{self.name} - {keyword}"):
                     try:
                         driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                         if result_page := self.extract_item_data(driver):
                             if not result_page.get("categoria"):
+                                driver.post_message("Anúncio sem categoria - 🚮")
                                 print(f"Deletando {url} - sem categoria")
                                 del links[url]
                                 continue
@@ -219,10 +224,13 @@ class BaseScraper:
                                     filename = f"{self.name}_{TODAY}_{product_id}.pdf"
                                 self.take_screenshot(driver, filename)
                                 result_page["screenshot"] = filename
+                                driver.post_message("Anúncio salvo 🖼️")
                             result_page["palavra_busca"] = keyword
                             result_page["index"] = i
-                            pprint(result_page)
+                            print(result_page)
                             pages_to_sample[url].update(result_page)
+                            if sample and len(pages_to_sample) >= sample:
+                                break
                     except Exception as e:
                         print(e)
                         print(f"Erro ao processar {url}")
