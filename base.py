@@ -201,6 +201,10 @@ class BaseScraper:
         sample: int = 65,
     ) -> Path:
         links = self.get_links(keyword)
+        if not links:
+            print(f"Não foram encontrados links de busca para {self.name} - {keyword}")
+            print("A coleta de links será agora com as opções padrão")
+            self.search(keyword)
         with self.browser() as driver:
             keys = L((i, k) for i, k in enumerate(links.keys()))
             if shuffle:
