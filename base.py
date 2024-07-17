@@ -9,7 +9,7 @@ from pprint import pprint
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
-from fastcore.xtras import Path
+from fastcore.xtras import Path, loads
 from gazpacho import Soup
 from seleniumbase import Driver
 from seleniumbase.common.exceptions import (
@@ -78,6 +78,9 @@ class BaseScraper:
     headless: bool = True
     turnstile: bool = False
     pages: int = None
+    ad_block_on: bool = True
+    incognito: bool = False
+    do_not_track: bool = True
 
     @property
     def folder(self):
@@ -85,13 +88,22 @@ class BaseScraper:
         folder.mkdir(parents=True, exist_ok=True)
         return folder
 
+    def links_file(self, keyword: str) -> Path:
+        return self.folder / f"{self.name}_{keyword.lower().replace(' ', '_')}.json"
+
+    def get_links(self, keyword: str) -> dict:
+        links_file = self.links_file(keyword)
+        if not links_file.is_file():
+            return {}
+        return loads(links_file.read_text())
+
     def init_driver(self):
         driver = Driver(
             headless=self.headless,
-            uc=True,
-            ad_block_on=True,
-            incognito=False,
-            do_not_track=True,
+            uc=True,  # Always true
+            ad_block_on=self.ad_block_on,
+            incognito=self.incognito,
+            do_not_track=self.do_not_track,
         )
         driver.maximize_window()
         driver.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
@@ -239,13 +251,7 @@ class BaseScraper:
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
     def search(self, keyword: str):
-        output_file = (
-            self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
-        )
-        if not output_file.is_file():
-            links = {}
-        else:
-            links = json.loads(output_file.read_text())
+        links = self.get_links(keyword)
         driver = self.init_driver()
         results = {}
         page = 1
@@ -271,7 +277,7 @@ class BaseScraper:
             links.update(results)
             json.dump(
                 links,
-                output_file.open("w"),
+                self.links_file(keyword).open("w"),
                 ensure_ascii=False,
             )
             driver.quit()
