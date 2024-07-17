@@ -194,60 +194,58 @@ class BaseScraper:
             f.write(screenshot)
 
     def inspect_pages(self, keyword: str, screenshot: bool = False, sample: int = 65):
-        links_file = (
-            self.folder / f"{self.name}_{keyword.lower().replace(" ", "_")}.json"
-        )
-        if not links_file.is_file():
-            links = {}
-        else:
-            links = json.loads(links_file.read_text())
-        driver = self.browser()
-        sample_keys = L((i, k) for i, k in enumerate(links.keys())).shuffle()[:sample]
-        sample_links = {}
-        try:
-            for i, url in tqdm(sample_keys, desc=f"{self.name} - {keyword}"):
-                try:
-                    driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
-                    if result_page := self.extract_item_data(driver):
-                        if not result_page.get("categoria"):
-                            print(f"Deletando {url} - sem categoria")
-                            del links[url]
-                            continue
-                        sample_links[url] = links[url]
-                        if screenshot:
-                            filename = f"{self.name}_{TODAY}_{i}.pdf"
-                            if product_id := result_page.get("product_id"):
-                                filename = f"{self.name}_{TODAY}_{product_id}.pdf"
-                            self.take_screenshot(driver, filename)
-                            result_page["screenshot"] = filename
-                        result_page["palavra_busca"] = keyword
-                        result_page["index"] = i
-                        pprint(result_page)
-                        sample_links[url].update(result_page)
-                except Exception as e:
-                    print(e)
-                    print(f"Erro ao processar {url}")
-        finally:
-            output_file = links_file.with_name(
-                f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
-            )
-            if output_file.is_file():
-                old_links = output_file.read_json()
-                old_links.update(sample_links)
-                sample_links = old_links
+        links = self.get_links(keyword)
+        with self.browser() as driver:
+            if sample:
+                sample_keys = L((i, k) for i, k in enumerate(links.keys())).shuffle()[
+                    :sample
+                ]
+            else:
+                sample_keys = L(links.keys()).shuffle()
+            pages_to_sample = {}
+            try:
+                for i, url in tqdm(sample_keys, desc=f"{self.name} - {keyword}"):
+                    try:
+                        driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
+                        if result_page := self.extract_item_data(driver):
+                            if not result_page.get("categoria"):
+                                print(f"Deletando {url} - sem categoria")
+                                del links[url]
+                                continue
+                            pages_to_sample[url] = links[url]
+                            if screenshot:
+                                filename = f"{self.name}_{TODAY}_{i}.pdf"
+                                if product_id := result_page.get("product_id"):
+                                    filename = f"{self.name}_{TODAY}_{product_id}.pdf"
+                                self.take_screenshot(driver, filename)
+                                result_page["screenshot"] = filename
+                            result_page["palavra_busca"] = keyword
+                            result_page["index"] = i
+                            pprint(result_page)
+                            pages_to_sample[url].update(result_page)
+                    except Exception as e:
+                        print(e)
+                        print(f"Erro ao processar {url}")
+            finally:
+                output_file = self.links_file(keyword).with_name(
+                    f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
+                )
+                if output_file.is_file():
+                    old_links = output_file.read_json()
+                    old_links.update(pages_to_sample)
+                    pages_to_sample = old_links
 
-            json.dump(
-                sample_links,
-                output_file.open("w"),
-                ensure_ascii=False,
-            )
-            driver.quit()
-            json.dump(
-                links,
-                links_file.open("w"),
-                ensure_ascii=False,
-            )
-        return output_file
+                json.dump(
+                    pages_to_sample,
+                    output_file.open("w"),
+                    ensure_ascii=False,
+                )
+                json.dump(
+                    links,
+                    self.links_file(keyword).open("w"),
+                    ensure_ascii=False,
+                )
+            return output_file
 
     def input_search_params(self, driver, keyword):
         self.highlight_element(driver, self.input_field)
