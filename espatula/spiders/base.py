@@ -6,24 +6,40 @@ from dataclasses import dataclass
 from datetime import datetime
 from pprint import pprint as print
 from contextlib import contextmanager
+from zoneinfo import ZoneInfo
+
 
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
-from gazpacho import Soup
 from seleniumbase import SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
 )
-from tqdm.auto import tqdm
-from zoneinfo import ZoneInfo
+from rich import progress
 
 load_dotenv(find_dotenv(), override=True)
 
 RECONNECT = int(os.environ.get("RECONNECT", 5))
-TIMEOUT = int(os.environ.get("TIMEOUT", 20))
+TIMEOUT = int(os.environ.get("TIMEOUT", 10))
+FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
+TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Sao_Paulo"))
+TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
+CERTIFICADO = re.compile(
+    r"""
+    (?ix)                  # Case-insensitive and verbose mode
+    ^                      # Start of the string
+    (Anatel[:\s]*)?        # Optional "Anatel" followed by colon or spaces
+    (                      # Start of main capturing group
+        (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
+    )
+    $                      # End of the string
+""",
+    re.VERBOSE,
+)
+
 KEYWORDS = [
     "smartphone",
     "carregador para smartphone",
@@ -40,29 +56,6 @@ KEYWORDS = [
     "jammer",
     "flipper zero",
 ]
-
-"""
-Defines a regular expression pattern to match Anatel certification numbers, and a path for storing data files.
-
-The `CERTIFICADO` regular expression pattern matches strings that start with "Anatel:" or "Anatel", ignoring the case, followed by a space, and then a sequence of digits separated by hyphens or spaces.
-
-The `DATA` variable defines a path for storing data files, using the value of the `FOLDER` environment variable if it is set, or defaulting to a `data` subdirectory in the current working directory.
-"""
-CERTIFICADO = re.compile(
-    r"""
-    (?ix)                  # Case-insensitive and verbose mode
-    ^                      # Start of the string
-    (Anatel[:\s]*)?        # Optional "Anatel" followed by colon or spaces
-    (                      # Start of main capturing group
-        (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
-    )
-    $                      # End of the string
-""",
-    re.VERBOSE,
-)
-FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
-TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Sao_Paulo"))
-TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
 
 
 def click_turnstile_and_verify(driver):
@@ -175,7 +168,7 @@ class BaseScraper:
     def extract_item_data(self, driver):
         raise NotImplementedError
 
-    def discover_product_urls(self, soup, keyword):
+    def discover_product_urls(self, driver, keyword):
         raise NotImplementedError
 
     def highlight_element(self, driver, element):
@@ -212,7 +205,9 @@ class BaseScraper:
             pages_to_sample = {}
             try:
                 driver.set_messenger_theme(location="bottom_center")
-                for i, url in tqdm(keys, desc=f"{self.name} - {keyword}"):
+                for i, url in progress.track(
+                    keys, description=f"{self.name} - {keyword}"
+                ):
                     try:
                         driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
                         if result_page := self.extract_item_data(driver):
@@ -273,9 +268,7 @@ class BaseScraper:
                 driver.set_messenger_theme(location="bottom_center")
                 while True:
                     driver.sleep(TIMEOUT)
-                    products = self.discover_product_urls(
-                        Soup(driver.get_page_source()), keyword
-                    )
+                    products = self.discover_product_urls(driver, keyword)
                     print(f"Navegando página {page} da busca '{keyword}'...")
                     driver.post_message(f"🕷️ Links da página {page} coletados! 🕸️")
                     for k, v in products.items():
