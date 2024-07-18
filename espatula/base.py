@@ -12,7 +12,7 @@ from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
 from gazpacho import Soup
-from seleniumbase import Driver, SB
+from seleniumbase import SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
