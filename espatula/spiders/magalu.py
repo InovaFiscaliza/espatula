@@ -54,7 +54,8 @@ class MagaluScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, soup, keyword):
+    def discover_product_urls(self, driver, keyword):
+        soup = Soup(driver.get_page_source())
         results = {}
         for item in soup.find(
             "a",
@@ -173,28 +174,3 @@ class MagaluScraper(BaseScraper):
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
         if department := CATEGORIES.get(keyword):
             driver.uc_click(department, timeout=RECONNECT)
-
-
-if __name__ == "__main__":
-
-    def main(
-        search: bool = True,
-        keyword: str = None,
-        headless: bool = True,
-        screenshot: bool = False,
-    ):
-        scraper = MagaluScraper(headless=headless)
-
-        if not keyword:
-            for keyword in KEYWORDS:
-                if search:
-                    scraper.search(keyword, screenshot)
-                else:
-                    scraper.inspect_pages(keyword, screenshot)
-        else:
-            if search:
-                scraper.search(keyword, screenshot)
-            else:
-                scraper.inspect_pages(keyword, screenshot)
-
-    typer.run(main)

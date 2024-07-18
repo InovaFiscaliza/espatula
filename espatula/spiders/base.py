@@ -2,23 +2,22 @@ import base64
 import json
 import os
 import re
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pprint import pprint as print
-from contextlib import contextmanager
-from zoneinfo import ZoneInfo
-
 
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
+from rich import progress
 from seleniumbase import SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
 )
-from rich import progress
+from zoneinfo import ZoneInfo
 
 load_dotenv(find_dotenv(), override=True)
 

@@ -208,7 +208,8 @@ class AmazonScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, soup, keyword):
+    def discover_product_urls(self, driver, keyword):
+        soup = Soup(driver.get_page_source())
         results = {}
         for div in soup.find(
             "div",
