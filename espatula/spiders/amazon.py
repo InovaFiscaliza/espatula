@@ -6,7 +6,7 @@ from urllib.parse import unquote
 
 from gazpacho import Soup
 
-from base import RECONNECT, TIMEOUT, TIMEZONE, BaseScraper
+from .base import RECONNECT, TIMEOUT, TIMEZONE, BaseScraper
 
 CATEGORIES = {"smartphone": ['li[id="n/16243803011"] a', 'li[id="n/16243890011"] a']}
 

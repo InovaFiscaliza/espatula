@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from gazpacho import Soup
-from base import TIMEZONE, BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 
 @dataclass

@@ -2,9 +2,8 @@ import re
 from datetime import datetime
 from dataclasses import dataclass
 
-import typer
 from gazpacho import Soup
-from base import BaseScraper, KEYWORDS, TIMEOUT, RECONNECT, TIMEZONE
+from .base import BaseScraper, KEYWORDS, TIMEOUT, RECONNECT, TIMEZONE
 
 CATEGORIES = {
     "smartphone": 'a[href="/busca/smartphone/?from=submit&filters=category---TE"]'
