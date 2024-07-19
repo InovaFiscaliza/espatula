@@ -57,18 +57,13 @@ KEYWORDS = [
 ]
 
 
-def click_turnstile_and_verify(driver):
-    driver.switch_to_frame("iframe")
-    driver.uc_click("span.mark")
-
-
 @dataclass
 class BaseScraper:
     headless: bool = True
-    turnstile: bool = False
     ad_block_on: bool = True
     incognito: bool = False
     do_not_track: bool = True
+    turnstile: bool = False
 
     @property
     def name(self):
@@ -87,7 +82,7 @@ class BaseScraper:
         raise NotImplementedError
 
     @property
-    def folder(self):
+    def folder(self) -> Path:
         folder = FOLDER / self.name
         folder.mkdir(parents=True, exist_ok=True)
         return folder
@@ -101,6 +96,14 @@ class BaseScraper:
             return {}
         return loads(links_file.read_text())
 
+    @staticmethod
+    def click_turnstile_and_verify(driver):
+        try:
+            driver.switch_to_frame("iframe")
+            driver.uc_click("span.mark")
+        except Exception:
+            pass
+
     @contextmanager
     def browser(self):
         with SB(
@@ -113,15 +116,12 @@ class BaseScraper:
             sb.driver.maximize_window()
             sb.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
             if self.turnstile:
-                try:
-                    sb.switch_to_frame("iframe")
-                    sb.uc_click("span.mark")
-                except Exception:
-                    pass
+                self.click_turnstile_and_verify(sb)
             yield sb
 
+    @staticmethod
     # https://chromedevtools.github.io/devtools-protocol/tot/Page#method-printToPDF
-    def capture_full_page_screenshot(self, driver) -> bytes:  #
+    def capture_full_page_screenshot(driver) -> bytes:
         """Gets full page screenshot as a pdf searchable."""
         url = f"{driver.command_executor._url}/session/{driver.session_id}/chromium/send_command_and_get_result"
         params = {
@@ -130,8 +130,6 @@ class BaseScraper:
             "preferCSSPageSize": False,
             "scale": 1,
         }
-        if self.pages:
-            params["pageRanges"] = f"1-{self.pages}"
 
         body = json.dumps({"cmd": "Page.printToPDF", "params": params})
         response = driver.command_executor._request("POST", url, body).get("value")
