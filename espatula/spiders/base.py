@@ -190,6 +190,27 @@ class BaseScraper:
         except (NoSuchElementException, ElementNotVisibleException):
             pass
 
+    @staticmethod
+    def compress_images(pdf_stream):
+        reader = PdfReader(pdf_stream)
+        writer = PdfWriter()
+
+        for page in reader.pages:
+            writer.add_page(page)
+
+        if reader.metadata is not None:
+            writer.add_metadata(reader.metadata)
+
+        for page in writer.pages:
+            for img in page.images:
+                img.replace(img.image, quality=80)
+            page.compress_content_streams(level=9)
+
+        with BytesIO() as bytes_stream:
+            writer.write(bytes_stream)
+
+        return bytes_stream.getvalue()
+
     def take_screenshot(self, driver, filename):
         folder = FOLDER / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
