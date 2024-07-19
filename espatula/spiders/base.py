@@ -103,12 +103,12 @@ class BaseScraper:
         return loads(links_file.read_text())
 
     @staticmethod
-    def click_turnstile_and_verify(driver):
+    def click_turnstile_and_verify(sb):
         try:
-            driver.switch_to_frame("iframe")
-            driver.uc_click("span.mark")
-        except Exception:
-            pass
+            sb.switch_to_frame("iframe")
+            sb.uc_click("span.mark")
+        except Exception as e:
+            print(e)
 
     @contextmanager
     def browser(self):
@@ -209,9 +209,8 @@ class BaseScraper:
                 img.replace(img.image, quality=80)
             page.compress_content_streams(level=9)
 
-        with BytesIO() as bytes_stream:
-            writer.write(bytes_stream)
-
+        bytes_stream = BytesIO()
+        writer.write(bytes_stream)
         return bytes_stream.getvalue()
 
     def take_screenshot(self, driver, filename):
@@ -222,9 +221,9 @@ class BaseScraper:
         with open(folder / filename, "wb") as f:
             f.write(screenshot)
 
-    def save_screenshot(self, driver, result_page, i):
+    def save_screenshot(self, sb, result_page, i):
         filename = self.generate_filename(result_page, i)
-        self.take_screenshot(driver, filename)
+        self.take_screenshot(sb.driver, filename)
         result_page["screenshot"] = filename
 
     def generate_filename(self, result_page, i):
@@ -252,7 +251,7 @@ class BaseScraper:
         driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
-                print(f"{url} inválida - sem categoria - 🚮")
+                print(f"Falha ao navegar {url}")
                 driver.post_message("Anúncio sem categoria - 🚮")
                 return False
 
@@ -272,7 +271,7 @@ class BaseScraper:
         sampled_pages = {}
 
         with self.browser() as driver:
-            driver.set_messenger_theme(location="center")
+            driver.set_messenger_theme(location="top_center")
             try:
                 for i, url in progress.track(
                     keys, description=f"{self.name} - {keyword}"
@@ -290,7 +289,6 @@ class BaseScraper:
 
                     if sample and len(sampled_pages) >= sample:
                         break
-
             finally:
                 self.save_sampled_pages(keyword, sampled_pages)
                 json.dump(
@@ -310,7 +308,7 @@ class BaseScraper:
         with self.browser() as driver:
             try:
                 self.input_search_params(driver, keyword)
-                driver.set_messenger_theme(location="bottom_center")
+                driver.set_messenger_theme(location="top_center")
                 while True:
                     driver.sleep(TIMEOUT)
                     products = self.discover_product_urls(driver, keyword)
