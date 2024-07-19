@@ -2,22 +2,25 @@ import base64
 import json
 import os
 import re
+from io import BytesIO
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
-from pprint import pprint as print
+from zoneinfo import ZoneInfo
+
 
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
-from rich import progress
+from rich import progress, print
 from seleniumbase import SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
 )
-from zoneinfo import ZoneInfo
+from pypdf import PdfReader, PdfWriter
+
 
 load_dotenv(find_dotenv(), override=True)
 
@@ -215,8 +218,45 @@ class BaseScraper:
         folder = FOLDER / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
+        screenshot = self.compress_images(BytesIO(screenshot))
         with open(folder / filename, "wb") as f:
             f.write(screenshot)
+
+    def process_url(self, driver, url):
+        driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
+        if result_page := self.extract_item_data(driver):
+            if not result_page.get("categoria"):
+                print(f"{url} inválida - sem categoria - 🚮")
+                driver.post_message("Anúncio sem categoria - 🚮")
+                return False
+
+        return result_page
+
+    def save_screenshot(self, driver, result_page, i):
+        filename = self.generate_filename(result_page, i)
+        self.take_screenshot(driver, filename)
+        result_page["screenshot"] = filename
+
+    def generate_filename(self, result_page, i):
+        base_filename = f"{self.name}_{TODAY}"
+        if product_id := result_page.get("product_id"):
+            return f"{base_filename}_{product_id}.pdf"
+        return f"{base_filename}_{i}.pdf"
+
+    def save_sampled_pages(self, keyword, sampled_pages):
+        output_file = self.links_file(keyword).with_name(
+            f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
+        )
+        if output_file.is_file():
+            old_links = output_file.read_json()
+            old_links.update(sampled_pages)
+            sampled_pages = old_links
+
+        json.dump(
+            sampled_pages,
+            output_file.open("w"),
+            ensure_ascii=False,
+        )
 
     def inspect_pages(
         self,
@@ -226,65 +266,42 @@ class BaseScraper:
         sample: int = 65,
     ) -> Path:
         links = self.get_links(keyword)
-        if not links:
-            print(f"Não foram encontrados links de busca para {self.name} - {keyword}")
-            print("A coleta de links será agora com as opções padrão")
-            self.search(keyword)
+        keys = L((i, k) for i, k in enumerate(links.keys()))
+        if shuffle:
+            keys = keys.shuffle()
+        sampled_pages = {}
+
         with self.browser() as driver:
-            keys = L((i, k) for i, k in enumerate(links.keys()))
-            if shuffle:
-                keys = keys.shuffle()
-            pages_to_sample = {}
+            driver.set_messenger_theme(location="center")
             try:
-                driver.set_messenger_theme(location="bottom_center")
                 for i, url in progress.track(
                     keys, description=f"{self.name} - {keyword}"
                 ):
                     try:
-                        driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
-                        if result_page := self.extract_item_data(driver):
-                            if not result_page.get("categoria"):
-                                driver.post_message("Anúncio sem categoria - 🚮")
-                                print(f"Deletando {url} - sem categoria")
-                                del links[url]
-                                continue
-                            pages_to_sample[url] = links[url]
-                            if screenshot:
-                                filename = f"{self.name}_{TODAY}_{i}.pdf"
-                                if product_id := result_page.get("product_id"):
-                                    filename = f"{self.name}_{TODAY}_{product_id}.pdf"
-                                self.take_screenshot(driver, filename)
-                                result_page["screenshot"] = filename
-                                driver.post_message("Anúncio salvo 🖼️")
-                            result_page["palavra_busca"] = keyword
-                            result_page["index"] = i
-                            print(result_page)
-                            pages_to_sample[url].update(result_page)
-                            if sample and len(pages_to_sample) >= sample:
-                                break
+                        if not (result_page := self.process_url(driver, url)):
+                            del links[url]
+                            continue
+
+                        if screenshot:
+                            self.save_screenshot(driver, result_page, i)
+
+                        result_page["palavra_busca"] = keyword
+                        result_page["index"] = i
+                        sampled_pages[url] = result_page
+
+                        if sample and len(sampled_pages) >= sample:
+                            break
+
                     except Exception as e:
                         print(e)
                         print(f"Erro ao processar {url}")
             finally:
-                output_file = self.links_file(keyword).with_name(
-                    f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
-                )
-                if output_file.is_file():
-                    old_links = output_file.read_json()
-                    old_links.update(pages_to_sample)
-                    pages_to_sample = old_links
-
-                json.dump(
-                    pages_to_sample,
-                    output_file.open("w"),
-                    ensure_ascii=False,
-                )
+                self.save_sampled_pages(keyword, sampled_pages)
                 json.dump(
                     links,
                     self.links_file(keyword).open("w"),
                     ensure_ascii=False,
                 )
-            return output_file
 
     def input_search_params(self, driver, keyword):
         self.highlight_element(driver, self.input_field)
