@@ -93,7 +93,10 @@ class BaseScraper:
     def get_links(self, keyword: str) -> dict:
         links_file = self.links_file(keyword)
         if not links_file.is_file():
-            return {}
+            print(f"Não foram encontrados links de busca para {self.name} - {keyword}")
+            print("A coleta de links será efetuada primeiro com as opções padrão")
+            self.search(keyword)
+            return self.get_links(keyword)
         return loads(links_file.read_text())
 
     @staticmethod
