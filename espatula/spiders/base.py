@@ -222,16 +222,6 @@ class BaseScraper:
         with open(folder / filename, "wb") as f:
             f.write(screenshot)
 
-    def process_url(self, driver, url):
-        driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
-        if result_page := self.extract_item_data(driver):
-            if not result_page.get("categoria"):
-                print(f"{url} inválida - sem categoria - 🚮")
-                driver.post_message("Anúncio sem categoria - 🚮")
-                return False
-
-        return result_page
-
     def save_screenshot(self, driver, result_page, i):
         filename = self.generate_filename(result_page, i)
         self.take_screenshot(driver, filename)
@@ -258,6 +248,16 @@ class BaseScraper:
             ensure_ascii=False,
         )
 
+    def process_url(self, driver, url):
+        driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
+        if result_page := self.extract_item_data(driver):
+            if not result_page.get("categoria"):
+                print(f"{url} inválida - sem categoria - 🚮")
+                driver.post_message("Anúncio sem categoria - 🚮")
+                return False
+
+        return result_page
+
     def inspect_pages(
         self,
         keyword: str,
@@ -277,24 +277,20 @@ class BaseScraper:
                 for i, url in progress.track(
                     keys, description=f"{self.name} - {keyword}"
                 ):
-                    try:
-                        if not (result_page := self.process_url(driver, url)):
-                            del links[url]
-                            continue
+                    if not (result_page := self.process_url(driver, url)):
+                        del links[url]
+                        continue
 
-                        if screenshot:
-                            self.save_screenshot(driver, result_page, i)
+                    if screenshot:
+                        self.save_screenshot(driver, result_page, i)
 
-                        result_page["palavra_busca"] = keyword
-                        result_page["index"] = i
-                        sampled_pages[url] = result_page
+                    result_page["palavra_busca"] = keyword
+                    result_page["index"] = i
+                    sampled_pages[url] = result_page
 
-                        if sample and len(sampled_pages) >= sample:
-                            break
+                    if sample and len(sampled_pages) >= sample:
+                        break
 
-                    except Exception as e:
-                        print(e)
-                        print(f"Erro ao processar {url}")
             finally:
                 self.save_sampled_pages(keyword, sampled_pages)
                 json.dump(
