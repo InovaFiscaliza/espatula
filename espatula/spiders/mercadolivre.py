@@ -13,11 +13,21 @@ CATEGORIES = {
 
 @dataclass
 class MercadoLivreScraper(BaseScraper):
-    name: str = "ml"
-    url: str = "https://www.mercadolivre.com.br"
-    input_field: str = 'input[id="cb1-edit"]'
-    next_page_button: str = 'a[title="Seguinte"]'
-    pages: int = None
+    @property
+    def name(self) -> str:
+        return "ml"
+
+    @property
+    def url(self) -> str:
+        return "https://www.mercadolivre.com.br"
+
+    @property
+    def input_field(self) -> str:
+        return 'input[id="cb1-edit"]'
+
+    @property
+    def next_page_button(self) -> str:
+        return 'a[title="Seguinte"]'
 
     @staticmethod
     def find_single_url(text):

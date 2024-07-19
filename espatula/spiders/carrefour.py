@@ -7,14 +7,23 @@ from .base import TIMEZONE, BaseScraper
 
 @dataclass
 class CarrefourScraper(BaseScraper):
-    name: str = "carrefour"
-    url: str = "https://www.carrefour.com.br/"
-    input_field: str = 'input[placeholder="Pesquise por produtos ou marcas"]'
-    next_page_button: str = (
-        "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
-    )
     turnstile: bool = True
-    pages: int = None
+
+    @property
+    def name(self) -> str:
+        return "carrefour"
+
+    @property
+    def url(self) -> str:
+        return "https://www.carrefour.com.br/"
+
+    @property
+    def input_field(self) -> str:
+        return 'input[placeholder="Pesquise por produtos ou marcas"]'
+
+    @property
+    def next_page_button(self) -> str:
+        return "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
 
     def input_search_params(self, driver, keyword):
         driver.uc_open_with_reconnect(

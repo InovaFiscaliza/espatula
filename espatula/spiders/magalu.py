@@ -12,11 +12,21 @@ CATEGORIES = {
 
 @dataclass
 class MagaluScraper(BaseScraper):
-    name: str = "magalu"
-    url: str = "https://www.magazineluiza.com.br"
-    input_field: str = 'input[data-testid="input-search"]'
-    next_page_button: str = 'button[aria-label="Go to next page"]'
-    pages: int = None
+    @property
+    def name(self) -> str:
+        return "magalu"
+
+    @property
+    def url(self) -> str:
+        return "https://www.magazineluiza.com.br"
+
+    @property
+    def input_field(self) -> str:
+        return 'input[data-testid="input-search"]'
+
+    @property
+    def next_page_button(self) -> str:
+        return 'button[aria-label="Go to next page"]'
 
     def extract_search_data(self, produto):
         relative_url = produto.attrs.get("href")

@@ -7,10 +7,21 @@ from .base import TIMEZONE, BaseScraper
 
 @dataclass
 class CasasBahiaScraper(BaseScraper):
-    name: str = "casasbahia"
-    url: str = "https://www.casasbahia.com.br"
-    input_field: str = 'input[id="search-form-input"]'
-    next_page_button: str = 'a[aria-label="Próxima página"]'
+    @property
+    def name(self) -> str:
+        return "casasbahia"
+
+    @property
+    def url(self) -> str:
+        return "https://www.casasbahia.com.br"
+
+    @property
+    def input_field(self) -> str:
+        return 'input[id="search-form-input"]'
+
+    @property
+    def next_page_button(self) -> str:
+        return 'a[aria-label="Próxima página"]'
 
     def extract_product_data(self, produto):
         if title := produto.find("h3", attrs={"class": "product-card__title"}):

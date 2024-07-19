@@ -13,11 +13,21 @@ CATEGORIES = {"smartphone": ['li[id="n/16243803011"] a', 'li[id="n/16243890011"]
 
 @dataclass
 class AmazonScraper(BaseScraper):
-    name: str = "amazon"
-    url: str = "https://www.amazon.com.br"
-    input_field: str = 'input[id="twotabsearchtextbox"]'
-    next_page_button: str = 'a[class="s-pagination-item s-pagination-next s-pagination-button s-pagination-separator"]'
-    pages: int = None
+    @property
+    def name(self) -> str:
+        return "amazon"
+
+    @property
+    def url(self) -> str:
+        return "https://www.amazon.com.br"
+
+    @property
+    def input_field(self) -> str:
+        return 'input[id="twotabsearchtextbox"]'
+
+    @property
+    def next_page_button(self) -> str:
+        return 'a[class="s-pagination-item s-pagination-next s-pagination-button s-pagination-separator"]'
 
     @staticmethod
     def transform_url(source_url):

@@ -7,11 +7,21 @@ from .base import BaseScraper, TIMEZONE
 
 @dataclass
 class AmericanasScraper(BaseScraper):
-    name: str = "americanas"
-    url: str = "https://www.americanas.com.br"
-    input_field: str = 'input[placeholder="busque aqui seu produto"]'
-    next_page_button: str = 'svg[class="src__ArrowRotate-sc-82ugau-2 hWXbQX"]'
-    pages: int = None
+    @property
+    def name(self) -> str:
+        return "americanas"
+
+    @property
+    def url(self) -> str:
+        return "https://www.americanas.com.br"
+
+    @property
+    def input_field(self) -> str:
+        return 'input[placeholder="busque aqui seu produto"]'
+
+    @property
+    def next_page_button(self) -> str:
+        return 'svg[class="src__ArrowRotate-sc-82ugau-2 hWXbQX"]'
 
     def extract_search_data(self, produto):
         if relative_url := produto.find("a"):
