@@ -64,16 +64,27 @@ def click_turnstile_and_verify(driver):
 
 @dataclass
 class BaseScraper:
-    name: str
-    url: str
-    input_field: str
-    next_page_button: str
     headless: bool = True
     turnstile: bool = False
-    pages: int = None
     ad_block_on: bool = True
     incognito: bool = False
     do_not_track: bool = True
+
+    @property
+    def name(self):
+        raise NotImplementedError
+
+    @property
+    def url(self):
+        raise NotImplementedError
+
+    @property
+    def input_field(self):
+        raise NotImplementedError
+
+    @property
+    def next_page_button(self):
+        raise NotImplementedError
 
     @property
     def folder(self):
