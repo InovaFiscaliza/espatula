@@ -15,7 +15,7 @@ from espatula.spiders import (
     CarrefourScraper,
 )
 
-from espatula.spiders.base import KEYWORDS, FOLDER
+from espatula.spiders.base import KEYWORDS, FOLDER, TODAY
 
 PREFIX = "https://anatel365.sharepoint.com/sites/Desenvolvimentodeappfiscalizaoe-commerce/Documentos%20Compartilhados/General/Resultados/screenshots/"
 
@@ -461,8 +461,8 @@ def process_shopee(output_file, category="Celulares e Smartphones"):
 
 def run_inspection(scraper, keyword, headless, screenshot, sample):
     site = SCRAPER[scraper](headless=headless)
-    output_file = site.inspect_pages(keyword, screenshot, sample)
-    # output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
+    site.inspect_pages(keyword, screenshot, sample)
+    output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
     if scraper == "amazon":
         process_amazon(output_file)
     elif scraper == "ml":
