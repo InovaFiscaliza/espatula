@@ -189,7 +189,7 @@ class BaseScraper:
         if self.headless:
             return
         try:
-            driver.highlight(element)
+            driver.highlight(element, timeout=TIMEOUT // 2)
         except (NoSuchElementException, ElementNotVisibleException):
             pass
 
