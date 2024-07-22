@@ -2,7 +2,11 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from gazpacho import Soup
-from .base import TIMEZONE, BaseScraper
+from .base import RECONNECT, TIMEOUT, BaseScraper
+
+CATEGORIES = {
+    "smartphone": "https://www.carrefour.com.br/celulares-smartphones-e-smartwatches/smartphones#crfint=hm-tlink|celulares-e-smartphones|smartphones|1"
+}
 
 
 @dataclass
@@ -26,13 +30,11 @@ class CarrefourScraper(BaseScraper):
         return "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
 
     def input_search_params(self, driver, keyword):
-        driver.uc_open_with_reconnect(
-            self.url
-            + "celulares-smartphones-e-smartwatches/smartphones#crfint=hm-tlink|celulares-e-smartphones|smartphones|1"
-        )
-        # self.highlight_element(driver, self.input_field)
-        # driver.type(self.input_field, keyword, timeout=TIMEOUT)
-        # driver.uc_click('button[aria-label="Buscar produtos"]', timeout=TIMEOUT)
+        if department := CATEGORIES.get(keyword):
+            driver.uc_open_with_reconnect(department, reconnect_time=RECONNECT)
+        else:
+            self.highlight_element(driver, self.input_field)
+            driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
     def extract_search_data(self, product_tag):
         if hasattr(
