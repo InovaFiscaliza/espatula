@@ -79,11 +79,13 @@ class AmazonScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    @staticmethod
-    def parse_tables(soup) -> dict:
+    def parse_tables(self, driver) -> dict:
         """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
+        soup = Soup(driver.get_page_source())
         table_data = {}
         tables = soup.find("table", attrs={"id": "productDetails"}, mode="all")
+        if tables:
+            self.highlight_element(driver, 'table[id="productDetails"]')
         for table in tables:
             for row in table.find("tr", mode="all"):
                 key = row.find("th", mode="first")
@@ -108,16 +110,28 @@ class AmazonScraper(BaseScraper):
     def extract_item_data(self, driver):
         soup = Soup(driver.get_page_source())
         if nome := soup.find("span", attrs={"id": "productTitle"}, mode="first"):
+            self.highlight_element(driver, 'span[id="productTitle"]')
             nome = nome.strip()
 
         if categoria := soup.find(
             "div", attrs={"id": "wayfinding-breadcrumbs_feature_div"}, mode="first"
         ):
+            self.highlight_element(
+                driver, 'div[id="wayfinding-breadcrumbs_feature_div"]'
+            )
             categoria = "|".join(
                 s.text.strip() for s in categoria.find("a", mode="all")
             )
         elif nome and "iphone" in nome.lower():
             categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
+
+        if vendas := soup.find(
+            "span", attrs={"id": "social-proofing-faceout-title-tk_bought"}
+        ):
+            self.highlight_element(
+                driver, 'span[id="social-proofing-faceout-title-tk_bought"]'
+            )
+            vendas = vendas.strip()
 
         if imagens := re.findall(
             r"colorImages':.*'initial':\s*(\[.+?\])},\n", soup.html
@@ -129,21 +143,26 @@ class AmazonScraper(BaseScraper):
             )
 
         if preço := soup.find("span", attrs={"class": "a-offscreen"}, mode="first"):
+            self.highlight_element(driver, 'span[class="a-offscreen"]')
             preço = re.sub(r"R\$|\.", "", preço.text.strip()).replace(",", ".")
 
         if nota := soup.find("i", attrs={"data-hook": "average-star-rating"}):
+            self.highlight_element(driver, 'i[data-hook="average-star-rating"]')
             nota = nota.strip()
 
         if avaliações := soup.find(
             "div", attrs={"data-hook": "total-review-count"}, mode="first"
         ):
+            # self.highlight_element(driver, 'div[data-hook="total-review-count"]')
             avaliações = "".join(re.findall(r"\d", avaliações.strip()))
         elif avaliações := soup.find(
             "span", attrs={"id": "acrCustomerReviewText"}, mode="first"
         ):
+            self.highlight_element(driver, 'span[id="acrCustomerReviewText"]')
             avaliações = avaliações.strip()
 
         if marca := soup.find("a", attrs={"id": "bylineInfo"}, mode="first"):
+            self.highlight_element(driver, 'a[id="bylineInfo"]')
             marca = (
                 f'{re.sub(r"Marca: |Visite a loja ", "", marca.text.strip())}'.title()
             )
@@ -151,9 +170,11 @@ class AmazonScraper(BaseScraper):
         if vendedor := soup.find(
             "a", attrs={"id": "sellerProfileTriggerId"}, mode="first"
         ):
+            self.highlight_element(driver, 'a[id="sellerProfileTriggerId"]')
             link_vendedor = f"{self.url}{vendedor.attrs.get('href')}"
             vendedor = vendedor.strip()
         elif vendedor := soup.find("a", attrs={"id": "bylineInfo"}, mode="first"):
+            self.highlight_element(driver, 'a[id="bylineInfo"]')
             link_vendedor = f"{self.url}{vendedor.attrs.get('href')}"
             vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.text.strip())}'.title()
         else:
@@ -164,6 +185,7 @@ class AmazonScraper(BaseScraper):
         if descrição_principal := soup.find(
             "div", attrs={"id": "feature-bullets"}, mode="first"
         ):
+            self.highlight_element(driver, 'div[id="feature-bullets"]')
             descrição += "\n".join(
                 s.text.strip() for s in descrição_principal.find("span", mode="all")
             )
@@ -171,13 +193,14 @@ class AmazonScraper(BaseScraper):
         if descrição_secundária := soup.find(
             "div", attrs={"id": "productDescription"}, mode="first"
         ):
+            self.highlight_element(driver, 'div[id="productDescription"]')
             descrição += "\n".join(
                 s.text.strip() for s in descrição_secundária.find("span", mode="all")
             )
 
         modelo, ean, certificado, asin = None, None, None, None
 
-        if características := self.parse_tables(soup):
+        if características := self.parse_tables(driver):
             if not marca:
                 marca = características.pop("Marca", "")
 
@@ -192,11 +215,6 @@ class AmazonScraper(BaseScraper):
 
             modelo = extrair_modelo(características)
             asin = características.pop("ASIN", None)
-
-        if vendas := soup.find(
-            "span", attrs={"id": "social-proofing-faceout-title-tk_bought"}
-        ):
-            vendas = vendas.strip()
 
         return {
             "nome": nome,
