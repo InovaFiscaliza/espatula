@@ -461,7 +461,7 @@ def process_shopee(output_file, category="Celulares e Smartphones"):
 
 def run_inspection(scraper, keyword, headless, screenshot, sample):
     site = SCRAPER[scraper](headless=headless)
-    site.inspect_pages(keyword, screenshot, sample)
+    site.inspect_pages(keyword=keyword, screenshot=screenshot, sample=sample)
     output_file = Path(FOLDER / scraper / f"{scraper}_{TODAY}_{keyword}.json")
     if scraper == "amazon":
         process_amazon(output_file)
