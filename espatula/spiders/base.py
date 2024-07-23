@@ -98,7 +98,7 @@ class BaseScraper:
         if not links_file.is_file():
             print(f"Não foram encontrados links de busca para {self.name} - {keyword}")
             print("A coleta de links será efetuada primeiro com as opções padrão")
-            self.search(keyword)
+            self.search(keyword, overwrite=True)
             return self.get_links(keyword)
         return loads(links_file.read_text())
 
@@ -286,6 +286,7 @@ class BaseScraper:
 
                     result_page["palavra_busca"] = keyword
                     result_page["index"] = i
+                    result_page["url"] = url
                     sampled_pages[url] = result_page
 
                     if sample and len(sampled_pages) >= sample:
@@ -302,8 +303,8 @@ class BaseScraper:
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
-    def search(self, keyword: str, max_pages: int = 10):
-        links = self.get_links(keyword)
+    def search(self, keyword: str, max_pages: int = 10, overwrite: bool = True):
+        links = {} if overwrite else self.get_links(keyword)
         results = {}
         page = 1
         with self.browser() as driver:

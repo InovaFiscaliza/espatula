@@ -221,8 +221,8 @@ class MercadoLivreScraper(BaseScraper):
             driver.uc_click("button[data-testid=action-collapsable-target]")
 
         if soup.find("a", attrs={"data-testid": "action-collapsable-target"}):
-            self.highlight_element(driver, "a[data-testid=action-collapsable-target]")
-            driver.uc_click("a[data-testid=action-collapsable-target]")
+            self.highlight_element(driver, 'a[title="Ver descrição completa"]')
+            driver.uc_click('a[title="Ver descrição completa"]')
 
         marca, modelo, ean, certificado = None, None, None, None
         if características := soup.find(
