@@ -190,8 +190,8 @@ class BaseScraper:
             return
         try:
             driver.highlight(element, timeout=TIMEOUT // 2)
-        except (NoSuchElementException, ElementNotVisibleException):
-            pass
+        except (NoSuchElementException, ElementNotVisibleException) as e:
+            print(e)
 
     @staticmethod
     def compress_images(pdf_stream):
@@ -261,8 +261,8 @@ class BaseScraper:
         self,
         keyword: str,
         screenshot: bool = False,
-        shuffle: bool = True,
         sample: int = 65,
+        shuffle: bool = True,
     ) -> Path:
         links = self.get_links(keyword)
         keys = L((i, k) for i, k in enumerate(links.keys()))
@@ -273,9 +273,10 @@ class BaseScraper:
         with self.browser() as driver:
             driver.set_messenger_theme(location="top_center")
             try:
-                for i, url in progress.track(
-                    keys, description=f"{self.name} - {keyword}"
-                ):
+                for i, url in keys:
+                    # progress.track(
+                    #     keys, description=f"{self.name} - {keyword}"
+                    # ):
                     if not (result_page := self.process_url(driver, url)):
                         del links[url]
                         continue
