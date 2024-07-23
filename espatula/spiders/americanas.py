@@ -76,7 +76,7 @@ class AmericanasScraper(BaseScraper):
         if categoria := soup.find(
             "div", attrs={"class": "breadcrumb"}, mode="first", partial=True
         ):
-            # self.highlight_element(driver, "div:contains(breadcrumb)")
+            self.highlight_element(driver, "div:contains(breadcrumb)")
             categoria = " | ".join(
                 i.strip()
                 for i in categoria.find("a", mode="all")
@@ -84,29 +84,29 @@ class AmericanasScraper(BaseScraper):
             )
 
         if nome := soup.find("h1", attrs={"class": "product-title"}, mode="first"):
-            # self.highlight_element(driver, 'h1:contains("product-title")')
+            self.highlight_element(driver, 'h1:contains("product-title")')
             nome = nome.strip()
 
-        # if imagens := soup.find("div", {"class": "Gallery"}, mode="first"):
-        #     self.highlight_element(driver, 'div:contains("Gallery")')
-        #     imagens = [
-        #         getattr(i, "attrs", {}).get("src")
-        #         for i in imagens.find("img", mode="all")
-        #     ]
+        if imagens := soup.find("div", {"class": "Gallery"}, mode="first"):
+            self.highlight_element(driver, 'div:contains("Gallery")')
+            imagens = [
+                getattr(i, "attrs", {}).get("src")
+                for i in imagens.find("img", mode="all")
+            ]
 
-        # nota, avaliações = None, None
-        # if popularidade := soup.find(
-        #     "div", attrs={"data-testid": "mod-row"}, mode="first"
-        # ):
-        #     self.highlight_element(driver, "div[data-testid=mod-row]")
-        #     if popularidade := popularidade.find(
-        #         "span", attrs={"format": "score-count"}, mode="first"
-        #     ):
-        #         nota, avaliações = popularidade.text.strip().split(" ")
-        #         avaliações = avaliações.replace("(", "").replace(")", "")
+        nota, avaliações = None, None
+        if popularidade := soup.find(
+            "div", attrs={"data-testid": "mod-row"}, mode="first"
+        ):
+            self.highlight_element(driver, "div[data-testid=mod-row]")
+            if popularidade := popularidade.find(
+                "span", attrs={"format": "score-count"}, mode="first"
+            ):
+                nota, avaliações = popularidade.text.strip().split(" ")
+                avaliações = avaliações.replace("(", "").replace(")", "")
 
         if preço := soup.find("div", attrs={"class": "priceSales"}, mode="first"):
-            # self.highlight_element(driver, "div[data-testid=mod-productprice]")
+            self.highlight_element(driver, "div[data-testid=mod-productprice]")
             preço = (
                 preço.strip()
                 .replace("R$", "")
@@ -118,11 +118,11 @@ class AmericanasScraper(BaseScraper):
         else:
             preço = None
 
-        # if descrição := soup.find(
-        #     "div", attrs={"data-testid": "rich-content-container"}, mode="first"
-        # ):
-        #     self.highlight_element(driver, "div[data-testid=rich-content-container]")
-        #     descrição = descrição.text.strip()
+        if descrição := soup.find(
+            "div", attrs={"data-testid": "rich-content-container"}, mode="first"
+        ):
+            self.highlight_element(driver, "div[data-testid=rich-content-container]")
+            descrição = descrição.text.strip()
 
         marca, modelo, certificado, ean, product_id = None, None, None, None, None
         if características := self.parse_tables(soup):
@@ -139,10 +139,10 @@ class AmericanasScraper(BaseScraper):
             "nome": nome,
             "categoria": categoria,
             "preço": preço,
-            # "nota": nota,
-            # "avaliações": avaliações,
-            # "imagens": imagens,
-            # "descrição": descrição,
+            "nota": nota,
+            "avaliações": avaliações,
+            "imagens": imagens,
+            "descrição": descrição,
             "marca": marca,
             "modelo": modelo,
             "certificado": certificado,
