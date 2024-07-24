@@ -161,7 +161,7 @@ class BaseScraper:
                 for k in caracteristicas
                 if any(s in k.lower() for s in ("certifica", "homologa", "anatel"))
             ),
-            None,
+            "",
         )
         if match := re.search(CERTIFICADO, certificado):
             # Remove all non-digit characters
