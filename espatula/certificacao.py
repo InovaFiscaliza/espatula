@@ -52,12 +52,12 @@ MARCA_ANATEL_COLUMNS = {
 }
 
 MATCH_COLUMNS = {
-    "Nome_Comercial": "Nome_SCH",
-    "fabricante_y": "fabricante_SCH",
-    "Modelo_y": "Modelo_SCH",
-    "Nome_do_Solicitante": "Solicitante",
+    "Nome_Comercial": "nome_sch",
     "fabricante_x": "fabricante",
-    "Modelo_x": "Modelo",
+    "fabricante_y": "fabricante_sch",
+    "Modelo_x": "modelo",
+    "Modelo_y": "modelo_SCH",
+    # "Nome_do_Solicitante": "Solicitante",
 }
 
 
@@ -167,15 +167,18 @@ def merge_to_sch(
     ).astype("string")
 
     hm.drop_duplicates(inplace=True)
+    hm = hm.rename(columns=MATCH_COLUMNS)
+    columns = df.columns.tolist() + list(MATCH_COLUMNS.values())
+    return hm.loc[:, columns]
 
     negative = hm[hm._merge == "left_only"].copy()
     negative.drop(["_merge"], axis=1, inplace=True)
     negative = negative.rename(columns=MATCH_COLUMNS)
     negative_columns = [c for c in negative.columns if "_SCH" not in c]
     negative = negative.loc[:, negative_columns]
-    positive = hm[hm._merge == "both"].copy()
-    positive.drop(
+    hm = hm[hm._merge == "both"].copy()
+    hm.drop(
         ["Data_da_Homologação", "Data_de_Homologação", "_merge"], axis=1, inplace=True
     )
-    positive = positive.rename(columns=MATCH_COLUMNS)
-    return positive, negative
+    hm = hm.rename(columns=MATCH_COLUMNS)
+    return hm, negative
