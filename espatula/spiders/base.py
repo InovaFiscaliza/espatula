@@ -17,7 +17,7 @@ from seleniumbase.common.exceptions import (
     NoSuchElementException,
 )
 
-from espatula.constants import (
+from espatula.constantes import (
     CERTIFICADO,
     FOLDER,
     RECONNECT,
