@@ -6,30 +6,26 @@ from fastcore.xtras import Path
 import pandas as pd
 from dotenv import find_dotenv, load_dotenv
 
+from espatula.constantes import FOLDER
+
 load_dotenv(find_dotenv(), override=True)
-
-FOLDER = Path(__file__).parent / "data"
-
-FOLDER.mkdir(exist_ok=True, parents=True)
-
-UPDATE_SCH = False
 
 CERTIFICADO_COLUMNS = {
     "Data da Homologação": "Data_da_Homologação",
-    "Número de Homologação": "Número_de_Homologação",
+    "Número de Homologação": "certificado",
     "Nome do Solicitante": "Nome_do_Solicitante",
     "Data de Validade do Certificado": "Data_de_Validade_do_Certificado",
     "Situação do Certificado": "Situação_do_Certificado",
-    "Nome do Fabricante": "Fabricante",
+    "Nome do Fabricante": "fabricante",
     "Modelo": "Modelo",
     "Nome Comercial": "Nome_Comercial",
     "Tipo do Produto": "Tipo_do_Produto",
 }
 
 CONFORMIDADE_COLUMNS = {
-    "NumeroHomologacao": "Número_de_Homologação",
+    "NumeroHomologacao": "certificado",
     "DataEmissaoHomologacao": "Data_de_Homologação",
-    "Fabricante": "Fabricante",
+    "Fabricante": "fabricante",
     "Produto": "Tipo_do_Produto",
     "Modelo": "Modelo",
     "NomeComercial": "Nome_Comercial",
@@ -37,12 +33,12 @@ CONFORMIDADE_COLUMNS = {
 }
 
 G5_COLUMNS = {
-    "NumeroHomologacao": "Número_de_Homologação",
+    "NumeroHomologacao": "certificado",
     "DataEmissaoHomologacao": "Data_de_Homologação",
     "TipodeProduto": "Tipo_do_Produto",
     "Modelo": "Modelo",
     "NomeComercial": "Nome_Comercial",
-    "Fabricante": "Fabricante",
+    "Fabricante": "fabricante",
 }
 
 MARCA_ANATEL_COLUMNS = {
@@ -50,17 +46,17 @@ MARCA_ANATEL_COLUMNS = {
     "Modelo do produto": "Modelo",
     "Nome Comercial": "Nome_Comercial",
     "Empresa Requerente": "Nome_do_Solicitante",
-    "Fabricante": "Fabricante",
+    "Fabricante": "fabricante",
     "Status da Homologação": "Situação_do_Certificado",
     "Data": "Data_de_Homologação",
 }
 
 MATCH_COLUMNS = {
     "Nome_Comercial": "Nome_SCH",
-    "Fabricante_y": "Fabricante_SCH",
+    "fabricante_y": "fabricante_SCH",
     "Modelo_y": "Modelo_SCH",
     "Nome_do_Solicitante": "Solicitante",
-    "Fabricante_x": "Fabricante",
+    "fabricante_x": "fabricante",
     "Modelo_x": "Modelo",
 }
 
@@ -131,9 +127,7 @@ def read_sch(update: bool = False) -> pd.DataFrame:
     )
     celulares.rename(columns=G5_COLUMNS, inplace=True)
 
-    celulares = celulares[
-        ~celulares.Número_de_Homologação.isin(certificados.Número_de_Homologação)
-    ]
+    celulares = celulares[~celulares.certificado.isin(certificados.certificado)]
 
     return pd.concat([certificados, conformidade, celulares], ignore_index=True)
 
@@ -143,7 +137,7 @@ def merge_to_sch(
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Merges the given DataFrame df with the SCH homologation database table.
 
-    Matches df and SCH on 'Número_de_Homologação', handling mismatches and duplicates.
+    Matches df and SCH on 'certificado', handling mismatches and duplicates.
 
     Returns a tuple of:
     - positive: the merged homologations found in both df and SCH.
@@ -152,26 +146,21 @@ def merge_to_sch(
     """
     df = df.rename(
         columns={
-            "Certificado_de_Homologação": "Número_de_Homologação",
-            "Marca": "Fabricante",
+            "marca": "fabricante",
         },
     )
 
     sch_table = read_sch(update)
-    df["Número_de_Homologação"] = df["Número_de_Homologação"].astype(
-        "string", copy=False
-    )
+    df["certificado"] = df["certificado"].astype("string", copy=False)
 
-    df.loc[:, "Número_de_Homologação"] = df.Número_de_Homologação.str.replace(".0", "")
-    df.loc[:, "Número_de_Homologação"] = df.Número_de_Homologação.str.extract(
-        r"(\d{1,12})"
-    )[0].values
-    df.loc[:, "Número_de_Homologação"] = df.Número_de_Homologação.str.zfill(12)
+    df.loc[:, "certificado"] = df.certificado.str.replace(".0", "")
+    df.loc[:, "certificado"] = df.certificado.str.extract(r"(\d{1,12})")[0].values
+    df.loc[:, "certificado"] = df.certificado.str.zfill(12)
 
     hm = pd.merge(
         df,
         sch_table,
-        on="Número_de_Homologação",
+        on="certificado",
         copy=False,
         how="left",
         indicator=True,
