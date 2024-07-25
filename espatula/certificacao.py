@@ -1,10 +1,11 @@
-from typing import Tuple
-import urllib.request
-from urllib.parse import unquote
 import os
-from fastcore.xtras import Path
+import urllib.request
+from typing import Tuple
+from urllib.parse import unquote
+
 import pandas as pd
 from dotenv import find_dotenv, load_dotenv
+from fastcore.xtras import Path
 
 from espatula.constantes import FOLDER
 
@@ -57,11 +58,7 @@ MATCH_COLUMNS = {
     "fabricante_y": "fabricante_sch",
     "Modelo_x": "modelo",
     "Modelo_y": "modelo_SCH",
-    # "Nome_do_Solicitante": "Solicitante",
 }
-
-
-# XLSX = Path(os.environ.get("ONEDRIVEDEST"))
 
 
 def update_sch():
@@ -98,8 +95,7 @@ def read_sch(update: bool = False) -> pd.DataFrame:
         update_sch()
     certificados = pd.read_csv(
         certificados_path,
-        dtype="string[pyarrow]",
-        dtype_backend="pyarrow",
+        dtype="string",
         sep=";",
         usecols=CERTIFICADO_COLUMNS.keys(),
     )
@@ -109,8 +105,7 @@ def read_sch(update: bool = False) -> pd.DataFrame:
         update_sch()
     conformidade = pd.read_csv(
         conformidade_path,
-        dtype="string[pyarrow]",
-        dtype_backend="pyarrow",
+        dtype="string",
         sep=";",
         usecols=CONFORMIDADE_COLUMNS.keys(),
     )
@@ -120,8 +115,7 @@ def read_sch(update: bool = False) -> pd.DataFrame:
         update_sch()
     celulares = pd.read_csv(
         celulares_path,
-        dtype="string[pyarrow]",
-        dtype_backend="pyarrow",
+        dtype="string",
         sep=";",
         usecols=G5_COLUMNS.keys(),
     )
@@ -170,15 +164,3 @@ def merge_to_sch(
     hm = hm.rename(columns=MATCH_COLUMNS)
     columns = df.columns.tolist() + list(MATCH_COLUMNS.values())
     return hm.loc[:, columns]
-
-    negative = hm[hm._merge == "left_only"].copy()
-    negative.drop(["_merge"], axis=1, inplace=True)
-    negative = negative.rename(columns=MATCH_COLUMNS)
-    negative_columns = [c for c in negative.columns if "_SCH" not in c]
-    negative = negative.loc[:, negative_columns]
-    hm = hm[hm._merge == "both"].copy()
-    hm.drop(
-        ["Data_da_Homologação", "Data_de_Homologação", "_merge"], axis=1, inplace=True
-    )
-    hm = hm.rename(columns=MATCH_COLUMNS)
-    return hm, negative
