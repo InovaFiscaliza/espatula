@@ -65,9 +65,10 @@ class BaseScraper:
         links_file = self.links_file(keyword)
         if not links_file.is_file():
             print(f"Não foram encontrados links de busca para {self.name} - {keyword}")
-            print("A coleta de links será efetuada primeiro com as opções padrão")
-            self.search(keyword, overwrite=True)
-            return self.get_links(keyword)
+            print(
+                "Execute primeiramente a busca de links pelo método 'search(keyword)'"
+            )
+            raise FileNotFoundError(f"Arquivo {links_file} não encontrado")
         return loads(links_file.read_text())
 
     @staticmethod
