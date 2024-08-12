@@ -284,7 +284,7 @@ class BaseScraper:
                     ensure_ascii=False,
                 )
 
-    def input_search_params(self, driver, keyword):
+    def input_search_params(self, driver: SB, keyword: str):
         self.highlight_element(driver, self.input_field)
         driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
 
@@ -300,14 +300,16 @@ class BaseScraper:
                     driver.sleep(TIMEOUT)
                     products = self.discover_product_urls(driver, keyword)
                     print(f"Navegando página {page} da busca '{keyword}'...")
-                    driver.post_message(f"🕷️ Links da página {page} coletados! 🕸️")
-                    for k, v in products.items():
-                        v["página_de_busca"] = page
-                        results[k] = v
+                    if not self.headless:
+                        driver.post_message(f"🕷️ Links da página {page} coletados! 🕸️")
+                    for url, link_data in products.items():
+                        link_data["página_de_busca"] = page
+                        results[url] = link_data
                     if page >= max_pages:
-                        driver.post_message(
-                            f"Número máximo de páginas atingido - {max_pages}!"
-                        )
+                        if not self.headless:
+                            driver.post_message(
+                                f"Número máximo de páginas atingido - {max_pages}!"
+                            )
                         driver.sleep(TIMEOUT)
                         break
                     if not driver.is_element_present(self.next_page_button):
