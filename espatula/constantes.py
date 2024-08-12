@@ -27,6 +27,23 @@ CERTIFICADO = re.compile(
     re.VERBOSE,
 )
 
+KEYWORDS = [
+    "smartphone",
+    "carregador para smartphone",
+    "power bank",
+    "tv box",
+    "bluetooth",
+    "wifi",
+    "drone",
+    "bateria celular",
+    "reforçador sinal",
+    "transmissor",
+    "transceptor",
+    "bloqueador sinal",
+    "jammer",
+    "flipper zero",
+]
+
 # Processamento dos dados de saída
 PREFIX = os.environ.get("PREFIX")
 

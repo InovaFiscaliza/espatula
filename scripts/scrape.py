@@ -6,6 +6,7 @@ import pandas as pd
 
 
 sys.path.append(str(Path(__file__).parent.parent))
+from espatula.constantes import KEYWORDS
 from espatula.spiders import (
     AmazonScraper,
     MercadoLivreScraper,
@@ -15,7 +16,7 @@ from espatula.spiders import (
     CarrefourScraper,
 )
 
-from espatula.spiders.base import KEYWORDS, FOLDER, TODAY
+from espatula.spiders.base import FOLDER, TODAY
 
 PREFIX = "https://anatel365.sharepoint.com/sites/Desenvolvimentodeappfiscalizaoe-commerce/Documentos%20Compartilhados/General/Resultados/screenshots/"
 

@@ -27,23 +27,6 @@ from espatula.constantes import (
 
 load_dotenv(find_dotenv(), override=True)
 
-KEYWORDS = [
-    "smartphone",
-    "carregador para smartphone",
-    "power bank",
-    "tv box",
-    "bluetooth",
-    "wifi",
-    "drone",
-    "bateria celular",
-    "reforçador sinal",
-    "transmissor",
-    "transceptor",
-    "bloqueador sinal",
-    "jammer",
-    "flipper zero",
-]
-
 
 @dataclass
 class BaseScraper:
