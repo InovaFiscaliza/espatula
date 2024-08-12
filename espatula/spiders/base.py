@@ -182,7 +182,7 @@ class BaseScraper:
         writer.write(bytes_stream)
         return bytes_stream.getvalue()
 
-    def take_screenshot(self, driver, filename):
+    def _save_screenshot(self, driver: SB, filename: str):
         folder = FOLDER / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
@@ -190,18 +190,18 @@ class BaseScraper:
         with open(folder / filename, "wb") as f:
             f.write(screenshot)
 
-    def save_screenshot(self, sb, result_page, i):
+    def save_screenshot(self, sb: SB, result_page: dict, i: int):
         filename = self.generate_filename(result_page, i)
-        self.take_screenshot(sb.driver, filename)
+        self._save_screenshot(sb.driver, filename)
         result_page["screenshot"] = filename
 
-    def generate_filename(self, result_page, i):
+    def generate_filename(self, result_page: dict, i: int):
         base_filename = f"{self.name}_{TODAY}"
         if product_id := result_page.get("product_id"):
             return f"{base_filename}_{product_id}.pdf"
         return f"{base_filename}_{i}.pdf"
 
-    def save_sampled_pages(self, keyword, sampled_pages):
+    def save_sampled_pages(self, keyword: str, sampled_pages: dict):
         output_file = self.links_file(keyword).with_name(
             f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
         )
@@ -216,12 +216,13 @@ class BaseScraper:
             ensure_ascii=False,
         )
 
-    def process_url(self, driver, url):
+    def process_url(self, driver: SB, url: str) -> dict | False:
         driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
                 print(f"Falha ao navegar {url}")
-                driver.post_message("Anúncio sem categoria - 🚮")
+                if not self.headless:
+                    driver.post_message("Anúncio sem categoria - 🚮")
                 return False
 
         return result_page
@@ -231,7 +232,7 @@ class BaseScraper:
         keyword: str,
         screenshot: bool = False,
         sample: int = 65,
-        shuffle: bool = True,
+        shuffle: bool = False,
     ) -> Path:
         links = self.get_links(keyword)
         keys = L((i, k) for i, k in enumerate(links.keys()))
