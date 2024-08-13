@@ -169,4 +169,4 @@ def merge_to_sch(
 
     if tipo_sch is not None:
         hm = hm.loc[hm.tipo_sch == tipo_sch].drop_duplicates().reset_index(drop=True)
-    return hm
+    return hm.drop("_merge", axis=1)
