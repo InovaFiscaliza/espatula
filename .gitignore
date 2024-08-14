@@ -164,3 +164,4 @@ cython_debug/
 data/
 downloaded_files/
 latest_logs/
+modelos/
