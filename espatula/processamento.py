@@ -6,15 +6,17 @@ from typing import List, Union
 import nltk
 import pandas as pd
 from fastcore.xtras import Path, listify
+from fuzzywuzzy import fuzz
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from rich import print
 
 from .certificacao import merge_to_sch
 from .constantes import FOLDER, SUBCATEGORIES
+from .modelos import SGD
 
 nltk.download("stopwords")
-nltk.download("punkt")
+nltk.download("punkt_tab")
 
 
 COLUNAS = [
@@ -23,11 +25,14 @@ COLUNAS = [
     "modelo",
     "certificado",
     "ean_gtin",
+    "passível",
+    "probabilidade",
     "nome_sch",
     "fabricante_sch",
     "modelo_sch",
+    "nome_score",
+    "modelo_score",
     "tipo_sch",
-    "preço",
     "subcategoria",
     "index",
     "página_de_busca",
@@ -37,47 +42,15 @@ COLUNAS = [
     "url",
 ]
 
+COLUMN_PAIRS = [
+    ("nome", "nome_sch"),
+    ("modelo", "modelo_sch"),
+]
 
-def preprocess_text(
-    text: str,
-    tokenize: bool = True,
-    remove_punctuation: bool = True,
-    remove_stopwords: bool = False,
-    join_tokens: bool = False,
-) -> Union[str, List]:
-    """Preprocess text by tokenizing, removing punctuation and stopwords.
-
-    Args:
-        text (str): The text to preprocess.
-        tokenize (bool): Whether to tokenize the text. Default True.
-        remove_punctuation (bool): Whether to remove punctuation. Default True.
-        remove_stopwords (bool): Whether to remove stopwords. Default True.
-        join_tokens (bool): Whether to join the tokens into a string.
-            Default True, otherwise returns a list of tokens.
-
-    Returns:
-        Union[str, List]: The preprocessed text, either as a string or list of tokens.
-    """
-    # Convert to lowercase
-    text_out = text.lower()
-
-    if tokenize:
-        # Tokenize the text
-        tokens = word_tokenize(text_out, language="portuguese")
-
-        if remove_punctuation:
-            # Remove punctuation from each token
-            table = str.maketrans("", "", string.punctuation)
-            tokens = [token.translate(table) for token in tokens]
-
-        if remove_stopwords:
-            # Filter out stop words
-            stop_words = set(stopwords.words("portuguese"))
-            tokens = [w for w in tokens if w not in stop_words]
-
-        text_out = " ".join(tokens) if join_tokens else tokens
-
-    return listify(text_out)
+COLUMN_SCORE_NAMES = [
+    "nome_score",
+    "modelo_score",
+]
 
 
 class Table:
@@ -88,6 +61,87 @@ class Table:
     @cached_property
     def df(self):
         return pd.DataFrame(self.source.read_json().values(), dtype="string")
+
+    @staticmethod
+    def preprocess_text(
+        text: str,
+        tokenize: bool = True,
+        remove_punctuation: bool = True,
+        remove_stopwords: bool = False,
+        join_tokens: bool = False,
+    ) -> Union[str, List]:
+        """Preprocess text by tokenizing, removing punctuation and stopwords.
+
+        Args:
+            text (str): The text to preprocess.
+            tokenize (bool): Whether to tokenize the text. Default True.
+            remove_punctuation (bool): Whether to remove punctuation. Default True.
+            remove_stopwords (bool): Whether to remove stopwords. Default True.
+            join_tokens (bool): Whether to join the tokens into a string.
+                Default True, otherwise returns a list of tokens.
+
+        Returns:
+            Union[str, List]: The preprocessed text, either as a string or list of tokens.
+        """
+        # Convert to lowercase
+        text_out = text.lower()
+
+        if tokenize:
+            # Tokenize the text
+            tokens = word_tokenize(text_out, language="portuguese")
+
+            if remove_punctuation:
+                # Remove punctuation from each token
+                table = str.maketrans("", "", string.punctuation)
+                tokens = [token.translate(table) for token in tokens]
+
+            if remove_stopwords:
+                # Filter out stop words
+                stop_words = set(stopwords.words("portuguese"))
+                tokens = [w for w in tokens if w not in stop_words]
+
+            text_out = " ".join(tokens) if join_tokens else tokens
+
+        return listify(text_out)
+
+    @staticmethod
+    def score_distance(str1: str, str2: str, join_tokens: bool = True) -> int:
+        """
+        Fuzzy matches two strings by generating a score mapping between all token combinations,
+        and returns the score mapping and maximum score.
+
+        Parameters:
+        str1 (str): The first string to match.
+        str2 (str): The second string to match.
+        join_tokens (bool): Whether to join tokens into ngrams before matching.
+
+        Returns:
+        max_score (int): The maximum score found betweel the strings.
+        """
+        first_set = Table.preprocess_text(str1, join_tokens=join_tokens)
+        second_set = Table.preprocess_text(str2, join_tokens=join_tokens)
+
+        return max(
+            [
+                fuzz.partial_ratio(s1, s2)
+                for s1 in first_set
+                for s2 in second_set
+                if s1 != "" and s2 != ""
+            ],
+            default=0,
+        )
+
+    @staticmethod
+    def calculate_text_distance(row: pd.Series) -> List[Union[dict, int]]:
+        """Score each row of the dataframe by comparing column pairs.
+
+        For each column pair, get the fuzzy match score between the values.
+        Return a list containing the match mapping dict and max score for each pair.
+        """
+        return [
+            Table.score_distance(row.loc[left], row.loc[right])
+            for left, right in COLUMN_PAIRS
+        ]
 
     def delete_files(self, filter: pd.Series) -> None:
         for row in self.df.loc[filter].itertuples():
@@ -127,10 +181,10 @@ class Table:
         )
 
     def write_excel(self):
-        self.df["data"] = pd.to_datetime(self.df["data"], format="mixed").dt.strftime(
+        df = self.df.loc[:, COLUNAS]
+        df["data"] = pd.to_datetime(self.df["data"], format="mixed").dt.strftime(
             "%d/%m/%Y"
         )
-        df = self.df.loc[:, COLUNAS]
 
         writer = pd.ExcelWriter(
             self.source.with_suffix(".xlsx"),
@@ -148,11 +202,9 @@ class Table:
         worksheet.freeze_panes(1, 0)
         if prefix := os.environ.get("PREFIX"):
             for i, link in enumerate(df["screenshot"], start=2):
-                worksheet.write_url(f"P{i}", prefix + link)
-        for i, row in enumerate(
-            df.itertuples(), start=2
-        ):  # Note I'm iterating over self.df not df
-            worksheet.write_url(f"Q{i}", row.url)
+                worksheet.write_url(f"T{i}", prefix + link, string=f"#{i}")
+        for i, row in enumerate(df.itertuples(), start=2):
+            worksheet.write_url(f"U{i}", row.url)
         # Make the columns wider for clarity.
         worksheet.autofit()
         # # Create a format for the font size
@@ -164,9 +216,30 @@ class Table:
         # Set font size 9 for column A and B
         writer.close()
 
+    def compare_columns(self):
+        self.df[COLUMN_SCORE_NAMES] = self.df.fillna("").apply(
+            self.calculate_text_distance, axis=1, result_type="expand"
+        )
+        self.df.sort_values(
+            COLUMN_SCORE_NAMES, ascending=False, inplace=True, ignore_index=True
+        )
+        self.df.drop_duplicates(
+            subset="url", keep="first", inplace=True, ignore_index=True
+        )
+
+    def classify(self):
+        model = SGD()
+        prediction = model.predict(self.df["nome"].to_list())
+        cat = prediction[:, 0].astype("bool")
+        prob = prediction[:, 1]
+        self.df["passível"] = cat
+        self.df["probabilidade"] = prob
+
     def process(self, update_sch: bool = False, tipo_sch: str = None):
         self.drop_incomplete_rows()
         self.split_categories()
         self.filter_subcategories()
         self.clean()
         self.df = merge_to_sch(self.df, update=update_sch, tipo_sch=tipo_sch)
+        self.compare_columns()
+        self.classify()
