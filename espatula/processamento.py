@@ -1,31 +1,83 @@
 import os
+import string
 from functools import cached_property
+from typing import List, Union
 
+import nltk
 import pandas as pd
-from fastcore.xtras import Path
+from fastcore.xtras import Path, listify
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 from rich import print
 
 from .certificacao import merge_to_sch
 from .constantes import FOLDER, SUBCATEGORIES
 
+nltk.download("stopwords")
+nltk.download("punkt")
+
+
 COLUNAS = [
-    "screenshot",
     "nome",
-    "preço",
     "fabricante",
     "modelo",
     "certificado",
     "ean_gtin",
-    "subcategoria",
     "nome_sch",
     "fabricante_sch",
     "modelo_sch",
     "tipo_sch",
+    "preço",
+    "subcategoria",
     "index",
     "página_de_busca",
     "palavra_busca",
     "data",
+    "screenshot",
+    "url",
 ]
+
+
+def preprocess_text(
+    text: str,
+    tokenize: bool = True,
+    remove_punctuation: bool = True,
+    remove_stopwords: bool = False,
+    join_tokens: bool = False,
+) -> Union[str, List]:
+    """Preprocess text by tokenizing, removing punctuation and stopwords.
+
+    Args:
+        text (str): The text to preprocess.
+        tokenize (bool): Whether to tokenize the text. Default True.
+        remove_punctuation (bool): Whether to remove punctuation. Default True.
+        remove_stopwords (bool): Whether to remove stopwords. Default True.
+        join_tokens (bool): Whether to join the tokens into a string.
+            Default True, otherwise returns a list of tokens.
+
+    Returns:
+        Union[str, List]: The preprocessed text, either as a string or list of tokens.
+    """
+    # Convert to lowercase
+    text_out = text.lower()
+
+    if tokenize:
+        # Tokenize the text
+        tokens = word_tokenize(text_out, language="portuguese")
+
+        if remove_punctuation:
+            # Remove punctuation from each token
+            table = str.maketrans("", "", string.punctuation)
+            tokens = [token.translate(table) for token in tokens]
+
+        if remove_stopwords:
+            # Filter out stop words
+            stop_words = set(stopwords.words("portuguese"))
+            tokens = [w for w in tokens if w not in stop_words]
+
+        text_out = " ".join(tokens) if join_tokens else tokens
+
+    return listify(text_out)
 
 
 class Table:
@@ -49,7 +101,6 @@ class Table:
             self.df = self.df.dropna(subset=column).reset_index(drop=True)
         for row in self.df.itertuples():
             if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-                print(f"Missing file, deleting row {row.screenshot}")
                 self.df = self.df.drop(index=row.Index)
 
     def split_categories(self):
@@ -66,12 +117,14 @@ class Table:
         if self.name not in SUBCATEGORIES:
             print(f"{self.name} has no subcategories defined, table unchanged!")
             return
-        filter = self.df["subcategoria"].isin(SUBCATEGORIES[self.name])
-        self.delete_files(~filter)
-        self.df = self.df.loc[filter].reset_index(drop=True)
+        irrelevant = self.df["subcategoria"].isin(SUBCATEGORIES[self.name])
+        self.delete_files(~irrelevant)
+        self.df = self.df.loc[irrelevant].reset_index(drop=True)
 
     def clean(self):
-        self.df["preço"] = self.df["preço"].str.strip().str.extract("(\d+\.?\d+)")
+        self.df["preço"] = (
+            self.df["preço"].str.strip().str.extract(r"(\d+\.{0,1}\d{0,2})")
+        )
 
     def write_excel(self):
         self.df["data"] = pd.to_datetime(self.df["data"], format="mixed").dt.strftime(
@@ -82,7 +135,11 @@ class Table:
         writer = pd.ExcelWriter(
             self.source.with_suffix(".xlsx"),
             engine="xlsxwriter",
-            engine_kwargs={"options": {"strings_to_urls": True}},
+            engine_kwargs={
+                "options": {
+                    "strings_to_urls": True,
+                }
+            },
         )
         df.to_excel(writer, sheet_name=self.name, engine="xlsxwriter", index=False)
         worksheet = writer.sheets[self.name]
@@ -91,13 +148,20 @@ class Table:
         worksheet.freeze_panes(1, 0)
         if prefix := os.environ.get("PREFIX"):
             for i, link in enumerate(df["screenshot"], start=2):
-                worksheet.write_url(f"A{i}", prefix + link, string=f"#{i}")
+                worksheet.write_url(f"P{i}", prefix + link)
         for i, row in enumerate(
-            self.df.itertuples(), start=2
+            df.itertuples(), start=2
         ):  # Note I'm iterating over self.df not df
-            worksheet.write_url(f"B{i}", row.url, string=row.nome)
+            worksheet.write_url(f"Q{i}", row.url)
         # Make the columns wider for clarity.
         worksheet.autofit()
+        # # Create a format for the font size
+        # cell_format = writer.book.add_format({"font_size": 9})
+
+        # # Apply the format to columns A and B
+        # worksheet.set_column("P:P", None, cell_format)
+        # worksheet.set_column("Q:Q", None, cell_format)
+        # Set font size 9 for column A and B
         writer.close()
 
     def process(self, update_sch: bool = False, tipo_sch: str = None):
