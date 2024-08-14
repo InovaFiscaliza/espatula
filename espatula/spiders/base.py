@@ -59,7 +59,9 @@ class BaseScraper:
         return folder
 
     def links_file(self, keyword: str) -> Path:
-        return self.folder / f"{self.name}_{keyword.lower().replace(' ', '_')}.json"
+        return (
+            self.folder / f"{self.name}_{keyword.lower().replace(' ', '_')}_links.json"
+        )
 
     def get_links(self, keyword: str) -> dict:
         links_file = self.links_file(keyword)
@@ -216,14 +218,14 @@ class BaseScraper:
             ensure_ascii=False,
         )
 
-    def process_url(self, driver: SB, url: str) -> dict | False:
+    def process_url(self, driver: SB, url: str) -> dict:
         driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
                 print(f"Falha ao navegar {url}")
                 if not self.headless:
                     driver.post_message("Anúncio sem categoria - 🚮")
-                return False
+                return {}
 
         return result_page
 
