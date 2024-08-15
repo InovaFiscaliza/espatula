@@ -284,6 +284,14 @@ class BaseScraper:
                 self.input_search_params(driver, keyword)
                 driver.set_messenger_theme(location="top_center")
                 while True:
+                    if page >= max_pages:
+                        if not self.headless:
+                            driver.post_message(
+                                f"Número máximo de páginas atingido - {max_pages}!"
+                            )
+                        driver.sleep(TIMEOUT)
+                        break
+
                     driver.sleep(TIMEOUT)
                     products = self.discover_product_urls(driver, keyword)
                     print(f"Navegando página {page} da busca '{keyword}'...")
@@ -292,13 +300,6 @@ class BaseScraper:
                     for url, link_data in products.items():
                         link_data["página_de_busca"] = page
                         results[url] = link_data
-                    if page >= max_pages:
-                        if not self.headless:
-                            driver.post_message(
-                                f"Número máximo de páginas atingido - {max_pages}!"
-                            )
-                        driver.sleep(TIMEOUT)
-                        break
                     if not driver.is_element_present(self.next_page_button):
                         break
                     self.highlight_element(driver, self.next_page_button)
