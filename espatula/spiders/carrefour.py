@@ -3,6 +3,7 @@ from datetime import datetime
 
 from gazpacho import Soup
 from .base import RECONNECT, TIMEOUT, BaseScraper
+from ..constantes import TIMEZONE
 
 CATEGORIES = {
     "smartphone": "https://www.carrefour.com.br/celulares-smartphones-e-smartwatches/smartphones#crfint=hm-tlink|celulares-e-smartphones|smartphones|1"
@@ -147,6 +148,7 @@ class CarrefourScraper(BaseScraper):
             "vendedor": vendedor,
             "desconto": desconto,
             "product_id": cod_produto,
+            "url": driver.get_current_url(),
             "certificado": certificado,
             "ean_gtin": ean,
             "descrição": descrição,

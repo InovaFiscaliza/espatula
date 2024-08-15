@@ -257,9 +257,7 @@ class BaseScraper:
 
                     result_page["palavra_busca"] = keyword
                     result_page["index"] = i
-                    result_page["url"] = url
-                    result_page.update(links[url])
-                    sampled_pages[url] = result_page
+                    sampled_pages[result_page["url"]] = result_page
 
                     if sample and len(sampled_pages) >= sample:
                         break

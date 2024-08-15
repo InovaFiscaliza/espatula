@@ -234,6 +234,7 @@ class AmazonScraper(BaseScraper):
             "modelo": modelo,
             "vendas": vendas,
             "product_id": asin,
+            "url": driver.get_current_url(),
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 

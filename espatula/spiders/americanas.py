@@ -150,6 +150,7 @@ class AmericanasScraper(BaseScraper):
             "ean_gtin": ean,
             "características": características,
             "product_id": product_id,
+            "url": driver.get_current_url(),
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
