@@ -8,6 +8,8 @@ dependencies:
   - nltk
   - pandas
   - fastcore
+  - gazpacho
+  - pyautogui
   - pypdf
   - python-dotenv
   - rich
