@@ -11,6 +11,11 @@ from espatula.constantes import FOLDER
 
 load_dotenv(find_dotenv(), override=True)
 
+CERTIFICADOS = "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/certificacao_de_produtos/produtos_certificados.zip"
+CONFORMIDADE = "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/certificacao_de_produtos/Produtos_Homologados_por_Declara%C3%A7%C3%A3o_de_Conformidade.zip"
+G5 = "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/certificacao_de_produtos/celulares_5g_homologados.zip"
+
+
 CERTIFICADO_COLUMNS = {
     "Data da Homologação": "Data_de_Homologação",
     "Número de Homologação": "certificado",
@@ -66,9 +71,9 @@ COLS_SCH = ["nome_sch", "fabricante_sch", "modelo_sch", "tipo_sch"]
 
 def update_sch():
     for source in [
-        os.environ["CERTIFICADOS"],
-        # os.environ["CONFORMIDADE"],
-        os.environ["G5"],
+        CERTIFICADOS,
+        # CONFORMIDADE,
+        G5,
     ]:
         urllib.request.urlretrieve(
             source, Path(f"{FOLDER}/{unquote(source.split('/')[-1])}")
