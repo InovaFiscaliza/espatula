@@ -127,6 +127,7 @@ def inspect_page():
 
 
 def main():
+    global ITERATION
     st.session_state.headless = st.sidebar.checkbox(
         "**Ocultar o navegador**", key=f"headless_{ITERATION}"
     )
@@ -141,6 +142,7 @@ def main():
                 st.session_state.links[st.session_state.plataforma].discard(
                     st.session_state.keyword
                 )
+                ITERATION += 1
                 main()
     else:
         search_page()
