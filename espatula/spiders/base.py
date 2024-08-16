@@ -207,16 +207,12 @@ class BaseScraper:
         output_file = self.links_file(keyword).with_name(
             f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
         )
-        if output_file.is_file():
-            old_links = output_file.read_json()
-            old_links.update(sampled_pages)
-            sampled_pages = old_links
-
         json.dump(
             sampled_pages,
             output_file.open("w"),
             ensure_ascii=False,
         )
+        self.output_file = output_file
 
     def process_url(self, driver: SB, url: str) -> dict:
         driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
@@ -268,6 +264,7 @@ class BaseScraper:
                     self.links_file(keyword).open("w"),
                     ensure_ascii=False,
                 )
+        return sampled_pages
 
     def input_search_params(self, driver: SB, keyword: str):
         self.highlight_element(driver, self.input_field)
@@ -282,14 +279,6 @@ class BaseScraper:
                 self.input_search_params(driver, keyword)
                 driver.set_messenger_theme(location="top_center")
                 while True:
-                    if page >= max_pages:
-                        if not self.headless:
-                            driver.post_message(
-                                f"Número máximo de páginas atingido - {max_pages}!"
-                            )
-                        driver.sleep(TIMEOUT)
-                        break
-
                     driver.sleep(TIMEOUT)
                     products = self.discover_product_urls(driver, keyword)
                     print(f"Navegando página {page} da busca '{keyword}'...")
@@ -300,9 +289,17 @@ class BaseScraper:
                         results[url] = link_data
                     if not driver.is_element_present(self.next_page_button):
                         break
+                    page += 1
+                    if page > max_pages:
+                        if not self.headless:
+                            driver.post_message(
+                                f"Número máximo de páginas atingido - {max_pages}!"
+                            )
+                        driver.sleep(TIMEOUT)
+                        break
                     self.highlight_element(driver, self.next_page_button)
                     driver.uc_click(self.next_page_button, timeout=TIMEOUT)
-                    page += 1
+
             finally:
                 links.update(results)
                 json.dump(
