@@ -5,6 +5,6 @@ Implementação de raspagem de dados de marketplaces utilizando SeleniumBase com
 
 
 <p align="center">
-<img src="espatula.png" alt="espatula">
+<img src="images/espatula.png" alt="espatula">
 </p>
 
