@@ -1,10 +1,24 @@
 from collections import defaultdict
-from enum import Enum, auto
+from enum import Enum
 
 import streamlit as st
 
-from config import SCRAPERS, MARKETPLACE, HIDE_BROWSER, SEARCH_PARAMETERS, KEYWORD, MAX_PAGES, SEARCH_LINKS, EXTRACTION_PARAMETERS, SEARCHED_TEXT, MAX_ADS, RANDOM_SAMPLE, CAPTURE_SCREENSHOT, NAVIGATE_ADS, REDO_SEARCH
-
+from config import (
+    CAPTURE_SCREENSHOT,
+    EXTRACTION_PARAMETERS,
+    HIDE_BROWSER,
+    KEYWORD,
+    MARKETPLACE,
+    MAX_ADS,
+    MAX_PAGES,
+    NAVIGATE_ADS,
+    RANDOM_SAMPLE,
+    REDO_SEARCH,
+    SCRAPERS,
+    SEARCH_LINKS,
+    SEARCH_PARAMETERS,
+    SEARCHED_TEXT,
+)
 
 if "plataforma" not in st.session_state:
     st.session_state.plataforma = "-"
@@ -117,9 +131,7 @@ def inspect_page(headless: bool):
             50,
             key="sample_{ITERATION}",
         )
-        shuffle = st.checkbox(
-            f"**{RANDOM_SAMPLE}**", key="shuffle_{ITERATION}"
-        )
+        shuffle = st.checkbox(f"**{RANDOM_SAMPLE}**", key="shuffle_{ITERATION}")
         screenshot = st.checkbox(
             f"**{CAPTURE_SCREENSHOT}**", key="screenshot_{ITERATION}"
         )
@@ -141,9 +153,7 @@ def inspect_page(headless: bool):
 def main():
     global ITERATION
     ITERATION += 1
-    headless = st.sidebar.checkbox(
-        f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}"
-    )
+    headless = st.sidebar.checkbox(f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}")
     if st.session_state.keyword in st.session_state.links[st.session_state.plataforma]:
         inspect_page(headless)
     else:
@@ -159,7 +169,10 @@ class PageName(Enum):
     CASAS_BAHIA = "Casas Bahia"
     CARREFOUR = "Carrefour"
 
-page_names_to_funcs = {PageName.INTRO: intro} | {PageName(k): main for k in SCRAPERS.keys()}
+
+page_names_to_funcs = {PageName.INTRO: intro} | {
+    PageName(k): main for k in SCRAPERS.keys()
+}
 
 st.session_state.plataforma = st.sidebar.selectbox(
     MARKETPLACE, [page.value for page in PageName]
