@@ -1,9 +1,11 @@
 import logging
+import random
 
 from collections import defaultdict
 from enum import Enum
 
 import streamlit as st
+import requests
 
 from config import (
     CAPTURE_SCREENSHOT,
@@ -169,10 +171,21 @@ def handle_page_logic(headless: bool):
         st.error("An unexpected error occurred. Please try again later.")
 
 
+@st.cache_data
+def get_dog():
+    response = requests.get("https://random.dog/doggos")
+    return [f"https://random.dog/{img}" for img in response.json()]
+
+
 def main():
     global ITERATION
     ITERATION += 1
     headless = st.sidebar.checkbox(f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}")
+    dog = random.choice(get_dog())
+    if dog[-4:] == ".mp4":
+        st.video(dog, autoplay=True, loop=True)
+    else:
+        st.image(dog)
     handle_page_logic(headless)
 
 
