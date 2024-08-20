@@ -147,14 +147,6 @@ def inspect_page(headless: bool):
             on_click=inspect,
             args=(headless, screenshot, sample, shuffle),
         )
-    if st.sidebar.button(
-        f"**{REDO_SEARCH}**",
-        use_container_width=True,
-    ):
-        st.session_state.links[st.session_state.plataforma].discard(
-            st.session_state.keyword
-        )
-        return
 
 
 def handle_page_logic(headless: bool):
@@ -181,12 +173,12 @@ def main():
     global ITERATION
     ITERATION += 1
     headless = st.sidebar.checkbox(f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}")
+    handle_page_logic(headless)
     dog = random.choice(get_dog())
     if dog[-4:] == ".mp4":
         st.video(dog, autoplay=True, loop=True)
     else:
         st.image(dog)
-    handle_page_logic(headless)
 
 
 page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
