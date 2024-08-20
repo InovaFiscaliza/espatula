@@ -2,14 +2,7 @@ from collections import defaultdict
 
 import streamlit as st
 
-from espatula.spiders import (
-    AmazonScraper,
-    MercadoLivreScraper,
-    MagaluScraper,
-    AmericanasScraper,
-    CasasBahiaScraper,
-    CarrefourScraper,
-)
+from config import SCRAPERS
 
 
 if "plataforma" not in st.session_state:
@@ -19,15 +12,6 @@ if "links" not in st.session_state:
 
 if "keyword" not in st.session_state:
     st.session_state.keyword = "smartphone"
-
-SCRAPERS = {
-    "Amazon": AmazonScraper,
-    "Mercado Livre": MercadoLivreScraper,
-    "Magalu": MagaluScraper,
-    "Americanas": AmericanasScraper,
-    "Casas Bahia": CasasBahiaScraper,
-    "Carrefour": CarrefourScraper,
-}
 
 ITERATION = 0
 
@@ -57,7 +41,7 @@ def intro():
         **👈 Para iniciar selecione qual plataforma deseja pesquisar no menu ao lado!**
         """
     )
-    st.image("espatula.png", caption="Espátula", use_column_width=True)
+    st.image("images/espatula.png", caption="Espátula", use_column_width=True)
 
 
 def search():
@@ -98,17 +82,22 @@ def search_page():
                 10,
                 key=f"max_pages_{ITERATION}",
             )
-        st.button("Iniciar Busca🔎", on_click=search, use_container_width=True)
+        st.button(
+            "Buscar links🔎",
+            on_click=search,
+            use_container_width=True,
+            key=f"search_{ITERATION}",
+        )
 
 
-def inspect():
+def inspect(screenshot: bool, sample: int, shuffle: bool):
     scraper = SCRAPERS[st.session_state.plataforma](headless=st.session_state.headless)
     with st.spinner("Amostrando páginas dos anúncios..."):
         dados = scraper.inspect_pages(
             keyword=st.session_state.keyword,
-            screenshot=st.session_state.screenshot,
-            sample=st.session_state.sample,
-            shuffle=st.session_state.shuffle,
+            screenshot=screenshot,
+            sample=sample,
+            shuffle=shuffle,
         )
         st.balloons()
         st.success(f"Os dados foram salvos em {getattr(scraper, "output_file", None)}")
@@ -116,34 +105,48 @@ def inspect():
 
 
 def inspect_page():
-    with st.sidebar:
-        with st.expander("**Parâmetros da Extração de Dados**", expanded=True):
-            st.info(f"Texto Pesquisado: **{st.session_state.keyword}**")
-            # Using 'key="sample"' is causing duplicate error
-            st.slider("Número máximo de anúncios a extrair", 1, 100, 50, key="sample")
-            st.checkbox("**Amostrar páginas aleatoriamente**", key="shuffle")
-            st.checkbox("**Capturar tela do anúncio**", key="screenshot")
-            st.button("**Navegar páginas dos anúncios🚀**", on_click=inspect)
+    global ITERATION
+    ITERATION += 1
+    with st.sidebar.expander("**Parâmetros da Extração de Dados**", expanded=True):
+        st.info(f"Texto Pesquisado: **{st.session_state.keyword}**")
+        # Using 'key="sample"' is causing duplicate error
+        sample = st.slider(
+            "Número máximo de anúncios a extrair",
+            1,
+            100,
+            50,
+            key="sample_{ITERATION}",
+        )
+        shuffle = st.checkbox(
+            "**Amostrar páginas aleatoriamente**", key="shuffle_{ITERATION}"
+        )
+        screenshot = st.checkbox(
+            "**Capturar tela do anúncio**", key="screenshot_{ITERATION}"
+        )
+        st.button(
+            "**Navegar páginas dos anúncios🚀**",
+            on_click=inspect,
+            args=(screenshot, sample, shuffle),
+        )
+    if st.sidebar.button(
+        "**Refazer Pesquisa de Links😵‍💫**",
+        use_container_width=True,
+    ):
+        st.session_state.links[st.session_state.plataforma].discard(
+            st.session_state.keyword
+        )
+        return
 
 
 def main():
     global ITERATION
+    ITERATION += 1
     st.session_state.headless = st.sidebar.checkbox(
         "**Ocultar o navegador**", key=f"headless_{ITERATION}"
     )
     if st.session_state.keyword in st.session_state.links[st.session_state.plataforma]:
-        with st.sidebar:
-            inspect_page()
-            if st.button(
-                "**Refazer Busca😵‍💫**",
-                on_click=search_page,
-                use_container_width=True,
-            ):
-                st.session_state.links[st.session_state.plataforma].discard(
-                    st.session_state.keyword
-                )
-                ITERATION += 1
-                main()
+        inspect_page()
+
     else:
         search_page()
 
