@@ -1,3 +1,5 @@
+import logging
+
 from collections import defaultdict
 from enum import Enum
 
@@ -19,6 +21,9 @@ from config import (
     SEARCH_PARAMETERS,
     SEARCHED_TEXT,
 )
+
+
+logging.basicConfig(level=logging.ERROR)
 
 if "plataforma" not in st.session_state:
     st.session_state.plataforma = "-"
@@ -151,25 +156,35 @@ def inspect_page(headless: bool):
 
 
 def handle_page_logic(headless: bool):
-    if st.session_state.keyword in st.session_state.links[st.session_state.plataforma]:
-        inspect_page(headless)
-    else:
-        search_page(headless)
+    try:
+        if (
+            st.session_state.keyword
+            in st.session_state.links[st.session_state.plataforma]
+        ):
+            inspect_page(headless)
+        else:
+            search_page(headless)
+    except Exception as e:
+        logging.error(f"An error occurred: {str(e)}")
+        st.error("An unexpected error occurred. Please try again later.")
 
 
 def main():
     global ITERATION
     ITERATION += 1
-    headless = st.sidebar.checkbox(
-        "**Ocultar o navegador**", key=f"headless_{ITERATION}"
-    )
+    headless = st.sidebar.checkbox(f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}")
     handle_page_logic(headless)
 
 
 page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
 
-st.session_state.plataforma = st.sidebar.selectbox(
-    "Marketplace", page_names_to_funcs.keys()
-)
-
-page_names_to_funcs[st.session_state.plataforma]()
+try:
+    st.session_state.plataforma = st.sidebar.selectbox(
+        MARKETPLACE, page_names_to_funcs.keys()
+    )
+    page_names_to_funcs[st.session_state.plataforma]()
+except Exception as e:
+    logging.error(
+        f"An error occurred while selecting or executing page function: {str(e)}"
+    )
+    st.error("An error occurred while loading the page. Please try again later.")
