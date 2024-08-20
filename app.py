@@ -150,32 +150,26 @@ def inspect_page(headless: bool):
         return
 
 
-def main():
-    global ITERATION
-    ITERATION += 1
-    headless = st.sidebar.checkbox(f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}")
+def handle_page_logic(headless: bool):
     if st.session_state.keyword in st.session_state.links[st.session_state.plataforma]:
         inspect_page(headless)
     else:
         search_page(headless)
 
 
-class PageName(Enum):
-    INTRO = "—"
-    AMAZON = "Amazon"
-    MERCADO_LIVRE = "Mercado Livre"
-    MAGALU = "Magalu"
-    AMERICANAS = "Americanas"
-    CASAS_BAHIA = "Casas Bahia"
-    CARREFOUR = "Carrefour"
+def main():
+    global ITERATION
+    ITERATION += 1
+    headless = st.sidebar.checkbox(
+        "**Ocultar o navegador**", key=f"headless_{ITERATION}"
+    )
+    handle_page_logic(headless)
 
 
-page_names_to_funcs = {PageName.INTRO: intro} | {
-    PageName(k): main for k in SCRAPERS.keys()
-}
+page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
 
 st.session_state.plataforma = st.sidebar.selectbox(
-    MARKETPLACE, [page.value for page in PageName]
+    "Marketplace", page_names_to_funcs.keys()
 )
 
-page_names_to_funcs[PageName(st.session_state.plataforma)]()
+page_names_to_funcs[st.session_state.plataforma]()
