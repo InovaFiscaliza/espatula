@@ -44,7 +44,7 @@ def intro():
     st.image("images/espatula.png", caption="Espátula", use_column_width=True)
 
 
-def search():
+def search(max_pages: int):
     scraper = SCRAPERS[st.session_state.plataforma](
         headless=st.session_state.headless,
     )
@@ -53,7 +53,7 @@ def search():
     ):
         links = scraper.search(
             keyword=st.session_state.keyword,
-            max_pages=st.session_state.max_pages,
+            max_pages=max_pages,
         )
         st.success(f"Foram encontrados {len(links)} anúncios!")
         st.info(f"Links salvos em {scraper.links_file(st.session_state.keyword)}")
@@ -61,8 +61,6 @@ def search():
         st.session_state.links[st.session_state.plataforma].add(
             st.session_state.keyword
         )
-
-    st.divider()
 
 
 def search_page():
@@ -146,7 +144,6 @@ def main():
     )
     if st.session_state.keyword in st.session_state.links[st.session_state.plataforma]:
         inspect_page()
-
     else:
         search_page()
 
