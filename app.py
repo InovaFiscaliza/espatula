@@ -68,21 +68,21 @@ def search_page(headless: bool):
     global ITERATION  # gambiarra para não haver conflitos de chaves nos widgets
     ITERATION += 1
     with st.sidebar:
-        with st.expander("**Parâmetros da Busca**", expanded=True):
+        with st.expander(f"**{SEARCH_PARAMETERS}**", expanded=True):
             st.session_state.keyword = st.text_input(
-                "Palavra-chave",
+                KEYWORD,
                 "smartphone",
                 key=f"keyword_{ITERATION}",
             )
             max_pages = st.slider(
-                "Número máximo de páginas de busca a navegar",
+                MAX_PAGES,
                 1,
                 40,
                 10,
                 key=f"max_pages_{ITERATION}",
             )
         st.button(
-            "Buscar links🔎",
+            SEARCH_LINKS,
             on_click=search,
             args=(headless, max_pages),
             use_container_width=True,
