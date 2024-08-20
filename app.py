@@ -1,11 +1,28 @@
 import logging
 import random
-
+import os
 from collections import defaultdict
 
 import streamlit as st
 import requests
 
+def set_environment_variables():
+    st.sidebar.title("Environment Variables")
+    with st.sidebar.form("env_vars_form"):
+        folder = st.text_input("FOLDER", value=os.environ.get("FOLDER", ""))
+        reconnect = st.number_input("RECONNECT", value=int(os.environ.get("RECONNECT", 10)))
+        timeout = st.number_input("TIMEOUT", value=int(os.environ.get("TIMEOUT", 5)))
+        
+        if st.form_submit_button("Set Variables"):
+            os.environ["FOLDER"] = folder
+            os.environ["RECONNECT"] = str(reconnect)
+            os.environ["TIMEOUT"] = str(timeout)
+            st.success("Environment variables set successfully!")
+
+# Call the function to set environment variables
+set_environment_variables()
+
+# Now import the configuration and scraper classes
 from config import (
     CAPTURE_SCREENSHOT,
     EXTRACTION_PARAMETERS,
