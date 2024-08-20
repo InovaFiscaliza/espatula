@@ -3,7 +3,7 @@ from enum import Enum, auto
 
 import streamlit as st
 
-from config import SCRAPERS
+from config import SCRAPERS, MARKETPLACE, HIDE_BROWSER, SEARCH_PARAMETERS, KEYWORD, MAX_PAGES, SEARCH_LINKS, EXTRACTION_PARAMETERS, SEARCHED_TEXT, MAX_ADS, RANDOM_SAMPLE, CAPTURE_SCREENSHOT, NAVIGATE_ADS, REDO_SEARCH
 
 
 if "plataforma" not in st.session_state:
@@ -107,29 +107,29 @@ def inspect(headless: bool, screenshot: bool, sample: int, shuffle: bool):
 def inspect_page(headless: bool):
     global ITERATION
     ITERATION += 1
-    with st.sidebar.expander("**Parâmetros da Extração de Dados**", expanded=True):
-        st.info(f"Texto Pesquisado: **{st.session_state.keyword}**")
+    with st.sidebar.expander(f"**{EXTRACTION_PARAMETERS}**", expanded=True):
+        st.info(f"{SEARCHED_TEXT}: **{st.session_state.keyword}**")
         # Using 'key="sample"' is causing duplicate error
         sample = st.slider(
-            "Número máximo de anúncios a extrair",
+            MAX_ADS,
             1,
             100,
             50,
             key="sample_{ITERATION}",
         )
         shuffle = st.checkbox(
-            "**Amostrar páginas aleatoriamente**", key="shuffle_{ITERATION}"
+            f"**{RANDOM_SAMPLE}**", key="shuffle_{ITERATION}"
         )
         screenshot = st.checkbox(
-            "**Capturar tela do anúncio**", key="screenshot_{ITERATION}"
+            f"**{CAPTURE_SCREENSHOT}**", key="screenshot_{ITERATION}"
         )
         st.button(
-            "**Navegar páginas dos anúncios🚀**",
+            f"**{NAVIGATE_ADS}**",
             on_click=inspect,
             args=(headless, screenshot, sample, shuffle),
         )
     if st.sidebar.button(
-        "**Refazer Pesquisa de Links😵‍💫**",
+        f"**{REDO_SEARCH}**",
         use_container_width=True,
     ):
         st.session_state.links[st.session_state.plataforma].discard(
@@ -142,7 +142,7 @@ def main():
     global ITERATION
     ITERATION += 1
     headless = st.sidebar.checkbox(
-        "**Ocultar o navegador**", key=f"headless_{ITERATION}"
+        f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}"
     )
     if st.session_state.keyword in st.session_state.links[st.session_state.plataforma]:
         inspect_page(headless)
@@ -162,7 +162,7 @@ class PageName(Enum):
 page_names_to_funcs = {PageName.INTRO: intro} | {PageName(k): main for k in SCRAPERS.keys()}
 
 st.session_state.plataforma = st.sidebar.selectbox(
-    "Marketplace", [page.value for page in PageName]
+    MARKETPLACE, [page.value for page in PageName]
 )
 
 page_names_to_funcs[PageName(st.session_state.plataforma)]()
