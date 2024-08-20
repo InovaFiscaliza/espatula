@@ -44,9 +44,9 @@ def intro():
     st.image("images/espatula.png", caption="Espátula", use_column_width=True)
 
 
-def search(max_pages: int):
+def search(headless: bool, max_pages: int):
     scraper = SCRAPERS[st.session_state.plataforma](
-        headless=st.session_state.headless,
+        headless=headless,
     )
     with st.spinner(
         f"Buscando - **{st.session_state.plataforma}** : _{st.session_state.keyword}_ ..."
@@ -63,7 +63,7 @@ def search(max_pages: int):
         )
 
 
-def search_page():
+def search_page(headless: bool):
     global ITERATION  # gambiarra para não haver conflitos de chaves nos widgets
     ITERATION += 1
     with st.sidebar:
@@ -73,7 +73,7 @@ def search_page():
                 "smartphone",
                 key=f"keyword_{ITERATION}",
             )
-            st.session_state.max_pages = st.slider(
+            max_pages = st.slider(
                 "Número máximo de páginas de busca a navegar",
                 1,
                 40,
@@ -83,13 +83,14 @@ def search_page():
         st.button(
             "Buscar links🔎",
             on_click=search,
+            args=(headless, max_pages),
             use_container_width=True,
             key=f"search_{ITERATION}",
         )
 
 
-def inspect(screenshot: bool, sample: int, shuffle: bool):
-    scraper = SCRAPERS[st.session_state.plataforma](headless=st.session_state.headless)
+def inspect(headless: bool, screenshot: bool, sample: int, shuffle: bool):
+    scraper = SCRAPERS[st.session_state.plataforma](headless=headless)
     with st.spinner("Amostrando páginas dos anúncios..."):
         dados = scraper.inspect_pages(
             keyword=st.session_state.keyword,
@@ -102,7 +103,7 @@ def inspect(screenshot: bool, sample: int, shuffle: bool):
         st.write(list(dados.values()))
 
 
-def inspect_page():
+def inspect_page(headless: bool):
     global ITERATION
     ITERATION += 1
     with st.sidebar.expander("**Parâmetros da Extração de Dados**", expanded=True):
@@ -124,7 +125,7 @@ def inspect_page():
         st.button(
             "**Navegar páginas dos anúncios🚀**",
             on_click=inspect,
-            args=(screenshot, sample, shuffle),
+            args=(headless, screenshot, sample, shuffle),
         )
     if st.sidebar.button(
         "**Refazer Pesquisa de Links😵‍💫**",
@@ -139,13 +140,13 @@ def inspect_page():
 def main():
     global ITERATION
     ITERATION += 1
-    st.session_state.headless = st.sidebar.checkbox(
+    headless = st.sidebar.checkbox(
         "**Ocultar o navegador**", key=f"headless_{ITERATION}"
     )
     if st.session_state.keyword in st.session_state.links[st.session_state.plataforma]:
-        inspect_page()
+        inspect_page(headless)
     else:
-        search_page()
+        search_page(headless)
 
 
 page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
