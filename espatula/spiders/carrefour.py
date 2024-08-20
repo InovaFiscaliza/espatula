@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from gazpacho import Soup
-from .base import RECONNECT, TIMEOUT, BaseScraper
-from ..constantes import TIMEZONE
+from .base import RECONNECT, TIMEOUT, TIMEZONE, BaseScraper
 
 CATEGORIES = {
     "smartphone": "https://www.carrefour.com.br/celulares-smartphones-e-smartwatches/smartphones#crfint=hm-tlink|celulares-e-smartphones|smartphones|1"

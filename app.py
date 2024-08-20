@@ -2,7 +2,6 @@ import logging
 import random
 
 from collections import defaultdict
-from enum import Enum
 
 import streamlit as st
 import requests
@@ -17,7 +16,6 @@ from config import (
     MAX_PAGES,
     NAVIGATE_ADS,
     RANDOM_SAMPLE,
-    REDO_SEARCH,
     SCRAPERS,
     SEARCH_LINKS,
     SEARCH_PARAMETERS,

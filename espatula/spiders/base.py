@@ -1,9 +1,13 @@
+import os
 import base64
 import json
 import re
+from datetime import datetime
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
+from zoneinfo import ZoneInfo
+
 
 import requests
 from dotenv import find_dotenv, load_dotenv
@@ -19,13 +23,14 @@ from seleniumbase.common.exceptions import (
 
 from espatula.constantes import (
     CERTIFICADO,
-    FOLDER,
-    RECONNECT,
-    TIMEOUT,
-    TODAY,
 )
 
 load_dotenv(find_dotenv(), override=True)
+TIMEZONE = ZoneInfo("America/Sao_Paulo")
+TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
+FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
+RECONNECT = int(os.environ.get("RECONNECT", 10))
+TIMEOUT = int(os.environ.get("TIMEOUT", 5))
 
 
 @dataclass

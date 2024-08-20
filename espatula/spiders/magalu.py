@@ -4,8 +4,7 @@ from dataclasses import dataclass
 
 from gazpacho import Soup
 
-from ..constantes import RECONNECT, TIMEOUT, TIMEZONE
-from .base import BaseScraper
+from .base import TIMEZONE, RECONNECT, TIMEOUT, BaseScraper
 
 CATEGORIES = {
     "smartphone": 'a[href="/busca/smartphone/?from=submit&filters=category---TE"]'

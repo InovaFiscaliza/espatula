@@ -1,19 +1,10 @@
-import os
 import re
-from datetime import datetime
 
 from dotenv import find_dotenv, load_dotenv
-from fastcore.xtras import Path
-from zoneinfo import ZoneInfo
 
 load_dotenv(find_dotenv())
 
 # Raspagem de Dados
-FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
-RECONNECT = int(os.environ.get("RECONNECT", 10))
-TIMEOUT = int(os.environ.get("TIMEOUT", 5))
-TIMEZONE = ZoneInfo("America/Sao_Paulo")
-TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
 CERTIFICADO = re.compile(
     r"""
     (?ix)                  # Case-insensitive and verbose mode
@@ -44,10 +35,6 @@ KEYWORDS = [
     "flipper zero",
 ]
 
-# Processamento dos dados de saída
-PREFIX = os.environ.get("PREFIX")
-
-COUNT = os.environ.get("COUNT", 65)
 DISCARD = {
     "amazon": [
         "Acessórios de Carros",

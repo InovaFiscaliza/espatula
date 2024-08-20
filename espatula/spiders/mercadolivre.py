@@ -4,8 +4,7 @@ from datetime import datetime
 
 from gazpacho import Soup
 
-from ..constantes import RECONNECT, TIMEOUT, TIMEZONE
-from .base import BaseScraper
+from .base import TIMEZONE, RECONNECT, TIMEOUT, BaseScraper
 
 CATEGORIES = {
     "smartphone": "https://www.mercadolivre.com.br/c/celulares-e-telefones#menu=categories"

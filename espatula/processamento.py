@@ -5,6 +5,7 @@ from typing import List, Union
 
 import nltk
 import pandas as pd
+from dotenv import find_dotenv, load_dotenv
 from fastcore.xtras import Path, listify
 from fuzzywuzzy import fuzz
 from nltk.corpus import stopwords
@@ -12,9 +13,11 @@ from nltk.tokenize import word_tokenize
 from rich import print
 
 from .certificacao import merge_to_sch
-from .constantes import FOLDER, SUBCATEGORIES
+from .constantes import SUBCATEGORIES
 from .modelos import SGD
+from .spiders.base import FOLDER
 
+load_dotenv(find_dotenv(), override=True)
 nltk.download("stopwords")
 nltk.download("punkt_tab")
 
