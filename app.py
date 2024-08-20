@@ -1,4 +1,5 @@
 from collections import defaultdict
+from enum import Enum, auto
 
 import streamlit as st
 
@@ -149,10 +150,19 @@ def main():
         search_page(headless)
 
 
-page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
+class PageName(Enum):
+    INTRO = "—"
+    AMAZON = "Amazon"
+    MERCADO_LIVRE = "Mercado Livre"
+    MAGALU = "Magalu"
+    AMERICANAS = "Americanas"
+    CASAS_BAHIA = "Casas Bahia"
+    CARREFOUR = "Carrefour"
+
+page_names_to_funcs = {PageName.INTRO: intro} | {PageName(k): main for k in SCRAPERS.keys()}
 
 st.session_state.plataforma = st.sidebar.selectbox(
-    "Marketplace", page_names_to_funcs.keys()
+    "Marketplace", [page.value for page in PageName]
 )
 
-page_names_to_funcs[st.session_state.plataforma]()
+page_names_to_funcs[PageName(st.session_state.plataforma)]()
