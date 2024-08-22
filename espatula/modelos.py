@@ -11,9 +11,7 @@ load_dotenv(find_dotenv(), override=True)
 
 class SGD:
     def __init__(self, model_path=os.environ.get("MODEL_SGD")):
-        if (model_path := Path(model_path)).is_file():
-            assert model_path.suffix == ".joblib", "Model must be a .joblib file"
-        self.model_path = model_path
+        self.model_path = Path(model_path)
 
     @cached_property
     def model(self):
