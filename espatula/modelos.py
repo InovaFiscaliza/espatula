@@ -1,20 +1,26 @@
 import os
-from fastcore.xtras import Path, listify
-import numpy as np
-from joblib import load
+from functools import cached_property
+from pathlib import Path
 
-from dotenv import load_dotenv, find_dotenv
+import numpy as np
+from dotenv import find_dotenv, load_dotenv
+from joblib import load
 
 load_dotenv(find_dotenv(), override=True)
 
 
 class SGD:
     def __init__(self, model_path=os.environ.get("MODEL_SGD")):
+        if (model_path := Path(model_path)).is_file():
+            assert model_path.suffix == ".joblib", "Model must be a .joblib file"
+        self.model_path = model_path
+
+    @cached_property
+    def model(self):
         try:
-            self.model_path = model_path
-            self.model = load(model_path)
-        except FileNotFoundError as e:
-            raise FileNotFoundError(f"Model not found at {model_path}") from e
+            return load(self.model_path)
+        except Exception as e:
+            raise Exception(f"Error loading model: {e}")
 
     def predict(self, X):
         predicted_class = self.model.predict(X)
