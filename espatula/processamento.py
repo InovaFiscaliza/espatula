@@ -18,8 +18,8 @@ from .modelos import SGD
 from .spiders.base import FOLDER
 
 load_dotenv(find_dotenv(), override=True)
-nltk.download("stopwords")
-nltk.download("punkt_tab")
+nltk.download("stopwords", quiet=True)
+nltk.download("punkt_tab", quiet=True)
 
 
 COLUNAS = [
@@ -57,12 +57,19 @@ COLUMN_SCORE_NAMES = [
 
 
 class Table:
-    def __init__(self, name: str, json_source: Path):
+    def __init__(self, name: str, page_dict: dict = None, json_source: Path = None):
         self.name = name
-        self.source = FOLDER / name / json_source
+        assert (
+            page_dict or json_source
+        ), "Either page_dict or json_source must be provided."
+        self.source = json_source
+        self.page_dict = page_dict
 
     @cached_property
     def df(self):
+        """Return the DataFrame for the table."""
+        if self.page_dict is not None:
+            return pd.DataFrame(self.page_dict.values(), dtype="string")
         return pd.DataFrame(self.source.read_json().values(), dtype="string")
 
     @staticmethod
