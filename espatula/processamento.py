@@ -17,7 +17,7 @@ from .constantes import SUBCATEGORIES
 from .modelos import SGD
 from .spiders.base import FOLDER
 
-load_dotenv(find_dotenv(), override=True)
+load_dotenv(find_dotenv(), override=False)
 nltk.download("stopwords", quiet=True)
 nltk.download("punkt_tab", quiet=True)
 

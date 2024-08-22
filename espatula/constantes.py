@@ -1,9 +1,5 @@
 import re
 
-from dotenv import find_dotenv, load_dotenv
-
-load_dotenv(find_dotenv())
-
 # Raspagem de Dados
 CERTIFICADO = re.compile(
     r"""

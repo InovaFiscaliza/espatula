@@ -1,15 +1,12 @@
-import os
 import urllib.request
 from typing import Tuple
 from urllib.parse import unquote
 
 import pandas as pd
-from dotenv import find_dotenv, load_dotenv
 from fastcore.xtras import Path
 
 from espatula.constantes import FOLDER
 
-load_dotenv(find_dotenv(), override=True)
 
 CERTIFICADOS = "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/certificacao_de_produtos/produtos_certificados.zip"
 CONFORMIDADE = "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/certificacao_de_produtos/Produtos_Homologados_por_Declara%C3%A7%C3%A3o_de_Conformidade.zip"

@@ -25,7 +25,7 @@ from espatula.constantes import (
     CERTIFICADO,
 )
 
-load_dotenv(find_dotenv(), override=True)
+load_dotenv(find_dotenv(), override=False)
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
 FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
