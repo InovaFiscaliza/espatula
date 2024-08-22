@@ -1,16 +1,15 @@
-import os
 from functools import cached_property
 from pathlib import Path
 
 import numpy as np
-from dotenv import find_dotenv, load_dotenv
 from joblib import load
 
-load_dotenv(find_dotenv(), override=True)
+
+MODEL_SGD = "https://github.com/InovaFiscaliza/dados-pacp/raw/main/model_trainning/clf_mktplaces_3/clf_marketplaces_scikit-learn-1.5.1.joblib"
 
 
 class SGD:
-    def __init__(self, model_path=os.environ.get("MODEL_SGD")):
+    def __init__(self, model_path=MODEL_SGD):
         self.model_path = Path(model_path)
 
     @cached_property
