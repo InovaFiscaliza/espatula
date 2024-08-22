@@ -68,6 +68,10 @@ class BaseScraper:
             self.folder / f"{self.name}_{keyword.lower().replace(' ', '_')}_links.json"
         )
 
+    def pages_file(self, keyword: str) -> Path:
+        stem = self.links_file(keyword).stem.replace("_links", f"_pages_{TODAY}")
+        return self.links_file(keyword).with_stem(stem)
+
     def get_links(self, keyword: str) -> dict:
         links_file = self.links_file(keyword)
         if not links_file.is_file():
@@ -209,15 +213,11 @@ class BaseScraper:
         return f"{base_filename}_{i}.pdf"
 
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
-        output_file = self.links_file(keyword).with_name(
-            f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
-        )
         json.dump(
             sampled_pages,
-            output_file.open("w"),
+            self.pages_file(keyword).open("w"),
             ensure_ascii=False,
         )
-        self.output_file = output_file
 
     def process_url(self, driver: SB, url: str) -> dict:
         driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
@@ -298,9 +298,8 @@ class BaseScraper:
                     if page > max_pages:
                         if not self.headless:
                             driver.post_message(
-                                f"Número máximo de páginas atingido - {max_pages}!"
+                                f"Número máximo de páginas atingido - #{max_pages}"
                             )
-                        driver.sleep(TIMEOUT)
                         break
                     self.highlight_element(driver, self.next_page_button)
                     driver.uc_click(self.next_page_button, timeout=TIMEOUT)
@@ -312,4 +311,4 @@ class BaseScraper:
                     self.links_file(keyword).open("w"),
                     ensure_ascii=False,
                 )
-                return results
+        return results
