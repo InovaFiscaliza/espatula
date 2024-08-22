@@ -5,24 +5,8 @@ from collections import defaultdict
 
 import streamlit as st
 import requests
+from fastcore.xtras import Path
 
-def set_environment_variables():
-    st.sidebar.title("Environment Variables")
-    with st.sidebar.form("env_vars_form"):
-        folder = st.text_input("FOLDER", value=os.environ.get("FOLDER", ""))
-        reconnect = st.number_input("RECONNECT", value=int(os.environ.get("RECONNECT", 10)))
-        timeout = st.number_input("TIMEOUT", value=int(os.environ.get("TIMEOUT", 5)))
-        
-        if st.form_submit_button("Set Variables"):
-            os.environ["FOLDER"] = folder
-            os.environ["RECONNECT"] = str(reconnect)
-            os.environ["TIMEOUT"] = str(timeout)
-            st.success("Environment variables set successfully!")
-
-# Call the function to set environment variables
-set_environment_variables()
-
-# Now import the configuration and scraper classes
 from config import (
     CAPTURE_SCREENSHOT,
     EXTRACTION_PARAMETERS,
@@ -33,12 +17,42 @@ from config import (
     MAX_PAGES,
     NAVIGATE_ADS,
     RANDOM_SAMPLE,
-    SCRAPERS,
     SEARCH_LINKS,
     SEARCH_PARAMETERS,
     SEARCHED_TEXT,
 )
 
+
+st.set_page_config(
+    page_title="Espátula",
+    page_icon="🛠️",
+)
+
+
+def set_environment_variables():
+    st.sidebar.title("Parâmetros Globais")
+    with st.sidebar.form("env_vars_form"):
+        folder = st.text_input(
+            "PASTA", value=os.environ.get("FOLDER", f"{Path(__file__)}/data")
+        )
+        reconnect = st.number_input(
+            "TEMPO DE RECONEXÃO", value=int(os.environ.get("RECONNECT", 10))
+        )
+        timeout = st.number_input(
+            "TEMPO DE ESPERA", value=int(os.environ.get("TIMEOUT", 5))
+        )
+
+        if st.form_submit_button("Definir Parâmetros"):
+            os.environ["FOLDER"] = str(folder)
+            os.environ["RECONNECT"] = str(reconnect)
+            os.environ["TIMEOUT"] = str(timeout)
+            st.success("Variáveis de ambiente definidas com sucesso!")
+
+
+# Call the function to set environment variables
+set_environment_variables()
+
+# Now import the configuration and scraper classe
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -51,11 +65,6 @@ if "keyword" not in st.session_state:
     st.session_state.keyword = "smartphone"
 
 ITERATION = 0
-
-st.set_page_config(
-    page_title="Espátula",
-    page_icon="🛠️",
-)
 
 
 def intro():
@@ -81,16 +90,16 @@ def intro():
     st.image("images/espatula.png", caption="Espátula", use_column_width=True)
 
 
-def search(headless: bool, max_pages: int):
+def search():
     scraper = SCRAPERS[st.session_state.plataforma](
-        headless=headless,
+        headless=st.session_state.headless,
     )
     with st.spinner(
         f"Buscando - **{st.session_state.plataforma}** : _{st.session_state.keyword}_ ..."
     ):
         links = scraper.search(
             keyword=st.session_state.keyword,
-            max_pages=max_pages,
+            max_pages=st.session_state.max_pages,
         )
         st.success(f"Foram encontrados {len(links)} anúncios!")
         st.info(f"Links salvos em {scraper.links_file(st.session_state.keyword)}")
@@ -100,29 +109,30 @@ def search(headless: bool, max_pages: int):
         )
 
 
-def search_page(headless: bool):
-    global ITERATION  # gambiarra para não haver conflitos de chaves nos widgets
-    ITERATION += 1
-    with st.sidebar:
-        with st.expander(f"**{SEARCH_PARAMETERS}**", expanded=True):
-            st.session_state.keyword = st.text_input(
-                KEYWORD,
-                "smartphone",
-                key=f"keyword_{ITERATION}",
-            )
-            max_pages = st.slider(
-                MAX_PAGES,
-                1,
-                40,
-                10,
-                key=f"max_pages_{ITERATION}",
-            )
-        st.button(
+def search_page():
+    # global ITERATION  # gambiarra para não haver conflitos de chaves nos widgets
+    # ITERATION += 1
+    st.sidebar.title(SEARCH_PARAMETERS)
+    with st.sidebar.form("search_form"):
+        st.session_state.headless = st.checkbox(
+            f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}"
+        )
+        st.session_state.keyword = st.text_input(
+            KEYWORD,
+            "smartphone",
+            key=f"keyword_{ITERATION}",
+        )
+        st.session_state.max_pages = st.slider(
+            MAX_PAGES,
+            1,
+            40,
+            10,
+            key=f"max_pages_{ITERATION}",
+        )
+        st.form_submit_button(
             SEARCH_LINKS,
             on_click=search,
-            args=(headless, max_pages),
             use_container_width=True,
-            key=f"search_{ITERATION}",
         )
 
 
@@ -164,15 +174,15 @@ def inspect_page(headless: bool):
         )
 
 
-def handle_page_logic(headless: bool):
+def handle_page_logic():
     try:
         if (
             st.session_state.keyword
             in st.session_state.links[st.session_state.plataforma]
         ):
-            inspect_page(headless)
+            inspect_page()
         else:
-            search_page(headless)
+            search_page()
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
         st.error("An unexpected error occurred. Please try again later.")
@@ -187,8 +197,7 @@ def get_dog():
 def main():
     global ITERATION
     ITERATION += 1
-    headless = st.sidebar.checkbox(f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}")
-    handle_page_logic(headless)
+    handle_page_logic()
     dog = random.choice(get_dog())
     if dog[-4:] == ".mp4":
         st.video(dog, autoplay=True, loop=True)
@@ -196,15 +205,38 @@ def main():
         st.image(dog)
 
 
-page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
+def intro_page():
+    from espatula.spiders import (
+        AmazonScraper,
+        MercadoLivreScraper,
+        MagaluScraper,
+        AmericanasScraper,
+        CasasBahiaScraper,
+        CarrefourScraper,
+    )
 
-try:
-    st.session_state.plataforma = st.sidebar.selectbox(
-        MARKETPLACE, page_names_to_funcs.keys()
-    )
-    page_names_to_funcs[st.session_state.plataforma]()
-except Exception as e:
-    logging.error(
-        f"An error occurred while selecting or executing page function: {str(e)}"
-    )
-    st.error("An error occurred while loading the page. Please try again later.")
+    global SCRAPERS
+    SCRAPERS = {
+        "Amazon": AmazonScraper,
+        "Mercado Livre": MercadoLivreScraper,
+        "Magalu": MagaluScraper,
+        "Americanas": AmericanasScraper,
+        "Casas Bahia": CasasBahiaScraper,
+        "Carrefour": CarrefourScraper,
+    }
+
+    page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
+
+    try:
+        st.session_state.plataforma = st.sidebar.selectbox(
+            MARKETPLACE, page_names_to_funcs.keys()
+        )
+        page_names_to_funcs[st.session_state.plataforma]()
+    except Exception as e:
+        logging.error(
+            f"An error occurred while selecting or executing page function: {str(e)}"
+        )
+        st.error("An error occurred while loading the page. Please try again later.")
+
+
+intro_page()
