@@ -1,3 +1,4 @@
+import os
 import urllib.request
 from typing import Tuple
 from urllib.parse import unquote
@@ -5,7 +6,7 @@ from urllib.parse import unquote
 import pandas as pd
 from fastcore.xtras import Path
 
-from espatula.constantes import FOLDER
+FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
 
 
 CERTIFICADOS = "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/certificacao_de_produtos/produtos_certificados.zip"
