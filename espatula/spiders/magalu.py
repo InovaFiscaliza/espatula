@@ -157,7 +157,7 @@ class MagaluScraper(BaseScraper):
                 self.extrair_ean(características),
             )
 
-        if match := re.search(r"/p/([\w\d]+)/", driver.current_url):
+        if match := re.search(r"/p/([\w\d]+)/", driver.get_current_url()):
             product_id = match.group(1)
         else:
             product_id = None
