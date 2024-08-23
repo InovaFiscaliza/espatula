@@ -255,10 +255,12 @@ class BaseScraper:
 
                     if screenshot:
                         self.save_screenshot(driver, result_page, i)
+                    else:
+                        result_page["screenshot"] = ""
 
                     result_page["palavra_busca"] = keyword
-                    result_page["index"] = i
-                    sampled_pages[result_page["url"]] = result_page
+                    result_page["indice"] = i
+                    sampled_pages[result_page["url"]] = {**links[url], **result_page}
 
                     if sample and len(sampled_pages) >= sample:
                         break
