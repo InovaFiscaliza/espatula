@@ -79,8 +79,20 @@ class BaseScraper:
             print(
                 "Execute primeiramente a busca de links pelo método 'search(keyword)'"
             )
-            raise FileNotFoundError(f"Arquivo {links_file} não encontrado")
+            return {}
         return loads(links_file.read_text())
+
+    def get_pages(self, keyword: str) -> dict:
+        pages_file = self.pages_file(keyword)
+        if not pages_file.is_file():
+            print(
+                f"Não foram arquivos de dados das páginas para {self.name} - {keyword}"
+            )
+            print(
+                "Caso já tenha feito a busca de links, execute o método 'inspect_pages(keyword)'"
+            )
+            return {}
+        return loads(pages_file.read_text())
 
     @staticmethod
     def click_turnstile_and_verify(sb):
