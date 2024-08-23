@@ -37,7 +37,7 @@ COLUNAS = [
     "modelo_score",
     "tipo_sch",
     "subcategoria",
-    "index",
+    "indice",
     "página_de_busca",
     "palavra_busca",
     "data",
@@ -150,7 +150,7 @@ class Table:
         """
         return [
             Table.score_distance(row.loc[left], row.loc[right])
-            for left, right in COLUMN_PAIRS
+            for (left, right) in COLUMN_PAIRS
         ]
 
     def delete_files(self, filter: pd.Series) -> None:
@@ -163,9 +163,9 @@ class Table:
         for column in ["nome", "categoria", "url"]:
             self.delete_files(self.df[column].isna())
             self.df = self.df.dropna(subset=column).reset_index(drop=True)
-        for row in self.df.itertuples():
-            if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-                self.df = self.df.drop(index=row.Index)
+        # for row in self.df.itertuples():
+        #     if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
+        #         self.df = self.df.drop(index=row.Index)
 
     def split_categories(self):
         categories = self.df["categoria"].str.split("|", expand=True)
@@ -173,17 +173,20 @@ class Table:
         for cat in categories:
             categories[cat] = categories[cat].str.strip()
         self.df = pd.concat([self.df, categories], axis=1)
+        self.df["subcategoria"] = ""
         for cat in categories.columns:
             condition = self.df[cat].notna()
             self.df.loc[condition, "subcategoria"] = self.df.loc[condition, cat]
+
+        self.df = self.df.drop(columns="categoria")
 
     def filter_subcategories(self):
         if self.name not in SUBCATEGORIES:
             print(f"{self.name} has no subcategories defined, table unchanged!")
             return
-        irrelevant = self.df["subcategoria"].isin(SUBCATEGORIES[self.name])
-        self.delete_files(~irrelevant)
-        self.df = self.df.loc[irrelevant].reset_index(drop=True)
+        relevant = self.df["subcategoria"].isin(SUBCATEGORIES[self.name])
+        self.delete_files(~relevant)
+        self.df = self.df.loc[relevant].reset_index(drop=True)
 
     def clean(self):
         self.df["preço"] = (
@@ -191,10 +194,7 @@ class Table:
         )
 
     def write_excel(self):
-        df = self.df.loc[:, COLUNAS]
-        df["data"] = pd.to_datetime(self.df["data"], format="mixed").dt.strftime(
-            "%d/%m/%Y"
-        )
+        """Write the dataframe to an Excel file."""
 
         writer = pd.ExcelWriter(
             self.source.with_suffix(".xlsx"),
@@ -204,6 +204,14 @@ class Table:
                     "strings_to_urls": True,
                 }
             },
+        )
+        self.df.to_excel(
+            writer, sheet_name=f"{self.name}_bruto", engine="xlsxwriter", index=False
+        )
+
+        df = self.df.loc[:, COLUNAS]
+        df["data"] = pd.to_datetime(self.df["data"], format="mixed").dt.strftime(
+            "%d/%m/%Y"
         )
         df.to_excel(writer, sheet_name=self.name, engine="xlsxwriter", index=False)
         worksheet = writer.sheets[self.name]
@@ -227,7 +235,7 @@ class Table:
         writer.close()
 
     def compare_columns(self):
-        self.df[COLUMN_SCORE_NAMES] = self.df.fillna("").apply(
+        self.df.loc[:, COLUMN_SCORE_NAMES] = self.df.fillna("").apply(
             self.calculate_text_distance, axis=1, result_type="expand"
         )
         self.df.sort_values(
@@ -239,7 +247,7 @@ class Table:
 
     def classify(self):
         model = SGD()
-        prediction = model.predict(self.df["nome"].to_list())
+        prediction = model.predict(self.df["nome"].values)
         cat = prediction[:, 0].astype("bool")
         prob = prediction[:, 1]
         self.df["passível"] = cat
@@ -248,8 +256,9 @@ class Table:
     def process(self, update_sch: bool = False, tipo_sch: str = None):
         self.drop_incomplete_rows()
         self.split_categories()
-        self.filter_subcategories()
+        # self.filter_subcategories()
         self.clean()
         self.df = merge_to_sch(self.df, update=update_sch, tipo_sch=tipo_sch)
         self.compare_columns()
         self.classify()
+        self.write_excel()

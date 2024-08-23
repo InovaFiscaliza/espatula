@@ -7,6 +7,18 @@ import streamlit as st
 import requests
 from fastcore.xtras import Path
 
+from espatula.spiders import (
+    AmazonScraper,
+    MercadoLivreScraper,
+    MagaluScraper,
+    AmericanasScraper,
+    CasasBahiaScraper,
+    CarrefourScraper,
+)
+
+from espatula.processamento import Table, COLUNAS
+
+
 from config import (
     CAPTURE_SCREENSHOT,
     EXTRACTION_PARAMETERS,
@@ -22,11 +34,31 @@ from config import (
     SEARCHED_TEXT,
 )
 
+SCRAPERS = {
+    "Amazon": AmazonScraper,
+    "Mercado Livre": MercadoLivreScraper,
+    "Magalu": MagaluScraper,
+    "Americanas": AmericanasScraper,
+    "Casas Bahia": CasasBahiaScraper,
+    "Carrefour": CarrefourScraper,
+}
+
 
 st.set_page_config(
     page_title="Espátula",
     page_icon="🛠️",
 )
+# Now import the configuration and scraper classe
+logging.basicConfig(level=logging.ERROR)
+
+
+if "plataforma" not in st.session_state:
+    st.session_state.plataforma = "-"
+if "links" not in st.session_state:
+    st.session_state.links = defaultdict(set)
+
+if "keyword" not in st.session_state:
+    st.session_state.keyword = ""
 
 
 def set_environment_variables():
@@ -36,35 +68,24 @@ def set_environment_variables():
             "PASTA", value=os.environ.get("FOLDER", f"{Path(__file__)}/data")
         )
         reconnect = st.number_input(
-            "TEMPO DE RECONEXÃO", value=int(os.environ.get("RECONNECT", 10))
+            "TEMPO DE RECONEXÃO",
+            min_value=2,
+            value=int(os.environ.get("RECONNECT", 10)),
         )
         timeout = st.number_input(
-            "TEMPO DE ESPERA", value=int(os.environ.get("TIMEOUT", 5))
+            "TEMPO DE ESPERA", min_value=1, value=int(os.environ.get("TIMEOUT", 5))
         )
+        st.checkbox(f"**{HIDE_BROWSER}**", key="headless")
 
-        if st.form_submit_button("Definir Parâmetros"):
+        submit = st.form_submit_button("Definir Parâmetros")
+        if submit:
             os.environ["FOLDER"] = str(folder)
             os.environ["RECONNECT"] = str(reconnect)
             os.environ["TIMEOUT"] = str(timeout)
             st.success("Variáveis de ambiente definidas com sucesso!")
 
 
-# Call the function to set environment variables
 set_environment_variables()
-
-# Now import the configuration and scraper classe
-
-logging.basicConfig(level=logging.ERROR)
-
-if "plataforma" not in st.session_state:
-    st.session_state.plataforma = "-"
-if "links" not in st.session_state:
-    st.session_state.links = defaultdict(set)
-
-if "keyword" not in st.session_state:
-    st.session_state.keyword = "smartphone"
-
-ITERATION = 0
 
 
 def intro():
@@ -114,20 +135,17 @@ def search_page():
     # ITERATION += 1
     st.sidebar.title(SEARCH_PARAMETERS)
     with st.sidebar.form("search_form"):
-        st.session_state.headless = st.checkbox(
-            f"**{HIDE_BROWSER}**", key=f"headless_{ITERATION}"
-        )
-        st.session_state.keyword = st.text_input(
+        st.text_input(
             KEYWORD,
             "smartphone",
-            key=f"keyword_{ITERATION}",
+            key="keyword",
         )
-        st.session_state.max_pages = st.slider(
+        st.slider(
             MAX_PAGES,
             1,
             40,
             10,
-            key=f"max_pages_{ITERATION}",
+            key="max_pages",
         )
         st.form_submit_button(
             SEARCH_LINKS,
@@ -136,41 +154,38 @@ def search_page():
         )
 
 
-def inspect(headless: bool, screenshot: bool, sample: int, shuffle: bool):
-    scraper = SCRAPERS[st.session_state.plataforma](headless=headless)
-    with st.spinner("Amostrando páginas dos anúncios..."):
+def inspect(keyword):
+    scraper = SCRAPERS[st.session_state.plataforma](headless=st.session_state.headless)
+    with st.spinner("Acessando os anúncios, aguarde..."):
         dados = scraper.inspect_pages(
-            keyword=st.session_state.keyword,
-            screenshot=screenshot,
-            sample=sample,
-            shuffle=shuffle,
+            keyword=keyword,
+            screenshot=st.session_state.screenshot,
+            sample=st.session_state.sample,
+            shuffle=st.session_state.shuffle,
         )
+        table = Table(scraper.name, dados, json_source=scraper.pages_file(keyword))
+        table.process()  # TODO: adicionar form para o fiscal inserir a categoria do SCH
         st.balloons()
-        st.success(f"Os dados foram salvos em {getattr(scraper, "output_file", None)}")
-        st.write(list(dados.values()))
+        st.dataframe(table.df.loc[:, COLUNAS])
 
 
-def inspect_page(headless: bool):
-    global ITERATION
-    ITERATION += 1
-    with st.sidebar.expander(f"**{EXTRACTION_PARAMETERS}**", expanded=True):
+def inspect_page():
+    st.sidebar.title(EXTRACTION_PARAMETERS)
+    with st.sidebar.form(f"**{EXTRACTION_PARAMETERS}**"):
         st.info(f"{SEARCHED_TEXT}: **{st.session_state.keyword}**")
-        # Using 'key="sample"' is causing duplicate error
-        sample = st.slider(
+        st.slider(
             MAX_ADS,
             1,
             100,
             50,
-            key="sample_{ITERATION}",
+            key="sample",
         )
-        shuffle = st.checkbox(f"**{RANDOM_SAMPLE}**", key="shuffle_{ITERATION}")
-        screenshot = st.checkbox(
-            f"**{CAPTURE_SCREENSHOT}**", key="screenshot_{ITERATION}"
-        )
-        st.button(
+        st.checkbox(f"**{RANDOM_SAMPLE}**", key="shuffle")
+        st.checkbox(f"**{CAPTURE_SCREENSHOT}**", key="screenshot")
+        st.form_submit_button(
             f"**{NAVIGATE_ADS}**",
             on_click=inspect,
-            args=(headless, screenshot, sample, shuffle),
+            args=(st.session_state.keyword,),
         )
 
 
@@ -181,8 +196,10 @@ def handle_page_logic():
             in st.session_state.links[st.session_state.plataforma]
         ):
             inspect_page()
+            return "inspect"
         else:
             search_page()
+            return "search"
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
         st.error("An unexpected error occurred. Please try again later.")
@@ -195,36 +212,23 @@ def get_dog():
 
 
 def main():
-    global ITERATION
-    ITERATION += 1
-    handle_page_logic()
-    dog = random.choice(get_dog())
-    if dog[-4:] == ".mp4":
-        st.video(dog, autoplay=True, loop=True)
-    else:
-        st.image(dog)
+    if handle_page_logic() == "search":
+        dog = random.choice(get_dog())
+        if dog[-4:] == ".mp4":
+            st.video(
+                dog,
+                autoplay=True,
+                loop=True,
+            )
+        else:
+            st.image(
+                dog,
+                caption="Aguardando a busca de anúncios...",
+                width=480,
+            )
 
 
 def intro_page():
-    from espatula.spiders import (
-        AmazonScraper,
-        MercadoLivreScraper,
-        MagaluScraper,
-        AmericanasScraper,
-        CasasBahiaScraper,
-        CarrefourScraper,
-    )
-
-    global SCRAPERS
-    SCRAPERS = {
-        "Amazon": AmazonScraper,
-        "Mercado Livre": MercadoLivreScraper,
-        "Magalu": MagaluScraper,
-        "Americanas": AmericanasScraper,
-        "Casas Bahia": CasasBahiaScraper,
-        "Carrefour": CarrefourScraper,
-    }
-
     page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
 
     try:
