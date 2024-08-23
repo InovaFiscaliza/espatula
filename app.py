@@ -55,10 +55,13 @@ logging.basicConfig(level=logging.ERROR)
 if "plataforma" not in st.session_state:
     st.session_state.plataforma = "-"
 if "links" not in st.session_state:
-    st.session_state.links = defaultdict(set)
+    st.session_state.links = defaultdict(defaultdict(dict))
 
 if "keyword" not in st.session_state:
     st.session_state.keyword = ""
+
+if "scrapers" not in st.session_state:
+    st.session_state.scrapers = {}
 
 
 def set_environment_variables():
@@ -75,7 +78,12 @@ def set_environment_variables():
         timeout = st.number_input(
             "TEMPO DE ESPERA", min_value=1, value=int(os.environ.get("TIMEOUT", 5))
         )
-        st.checkbox(f"**{HIDE_BROWSER}**", key="headless")
+        keyword = st.text_input(
+            KEYWORD,
+            "smartphone",
+            key="keyword",
+        )
+        headless = st.checkbox(f"**{HIDE_BROWSER}**", key="headless")
 
         submit = st.form_submit_button("Definir Parâmetros")
         if submit:
@@ -89,7 +97,7 @@ set_environment_variables()
 
 
 def intro():
-    st.write("# Regulatron")
+    st.title("Projeto Regulatron - App Espátula")
     st.logo("images/logo.svg", icon_image="images/logo.svg")
     st.sidebar.success("Selecione uma plataforma")
     st.info("""
@@ -105,7 +113,7 @@ def intro():
         * 🗄️ Cruzar com os registros de produtos homologados da Anatel.
         * 📊 Categorizar e efetuar análises quantitativas
         
-        **👈 Para iniciar selecione qual plataforma deseja pesquisar no menu ao lado!**
+        **👈 Para iniciar primeiramente defina os parâmetros globais ao lado!**
         """
     )
     st.image("images/espatula.png", caption="Espátula", use_column_width=True)
@@ -125,9 +133,9 @@ def search():
         st.success(f"Foram encontrados {len(links)} anúncios!")
         st.info(f"Links salvos em {scraper.links_file(st.session_state.keyword)}")
         st.write(list(links.values()))
-        st.session_state.links[st.session_state.plataforma].add(
-            st.session_state.keyword
-        )
+        st.session_state.links[st.session_state.plataforma][st.session_state.keyword][
+            "links"
+        ] = links
 
 
 def search_page():
@@ -135,11 +143,6 @@ def search_page():
     # ITERATION += 1
     st.sidebar.title(SEARCH_PARAMETERS)
     with st.sidebar.form("search_form"):
-        st.text_input(
-            KEYWORD,
-            "smartphone",
-            key="keyword",
-        )
         st.slider(
             MAX_PAGES,
             1,
@@ -189,17 +192,21 @@ def inspect_page():
         )
 
 
-def handle_page_logic():
+def handle_page_layout():
+    pltf = st.session_state.plataforma
+    if not (scraper := st.session_state.scrapers.get(pltf)):
+        st.session_state.scrapers[pltf] = SCRAPERS[pltf](
+            headless=st.session_state.headless
+        )
+
     try:
         if (
             st.session_state.keyword
             in st.session_state.links[st.session_state.plataforma]
         ):
             inspect_page()
-            return "inspect"
         else:
             search_page()
-            return "search"
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
         st.error("An unexpected error occurred. Please try again later.")
@@ -212,7 +219,10 @@ def get_dog():
 
 
 def main():
-    if handle_page_logic() == "search":
+    handle_page_layout()
+    if not st.session_state.links[
+        st.session_state.plataforma
+    ]:  # Show dog if empty dict of links
         dog = random.choice(get_dog())
         if dog[-4:] == ".mp4":
             st.video(
