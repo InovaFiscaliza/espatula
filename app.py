@@ -51,72 +51,140 @@ st.set_page_config(
 # Now import the configuration and scraper classe
 logging.basicConfig(level=logging.ERROR)
 
+# if "folder" not in st.session_state:
+#     st.session_state.folder = str(Path.cwd())
 
-if "plataforma" not in st.session_state:
-    st.session_state.plataforma = "-"
-if "links" not in st.session_state:
-    st.session_state.links = defaultdict(defaultdict(dict))
+# if "reconnect" not in st.session_state:
+#     st.session_state.reconnect = 10
 
-if "keyword" not in st.session_state:
-    st.session_state.keyword = ""
+# if "timeout" not in st.session_state:
+#     st.session_state.timeout = 5
 
-if "scrapers" not in st.session_state:
-    st.session_state.scrapers = {}
+# if "scrapers" not in st.session_state:
+#     st.session_state.scrapers = defaultdict(list)
 
 
-def set_environment_variables():
-    st.sidebar.title("Parâmetros Globais")
-    with st.sidebar.form("env_vars_form"):
-        folder = st.text_input(
-            "PASTA", value=os.environ.get("FOLDER", f"{Path(__file__)}/data")
+@st.fragment
+def amazon_search(scraper):
+    with st.status(f"Buscando - **Amazon** : _{st.session_state.amazon_keyword}_ ..."):
+        scraper.search(
+            keyword=st.session_state.amazon_keyword,
+            max_pages=st.session_state.amazon_max_pages,
         )
-        reconnect = st.number_input(
-            "TEMPO DE RECONEXÃO",
-            min_value=2,
-            value=int(os.environ.get("RECONNECT", 10)),
-        )
-        timeout = st.number_input(
-            "TEMPO DE ESPERA", min_value=1, value=int(os.environ.get("TIMEOUT", 5))
-        )
-        keyword = st.text_input(
-            KEYWORD,
-            "smartphone",
-            key="keyword",
-        )
-        headless = st.checkbox(f"**{HIDE_BROWSER}**", key="headless")
 
-        submit = st.form_submit_button("Definir Parâmetros")
+
+@st.fragment
+def amazon_links():
+    scraper = AmazonScraper(
+        headless=st.session_state.amazon_headless,
+        # timeout=st.session_state.timeout,
+        # reconnect=st.session_state.reconnect,
+        # folder=st.session_state.folder,
+    )
+    if links := scraper.get_links(st.session_state.amazon_keyword):
+        st.success(
+            f"Foram encontrados {len(links)} anúncios para o termo {st.session_state.amazon_keyword}!",
+            icon="✅",
+        )
+        st.info(
+            f"Links salvos em {scraper.links_file(st.session_state.amazon_keyword)}"
+        )
+        st.write(list(links.values()))
+        label = "Refazer Busca🔄"
+
+    else:
+        st.warning(
+            f"Nenhum link salvo para o termo {st.session_state.amazon_keyword}!",
+            icon="⚠️",
+        )
+        label = "Efetuar Busca➡️"
+
+    st.button(label, on_click=amazon_search, args=(scraper,), use_container_width=True)
+
+
+def amazon():
+    name = "Amazon🛒🛍"
+    st.title(name)
+    # TODO: Escrever uma explicação aqui
+    tabs = st.tabs(["🔎Links", "🗐 Páginas"])
+
+    with tabs[0]:
+        st.sidebar.title(SEARCH_PARAMETERS)
+        with st.sidebar.form("search_form"):
+            st.checkbox(f"**{HIDE_BROWSER}**", key="amazon_headless")
+            st.text_input(
+                KEYWORD,
+                key="amazon_keyword",
+            )
+            st.slider(
+                MAX_PAGES,
+                1,
+                40,
+                10,
+                key="amazon_max_pages",
+            )
+            submit = st.form_submit_button(
+                SEARCH_LINKS,
+            )
+            if submit:
+                st.success("Variáveis de busca definidas com sucesso!")
         if submit:
-            os.environ["FOLDER"] = str(folder)
-            os.environ["RECONNECT"] = str(reconnect)
-            os.environ["TIMEOUT"] = str(timeout)
-            st.success("Variáveis de ambiente definidas com sucesso!")
-
-
-set_environment_variables()
+            amazon_links()
+            # timeout=st.session_state.timeout,
+            # reconnect=st.session_state.reconnect,
+            # folder=st.session_state.folder,
 
 
 def intro():
-    st.title("Projeto Regulatron - App Espátula")
+    st.title("Projeto Regulatron - Módulo Espátula")
+    st.image("images/espatula.png", caption="Espátula", use_column_width=True)
     st.logo("images/logo.svg", icon_image="images/logo.svg")
-    st.sidebar.success("Selecione uma plataforma")
     st.info("""
-        Essa aplicação efetua primariamente a raspagem de dados _(webscraping)_ de anúncios de
-        produtos para telecomunicações publicados em alguns dos principais _marketplaces_ do país. 
+        Raspagem de dados _(webscraping)_ de anúncios de
+        produtos para telecomunicações. 
         """)
     st.markdown(
         """
     
         * 👨🏻‍💻 Simular o comportamento de um consumidor ao acessar o site.
         * 👾 Generalizar a implementação para outras plataformas
-        * 🤖 Tornar a extração independente da categorização de cada marketplace.
+        * 🤖 Tornar a extração independente da categorização de cada marketplace atráves da busca por termos
         * 🗄️ Cruzar com os registros de produtos homologados da Anatel.
         * 📊 Categorizar e efetuar análises quantitativas
         
-        **👈 Para iniciar primeiramente defina os parâmetros globais ao lado!**
+        **👈 Para iniciar primeiramente defina os parâmetros globais 
+        (aplicáveis a todos os _scrapers_) ao lado, depois é só navegar em qualquer página e seguir as instruções!**
         """
     )
-    st.image("images/espatula.png", caption="Espátula", use_column_width=True)
+    st.sidebar.title("Parâmetros Globais")
+
+    with st.sidebar.form("env_vars_form"):
+        st.text_input(
+            "PASTA",
+            key="folder",
+            value=str(Path.cwd()),
+        )
+        st.number_input("TEMPO DE RECONEXÃO(s)", min_value=2, key="reconnect", value=5)
+        st.number_input("TEMPO DE ESPERA(s)", min_value=1, key="timeout", value=2)
+        submit = st.form_submit_button(
+            "Definir Parâmetros",
+        )
+        if submit:
+            st.success("Variáveis globais definidas com sucesso!")
+
+
+intro_page = st.Page(intro, title="Introdução", icon=":material/login:")
+amazon_page = st.Page(amazon, title="Amazon")
+
+pg = st.navigation([intro_page, amazon_page])
+pg.run()
+
+
+# st.text_input(
+#     KEYWORD,
+#     key="keyword",
+# )
+# headless = st.checkbox(f"**{HIDE_BROWSER}**", key="headless")
 
 
 def search():
@@ -192,65 +260,45 @@ def inspect_page():
         )
 
 
-def handle_page_layout():
-    pltf = st.session_state.plataforma
-    if not (scraper := st.session_state.scrapers.get(pltf)):
-        st.session_state.scrapers[pltf] = SCRAPERS[pltf](
-            headless=st.session_state.headless
-        )
-
-    try:
-        if (
-            st.session_state.keyword
-            in st.session_state.links[st.session_state.plataforma]
-        ):
-            inspect_page()
-        else:
-            search_page()
-    except Exception as e:
-        logging.error(f"An error occurred: {str(e)}")
-        st.error("An unexpected error occurred. Please try again later.")
-
-
 @st.cache_data
 def get_dog():
     response = requests.get("https://random.dog/doggos")
     return [f"https://random.dog/{img}" for img in response.json()]
 
 
-def main():
-    handle_page_layout()
-    if not st.session_state.links[
-        st.session_state.plataforma
-    ]:  # Show dog if empty dict of links
-        dog = random.choice(get_dog())
-        if dog[-4:] == ".mp4":
-            st.video(
-                dog,
-                autoplay=True,
-                loop=True,
-            )
-        else:
-            st.image(
-                dog,
-                caption="Aguardando a busca de anúncios...",
-                width=480,
-            )
+# def main():
+#     handle_page_layout()
+#     if not st.session_state.links[
+#         st.session_state.plataforma
+#     ]:  # Show dog if empty dict of links
+#         dog = random.choice(get_dog())
+#         if dog[-4:] == ".mp4":
+#             st.video(
+#                 dog,
+#                 autoplay=True,
+#                 loop=True,
+#             )
+#         else:
+#             st.image(
+#                 dog,
+#                 caption="Aguardando a busca de anúncios...",
+#                 width=480,
+#             )
 
 
-def intro_page():
-    page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
+# def intro_page():
+#     page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
 
-    try:
-        st.session_state.plataforma = st.sidebar.selectbox(
-            MARKETPLACE, page_names_to_funcs.keys()
-        )
-        page_names_to_funcs[st.session_state.plataforma]()
-    except Exception as e:
-        logging.error(
-            f"An error occurred while selecting or executing page function: {str(e)}"
-        )
-        st.error("An error occurred while loading the page. Please try again later.")
+#     try:
+#         st.session_state.plataforma = st.sidebar.selectbox(
+#             MARKETPLACE, page_names_to_funcs.keys()
+#         )
+#         page_names_to_funcs[st.session_state.plataforma]()
+#     except Exception as e:
+#         logging.error(
+#             f"An error occurred while selecting or executing page function: {str(e)}"
+#         )
+#         st.error("An error occurred while loading the page. Please try again later.")
 
 
-intro_page()
+# intro_page()
