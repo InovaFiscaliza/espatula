@@ -48,11 +48,14 @@ if "mkplc" not in st.session_state:
 if "keyword" not in st.session_state:
     st.session_state.keyword = ""
 
+if "folder" not in st.session_state:
+    st.session_state.folder = None
+
 if "cache" not in st.session_state:
     st.session_state.cache = {}
 
 if "use_cache" not in st.session_state:
-    st.session_state.use_cache = None
+    st.session_state.use_cache = False
 
 if "show_cache" not in st.session_state:
     st.session_state.show_cache = False
@@ -76,9 +79,18 @@ def set_keyword():
 
 
 @st.fragment
+def set_folder():
+    # Callback function to save the keyword selection to Session State
+    if (folder := Path(st.session_state._folder)).is_dir():
+        st.session_state.folder = folder
+    else:
+        st.session_state.folder = None
+
+
+@st.fragment
 def set_cache():
     # Callback function to save the keyword selection to Session State
-    scraper = SCRAPERS[st.session_state.mkplc]()
+    scraper = SCRAPERS[st.session_state.mkplc](path=st.session_state.folder)
     st.session_state.cache = scraper.get_links(st.session_state.keyword)
 
 
@@ -109,12 +121,12 @@ def run():
     keyword = st.session_state.keyword
     msg = st.toast("Iniciando a navegação...")
     if not st.session_state.use_cache:
-        scraper.search(keyword=keyword)
+        scraper.search(keyword=keyword, max_pages=st.session_state.max_searcg)
         msg.toast("Pesquisa de links realizada com sucesso!")
     dados = scraper.inspect_pages(
         keyword=keyword,
         screenshot=st.session_state.screenshot,
-        sample=st.session_state.sample_size,
+        sample=st.session_state.max_pages,
         shuffle=st.session_state.shuffle,
     )
     msg.toast("Captação de Anúncios Concluída!")
@@ -129,7 +141,9 @@ def run():
     st.snow()
 
 
-mkplc = st.sidebar.selectbox(
+config_container = st.sidebar.container(border=True)
+
+mkplc = config_container.selectbox(
     MARKETPLACE,
     SCRAPERS.keys(),
     key="_mkplc",
@@ -140,52 +154,64 @@ mkplc = st.sidebar.selectbox(
 if st.session_state.mkplc is None:
     st.title(TITLE)
 else:
-    st.sidebar.text_input(
+    config_container.text_input(
         KEYWORD,
         placeholder="Qual a palavra-chave a pesquisar?",
         key="_keyword",
         on_change=set_keyword,
     )
+
+    config_container.text_input(
+        FOLDER,
+        key="_folder",
+        on_change=set_folder,
+    )
+
     if st.session_state.keyword:
-        set_cache()
-        if cache := st.session_state.cache:
-            container = st.sidebar.container(border=True)
-            container.info(f"Existem **{len(cache)}** resultados de busca em cache")
-            if container.toggle("Visualizar cache", key="show_cache"):
-                show_links(st.empty())
-            container.radio(
-                "Pesquisa de links",
-                options=CACHE,
-                key="_use_cache",
-                on_change=use_cache,
-            )
+        if st.session_state.folder is not None:
+            set_cache()
+            if cache := st.session_state.cache:
+                container = st.sidebar.container(border=True)
+                container.info(f"Existem **{len(cache)}** resultados de busca em cache")
+                if container.toggle("Visualizar cache", key="show_cache"):
+                    show_links(st.empty())
+                container.radio(
+                    "Pesquisa de links",
+                    options=CACHE,
+                    key="_use_cache",
+                    on_change=use_cache,
+                )
+            else:
+                st.session_state.use_cache = False
         else:
-            st.session_state.use_cache = False
+            st.sidebar.error("Insira um caminho válido!", icon="🚨")
+    else:
+        st.sidebar.warning("Insira uma palavra-chave não vazia!", icon="⚠️")
 
 
 with st.sidebar:
     if mkplc is not None:
         with st.form("config", border=False):
             with st.expander("CONFIGURAÇÕES", expanded=False):
-                st.text_input(
-                    FOLDER,
-                    key="folder",
-                    value=str(Path.cwd()),
-                )
+                # st.text_input(
+                #     FOLDER,
+                #     key="folder",
+                #     value=str(Path.cwd()),
+                # )
                 st.number_input(RECONNECT, min_value=2, key="reconnect", value=5)
                 st.number_input(TIMEOUT, min_value=1, key="timeout", value=2)
                 st.number_input(
                     MAX_SEARCH,
                     min_value=1,
                     value=10,
-                    key="max_pages",
+                    key="max_search",
                     disabled=st.session_state.use_cache,
                 )
                 st.number_input(
                     MAX_PAGES,
                     min_value=1,
                     value=50,
-                    key="sample_size",
+                    key="max_pages",
                 )
                 st.checkbox(SHUFFLE, key="shuffle")
                 st.checkbox(SCREENSHOT, key="screenshot")
