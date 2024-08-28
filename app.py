@@ -55,13 +55,14 @@ if "cache" not in st.session_state:
     st.session_state.cache = {}
 
 if "use_cache" not in st.session_state:
-    st.session_state.use_cache = False
+    st.session_state.use_cache = CACHE[0]
 
 if "show_cache" not in st.session_state:
     st.session_state.show_cache = False
 
-# Retrieve the mkplc from Session State to initialize the widget
-st.session_state._mkplc = st.session_state.mkplc
+# Retrieve previous Session State to initialize the widgets
+for key in st.session_state:
+    st.session_state["_" + key] = st.session_state[key]
 
 
 @st.fragment
@@ -81,8 +82,8 @@ def set_keyword():
 @st.fragment
 def set_folder():
     # Callback function to save the keyword selection to Session State
-    if (folder := Path(st.session_state._folder)).is_dir():
-        st.session_state.folder = folder
+    if Path(st.session_state._folder).is_dir():
+        st.session_state.folder = st.session_state._folder
     else:
         st.session_state.folder = None
 
@@ -97,10 +98,7 @@ def set_cache():
 @st.fragment
 def use_cache():
     # Callback function to save the keyword selection to Session State
-    if st.session_state._use_cache == CACHE[1]:
-        st.session_state.use_cache = True
-    else:
-        st.session_state.use_cache = False
+    st.session_state.use_cache = st.session_state._use_cache
 
 
 @st.fragment
@@ -119,26 +117,26 @@ def run():
         timeout=st.session_state.timeout,
     )
     keyword = st.session_state.keyword
-    msg = st.toast("Iniciando a navegação...")
-    if not st.session_state.use_cache:
-        scraper.search(keyword=keyword, max_pages=st.session_state.max_searcg)
-        msg.toast("Pesquisa de links realizada com sucesso!")
-    dados = scraper.inspect_pages(
-        keyword=keyword,
-        screenshot=st.session_state.screenshot,
-        sample=st.session_state.max_pages,
-        shuffle=st.session_state.shuffle,
-    )
-    msg.toast("Captação de Anúncios Concluída!")
-    table = Table(
-        scraper.name,
-        dados,
-        json_source=scraper.pages_file(st.session_state.keyword),
-    )
-    table.process()  # TODO: adicionar form para o fiscal inserir a categoria do SCH
-    msg.toast("Processamento dos dados finalizado!", icon="🎉")
-    st.dataframe(table.df.loc[:, COLUNAS])
-    st.snow()
+    with st.status("Raspando páginas...🕷️"):
+        if st.session_state.use_cache == CACHE[0]:
+            scraper.search(keyword=keyword, max_pages=st.session_state.max_search)
+            st.toast("Pesquisa de links realizada com sucesso!")
+        dados = scraper.inspect_pages(
+            keyword=keyword,
+            screenshot=st.session_state.screenshot,
+            sample=st.session_state.max_pages,
+            shuffle=st.session_state.shuffle,
+        )
+        st.toast("Captação de Anúncios Concluída!")
+        table = Table(
+            scraper.name,
+            dados,
+            json_source=scraper.pages_file(st.session_state.keyword),
+        )
+        table.process()  # TODO: adicionar form para o fiscal inserir a categoria do SCH
+        st.toast("Processamento dos dados finalizado!", icon="🎉")
+        st.dataframe(table.df.loc[:, COLUNAS])
+        st.snow()
 
 
 config_container = st.sidebar.container(border=True)
@@ -182,7 +180,7 @@ else:
                     on_change=use_cache,
                 )
             else:
-                st.session_state.use_cache = False
+                st.session_state.use_cache = CACHE[0]
         else:
             st.sidebar.error("Insira um caminho válido!", icon="🚨")
     else:
@@ -193,11 +191,6 @@ with st.sidebar:
     if mkplc is not None:
         with st.form("config", border=False):
             with st.expander("CONFIGURAÇÕES", expanded=False):
-                # st.text_input(
-                #     FOLDER,
-                #     key="folder",
-                #     value=str(Path.cwd()),
-                # )
                 st.number_input(RECONNECT, min_value=2, key="reconnect", value=5)
                 st.number_input(TIMEOUT, min_value=1, key="timeout", value=2)
                 st.number_input(
@@ -205,7 +198,7 @@ with st.sidebar:
                     min_value=1,
                     value=10,
                     key="max_search",
-                    disabled=st.session_state.use_cache,
+                    disabled=(st.session_state.use_cache == CACHE[1]),
                 )
                 st.number_input(
                     MAX_PAGES,
