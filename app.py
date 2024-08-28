@@ -131,7 +131,7 @@ def run():
             ):
                 st.write(result)
                 progress_bar.progress(
-                    i * (100 // st.session_state.max_search), text=progress_text
+                    (i * (100 // st.session_state.max_search)) % 100, text=progress_text
                 )
             progress_bar.empty()
     container.empty()
@@ -148,7 +148,7 @@ def run():
             start=1,
         ):
             progress_bar.progress(
-                i * (100 // st.session_state.max_pages), text=progress_text
+                (i * (100 // st.session_state.max_pages)) % 100, text=progress_text
             )
             st.write(result)
         progress_bar.empty()
