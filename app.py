@@ -120,22 +120,22 @@ def run():
     )
     keyword = st.session_state.keyword
 
-    with container:
+    with container.empty():
         if st.session_state.use_cache == CACHE[0]:
             progress_text = "Realizando a busca de produtos...🕸️"
             progress_bar = st.progress(0, text=progress_text)
-
             for i, result in enumerate(
                 scraper.search(keyword=keyword, max_pages=st.session_state.max_search),
                 start=1,
             ):
-                st.write(result)
+                with st.empty():
+                    st.write(result)
                 progress_bar.progress(
-                    (i * (100 // st.session_state.max_search)) % 100, text=progress_text
+                    (i * (100 // st.session_state.max_search)) % 100,
+                    text=progress_text,
                 )
             progress_bar.empty()
-    container.empty()
-    with container:
+    with container.empty():
         progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
         progress_bar = st.progress(0, text=progress_text)
         for i, result in enumerate(
@@ -150,7 +150,8 @@ def run():
             progress_bar.progress(
                 (i * (100 // st.session_state.max_pages)) % 100, text=progress_text
             )
-            st.write(result)
+            with st.empty():
+                st.write(result)
         progress_bar.empty()
 
         table = Table(
