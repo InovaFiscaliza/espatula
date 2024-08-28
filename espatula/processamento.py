@@ -154,11 +154,10 @@ class Table:
 
     def drop_incomplete_rows(self):
         for column in ["nome", "categoria", "url"]:
-            self.delete_files(self.df[column].isna())
             self.df = self.df.dropna(subset=column).reset_index(drop=True)
-        # for row in self.df.itertuples():
-        #     if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-        #         self.df = self.df.drop(index=row.Index)
+        for row in self.df.itertuples():
+            if not (self.folder / "screenshots" / f"{row.screenshot}").is_file():
+                self.df = self.df.drop(index=row.Index)
 
     def split_categories(self):
         categories = self.df["categoria"].str.split("|", expand=True)
