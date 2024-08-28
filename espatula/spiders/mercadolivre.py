@@ -4,7 +4,7 @@ from datetime import datetime
 
 from gazpacho import Soup
 
-from .base import TIMEZONE, RECONNECT, TIMEOUT, BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
     "smartphone": "https://www.mercadolivre.com.br/c/celulares-e-telefones#menu=categories"
@@ -277,6 +277,6 @@ class MercadoLivreScraper(BaseScraper):
 
     def input_search_params(self, driver, keyword):
         if department := CATEGORIES.get(keyword):
-            driver.uc_open_with_reconnect(department, reconnect_time=RECONNECT)
+            driver.uc_open_with_reconnect(department, reconnect_time=self.reconnect)
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)

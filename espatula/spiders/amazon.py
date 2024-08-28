@@ -6,7 +6,7 @@ from urllib.parse import unquote
 
 from gazpacho import Soup
 
-from .base import TIMEZONE, RECONNECT, TIMEOUT, BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {"smartphone": ['li[id="n/16243803011"] a', 'li[id="n/16243890011"] a']}
 
@@ -264,12 +264,12 @@ class AmazonScraper(BaseScraper):
         except Exception as e:
             print(e)
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
         if department := CATEGORIES.get(keyword):
             for subcategory in department:
                 try:
                     subcategory_tag = driver.find_element(subcategory)
                     subcategory_tag.uc_click()
-                    driver.sleep(RECONNECT)
+                    driver.sleep(self.reconnect)
                 except Exception as e:
                     print(e)

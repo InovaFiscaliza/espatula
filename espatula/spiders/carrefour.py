@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from gazpacho import Soup
-from .base import RECONNECT, TIMEOUT, TIMEZONE, BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
     "smartphone": "https://www.carrefour.com.br/celulares-smartphones-e-smartwatches/smartphones#crfint=hm-tlink|celulares-e-smartphones|smartphones|1"
@@ -31,10 +31,10 @@ class CarrefourScraper(BaseScraper):
 
     def input_search_params(self, driver, keyword):
         if department := CATEGORIES.get(keyword):
-            driver.uc_open_with_reconnect(department, reconnect_time=RECONNECT)
+            driver.uc_open_with_reconnect(department, reconnect_time=self.reconnect)
         else:
             self.highlight_element(driver, self.input_field)
-            driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+            driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
 
     def extract_search_data(self, product_tag):
         if hasattr(

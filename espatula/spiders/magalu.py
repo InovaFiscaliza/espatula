@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from gazpacho import Soup
 
-from .base import TIMEZONE, RECONNECT, TIMEOUT, BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
     "smartphone": 'a[href="/busca/smartphone/?from=submit&filters=category---TE"]'
@@ -182,6 +182,6 @@ class MagaluScraper(BaseScraper):
 
     def input_search_params(self, driver, keyword):
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
         if department := CATEGORIES.get(keyword):
-            driver.uc_click(department, timeout=RECONNECT)
+            driver.uc_click(department, timeout=self.reconnect)
