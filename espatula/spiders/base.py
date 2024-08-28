@@ -14,7 +14,7 @@ from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
 from pypdf import PdfReader, PdfWriter
-from rich import print, progress
+from rich import print
 from seleniumbase import SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
@@ -36,6 +36,9 @@ TIMEOUT = int(os.environ.get("TIMEOUT", 5))
 @dataclass
 class BaseScraper:
     headless: bool = True
+    path: Path = FOLDER
+    reconnect: int = RECONNECT
+    timeout: int = TIMEOUT
     ad_block_on: bool = True
     incognito: bool = False
     do_not_track: bool = True
@@ -59,7 +62,7 @@ class BaseScraper:
 
     @property
     def folder(self) -> Path:
-        folder = FOLDER / self.name
+        folder = self.path / self.name
         folder.mkdir(parents=True, exist_ok=True)
         return folder
 
@@ -112,7 +115,7 @@ class BaseScraper:
             do_not_track=self.do_not_track,
         ) as sb:
             sb.driver.maximize_window()
-            sb.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
+            sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
             if self.turnstile:
                 self.click_turnstile_and_verify(sb)
             yield sb
@@ -181,7 +184,7 @@ class BaseScraper:
         if self.headless:
             return
         try:
-            driver.highlight(element, timeout=TIMEOUT // 2)
+            driver.highlight(element, timeout=self.timeout // 2)
         except (NoSuchElementException, ElementNotVisibleException) as e:
             print(e)
 
@@ -206,7 +209,7 @@ class BaseScraper:
         return bytes_stream.getvalue()
 
     def _save_screenshot(self, driver: SB, filename: str):
-        folder = FOLDER / "screenshots"
+        folder = self.path / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
         screenshot = self.compress_images(BytesIO(screenshot))
@@ -232,7 +235,7 @@ class BaseScraper:
         )
 
     def process_url(self, driver: SB, url: str) -> dict:
-        driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
+        driver.uc_open_with_reconnect(url, reconnect_time=self.reconnect)
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
                 print(f"Falha ao navegar {url}")
@@ -258,9 +261,7 @@ class BaseScraper:
         with self.browser() as driver:
             driver.set_messenger_theme(location="top_center")
             try:
-                for i, url in progress.track(
-                    keys, description=f"{self.name} - {keyword}"
-                ):
+                for i, url in keys:
                     if not (result_page := self.process_url(driver, url)):
                         del links[url]
                         continue
@@ -287,9 +288,9 @@ class BaseScraper:
 
     def input_search_params(self, driver: SB, keyword: str):
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
 
-    def search(self, keyword: str, max_pages: int = 10, overwrite: bool = True):
+    def search(self, keyword: str, max_pages: int = 10, overwrite: bool = False):
         links = {} if overwrite else self.get_links(keyword)
         results = {}
         page = 1
@@ -298,7 +299,7 @@ class BaseScraper:
                 self.input_search_params(driver, keyword)
                 driver.set_messenger_theme(location="top_center")
                 while True:
-                    driver.sleep(TIMEOUT)
+                    driver.sleep(self.timeout)
                     products = self.discover_product_urls(driver, keyword)
                     print(f"Navegando página {page} da busca '{keyword}'...")
                     if not self.headless:
@@ -316,7 +317,7 @@ class BaseScraper:
                             )
                         break
                     self.highlight_element(driver, self.next_page_button)
-                    driver.uc_click(self.next_page_button, timeout=TIMEOUT)
+                    driver.uc_click(self.next_page_button, timeout=self.timeout)
 
             finally:
                 links.update(results)
