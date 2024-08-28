@@ -1,5 +1,5 @@
 import streamlit as st
-from fastcore.xtras import Path, loads
+from fastcore.xtras import Path
 from espatula.spiders import (
     AmazonScraper,
     MercadoLivreScraper,
@@ -9,7 +9,22 @@ from espatula.spiders import (
     CarrefourScraper,
 )
 from espatula.processamento import Table, COLUNAS
-from config import *
+from config import (
+    MARKETPLACES,
+    MARKETPLACE,
+    TITLE,
+    KEYWORD,
+    CACHE,
+    FOLDER,
+    RECONNECT,
+    TIMEOUT,
+    MAX_SEARCH,
+    MAX_PAGES,
+    SHUFFLE,
+    SCREENSHOT,
+    HIDE_BROWSER,
+    START,
+)
 
 SCRAPERS = {
     "Amazon": AmazonScraper,
@@ -70,7 +85,7 @@ def set_cache():
 @st.fragment
 def use_cache():
     # Callback function to save the keyword selection to Session State
-    if st.session_state._use_cache == "Utilizar resultados do cache":
+    if st.session_state._use_cache == CACHE[1]:
         st.session_state.use_cache = True
     else:
         st.session_state.use_cache = False
@@ -85,7 +100,12 @@ def show_links(main_page):
 
 def run():
     st.session_state.show_cache = False
-    scraper = SCRAPERS[st.session_state.mkplc](st.session_state.headless)
+    scraper = SCRAPERS[st.session_state.mkplc](
+        headless=st.session_state.headless,
+        path=st.session_state.folder,
+        reconnect=st.session_state.reconnect,
+        timeout=st.session_state.timeout,
+    )
     keyword = st.session_state.keyword
     msg = st.toast("Iniciando a navegação...")
     if not st.session_state.use_cache:
@@ -118,7 +138,7 @@ mkplc = st.sidebar.selectbox(
 )
 
 if st.session_state.mkplc is None:
-    st.title("🤖 Regulatron")
+    st.title(TITLE)
 else:
     st.sidebar.text_input(
         KEYWORD,
@@ -135,7 +155,7 @@ else:
                 show_links(st.empty())
             container.radio(
                 "Pesquisa de links",
-                options=["Efetuar nova busca", "Utilizar resultados do cache"],
+                options=CACHE,
                 key="_use_cache",
                 on_change=use_cache,
             )
@@ -152,26 +172,22 @@ with st.sidebar:
                     key="folder",
                     value=str(Path.cwd()),
                 )
+                st.number_input(RECONNECT, min_value=2, key="reconnect", value=5)
+                st.number_input(TIMEOUT, min_value=1, key="timeout", value=2)
                 st.number_input(
-                    "Tempo de reconexão (seg)", min_value=2, key="reconnect", value=5
-                )
-                st.number_input(
-                    "Tempo de espera (seg)", min_value=1, key="timeout", value=2
-                )
-                st.number_input(
-                    "Número máximo de páginas de busca a navegar",
+                    MAX_SEARCH,
                     min_value=1,
                     value=10,
                     key="max_pages",
                     disabled=st.session_state.use_cache,
                 )
                 st.number_input(
-                    "Número máximo de produtos a capturar",
+                    MAX_PAGES,
                     min_value=1,
                     value=50,
                     key="sample_size",
                 )
-                st.checkbox(RANDOM_SAMPLE, key="shuffle")
-                st.checkbox(CAPTURE_SCREENSHOT, key="screenshot")
+                st.checkbox(SHUFFLE, key="shuffle")
+                st.checkbox(SCREENSHOT, key="screenshot")
                 st.toggle(HIDE_BROWSER, key="headless")
-            st.form_submit_button(NAVIGATE_ADS, on_click=run, use_container_width=True)
+            st.form_submit_button(START, on_click=run, use_container_width=True)

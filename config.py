@@ -1,32 +1,25 @@
-from espatula.spiders import (
-    AmazonScraper,
-    MercadoLivreScraper,
-    MagaluScraper,
-    AmericanasScraper,
-    CasasBahiaScraper,
-    CarrefourScraper,
-)
-
 # Constants for string literals
-MARKETPLACE = "Marketplace"
-HIDE_BROWSER = "Ocultar o navegador"
-SEARCH_PARAMETERS = "Parâmetros da Busca"
-KEYWORD = "PALAVRA CHAVE"
-MAX_PAGES = "Número máximo de páginas de busca a navegar"
-SEARCH_LINKS = "Verificar links🧐"
-EXTRACTION_PARAMETERS = "Parâmetros da Extração de Dados"
-SEARCHED_TEXT = "Texto Pesquisado"
-MAX_ADS = "Número máximo de anúncios a extrair"
-RANDOM_SAMPLE = "Amostrar páginas aleatoriamente"
-CAPTURE_SCREENSHOT = "Capturar tela do anúncio"
-NAVIGATE_ADS = "Navegar páginas dos anúncios🚀"
-REDO_SEARCH = "Refazer Pesquisa de Links😵‍💫"
+MARKETPLACE = "**Marketplace**"
+KEYWORD = "Palavra-Chave🔎"
 
-SCRAPERS = {
-    "Amazon": AmazonScraper,
-    "Mercado Livre": MercadoLivreScraper,
-    "Magalu": MagaluScraper,
-    "Americanas": AmericanasScraper,
-    "Casas Bahia": CasasBahiaScraper,
-    "Carrefour": CarrefourScraper,
+MARKETPLACES = {
+    "Amazon": "Amazon",
+    "Mercado Livre": "Mercado Livre",
+    "Magalu": "Magalu",
+    "Americanas": "Americanas",
+    "Casas Bahia": "Casas Bahia",
+    "Carrefour": "Carrefour",
 }
+
+TITLE = "🤖 Regulatron"
+CACHE = ("Efetuar nova busca", "Utilizar resultados do cache")
+FOLDER = "Pasta de Trabalho"
+RECONNECT = "Tempo de reconexão do navegador (seg)"
+TIMEOUT = "Tempo de espera (seg)"
+SEARCH_PARAMETERS = "Parâmetros - Busca de Links"
+MAX_SEARCH = "Número máximo de páginas de busca a navegar"
+MAX_PAGES = "Número máximo de produtos a capturar"
+SHUFFLE = "Amostrar páginas aleatoriamente"
+SCREENSHOT = "Capturar tela do anúncio"
+HIDE_BROWSER = "Ocultar o navegador?"
+START = "Iniciar Navegação🚀"
