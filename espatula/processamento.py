@@ -15,7 +15,6 @@ from rich import print
 from .certificacao import merge_to_sch
 from .constantes import SUBCATEGORIES
 from .modelos import SGD
-from .spiders.base import FOLDER
 
 load_dotenv(find_dotenv(), override=False)
 nltk.download("stopwords", quiet=True)
@@ -152,12 +151,6 @@ class Table:
             Table.score_distance(row.loc[left], row.loc[right])
             for (left, right) in COLUMN_PAIRS
         ]
-
-    def delete_files(self, filter: pd.Series) -> None:
-        for row in self.df.loc[filter].itertuples():
-            if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-                print(f"Deleting {file} from discarded row")
-                # file.unlink()
 
     def drop_incomplete_rows(self):
         for column in ["nome", "categoria", "url"]:

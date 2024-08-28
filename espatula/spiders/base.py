@@ -28,17 +28,14 @@ from espatula.constantes import (
 load_dotenv(find_dotenv(), override=False)
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
-FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
-RECONNECT = int(os.environ.get("RECONNECT", 10))
-TIMEOUT = int(os.environ.get("TIMEOUT", 5))
 
 
 @dataclass
 class BaseScraper:
     headless: bool = True
-    path: Path = FOLDER
-    reconnect: int = RECONNECT
-    timeout: int = TIMEOUT
+    path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
+    reconnect: int = int(os.environ.get("RECONNECT", 10))
+    timeout: int = int(os.environ.get("TIMEOUT", 5))
     ad_block_on: bool = True
     incognito: bool = False
     do_not_track: bool = True
