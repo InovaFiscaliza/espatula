@@ -1,12 +1,5 @@
-import logging
-import random
-import os
-from collections import defaultdict
-
 import streamlit as st
-import requests
-from fastcore.xtras import Path
-
+from fastcore.xtras import Path, loads
 from espatula.spiders import (
     AmazonScraper,
     MercadoLivreScraper,
@@ -15,24 +8,8 @@ from espatula.spiders import (
     CasasBahiaScraper,
     CarrefourScraper,
 )
-
 from espatula.processamento import Table, COLUNAS
-
-
-from config import (
-    CAPTURE_SCREENSHOT,
-    EXTRACTION_PARAMETERS,
-    HIDE_BROWSER,
-    KEYWORD,
-    MARKETPLACE,
-    MAX_ADS,
-    MAX_PAGES,
-    NAVIGATE_ADS,
-    RANDOM_SAMPLE,
-    SEARCH_LINKS,
-    SEARCH_PARAMETERS,
-    SEARCHED_TEXT,
-)
+from config import *
 
 SCRAPERS = {
     "Amazon": AmazonScraper,
@@ -43,262 +20,158 @@ SCRAPERS = {
     "Carrefour": CarrefourScraper,
 }
 
-
 st.set_page_config(
-    page_title="Espátula",
-    page_icon="🛠️",
+    page_title="Regulatron",
+    page_icon="🤖",
+    layout="wide",
 )
-# Now import the configuration and scraper classe
-logging.basicConfig(level=logging.ERROR)
 
-# if "folder" not in st.session_state:
-#     st.session_state.folder = str(Path.cwd())
+# Initialize st.session_state.mkplc to None
+if "mkplc" not in st.session_state:
+    st.session_state.mkplc = None
 
-# if "reconnect" not in st.session_state:
-#     st.session_state.reconnect = 10
+if "keyword" not in st.session_state:
+    st.session_state.keyword = ""
 
-# if "timeout" not in st.session_state:
-#     st.session_state.timeout = 5
+if "cache" not in st.session_state:
+    st.session_state.cache = {}
 
-# if "scrapers" not in st.session_state:
-#     st.session_state.scrapers = defaultdict(list)
+if "use_cache" not in st.session_state:
+    st.session_state.use_cache = None
 
+if "show_cache" not in st.session_state:
+    st.session_state.show_cache = False
 
-@st.fragment
-def amazon_search(scraper):
-    with st.status(f"Buscando - **Amazon** : _{st.session_state.amazon_keyword}_ ..."):
-        scraper.search(
-            keyword=st.session_state.amazon_keyword,
-            max_pages=st.session_state.amazon_max_pages,
-        )
+# Retrieve the mkplc from Session State to initialize the widget
+st.session_state._mkplc = st.session_state.mkplc
 
 
 @st.fragment
-def amazon_links():
-    scraper = AmazonScraper(
-        headless=st.session_state.amazon_headless,
-        # timeout=st.session_state.timeout,
-        # reconnect=st.session_state.reconnect,
-        # folder=st.session_state.folder,
-    )
-    if links := scraper.get_links(st.session_state.amazon_keyword):
-        st.success(
-            f"Foram encontrados {len(links)} anúncios para o termo {st.session_state.amazon_keyword}!",
-            icon="✅",
-        )
-        st.info(
-            f"Links salvos em {scraper.links_file(st.session_state.amazon_keyword)}"
-        )
-        st.write(list(links.values()))
-        label = "Refazer Busca🔄"
+def set_mkplc():
+    # Callback function to save the mkplc selection to Session State
+    st.session_state.mkplc = st.session_state._mkplc
+    st.title(MARKETPLACES[st.session_state._mkplc])
 
+
+@st.fragment
+def set_keyword():
+    # Callback function to save the keyword selection to Session State
+    keyword = st.session_state._keyword.strip()
+    st.session_state.keyword = keyword
+
+
+@st.fragment
+def set_cache():
+    # Callback function to save the keyword selection to Session State
+    scraper = SCRAPERS[st.session_state.mkplc]()
+    st.session_state.cache = scraper.get_links(st.session_state.keyword)
+
+
+@st.fragment
+def use_cache():
+    # Callback function to save the keyword selection to Session State
+    if st.session_state._use_cache == "Utilizar resultados do cache":
+        st.session_state.use_cache = True
     else:
-        st.warning(
-            f"Nenhum link salvo para o termo {st.session_state.amazon_keyword}!",
-            icon="⚠️",
-        )
-        label = "Efetuar Busca➡️"
-
-    st.button(label, on_click=amazon_search, args=(scraper,), use_container_width=True)
+        st.session_state.use_cache = False
 
 
-def amazon():
-    name = "Amazon🛒🛍"
-    st.title(name)
-    # TODO: Escrever uma explicação aqui
-    tabs = st.tabs(["🔎Links", "🗐 Páginas"])
-
-    with tabs[0]:
-        st.sidebar.title(SEARCH_PARAMETERS)
-        with st.sidebar.form("search_form"):
-            st.checkbox(f"**{HIDE_BROWSER}**", key="amazon_headless")
-            st.text_input(
-                KEYWORD,
-                key="amazon_keyword",
-            )
-            st.slider(
-                MAX_PAGES,
-                1,
-                40,
-                10,
-                key="amazon_max_pages",
-            )
-            submit = st.form_submit_button(
-                SEARCH_LINKS,
-            )
-            if submit:
-                st.success("Variáveis de busca definidas com sucesso!")
-        if submit:
-            amazon_links()
-            # timeout=st.session_state.timeout,
-            # reconnect=st.session_state.reconnect,
-            # folder=st.session_state.folder,
+@st.fragment
+def show_links(main_page):
+    with main_page.container():
+        if st.session_state.cache:
+            st.write(st.session_state.cache)
 
 
-def intro():
-    st.title("Projeto Regulatron - Módulo Espátula")
-    st.image("images/espatula.png", caption="Espátula", use_column_width=True)
-    st.logo("images/logo.svg", icon_image="images/logo.svg")
-    st.info("""
-        Raspagem de dados _(webscraping)_ de anúncios de
-        produtos para telecomunicações. 
-        """)
-    st.markdown(
-        """
-    
-        * 👨🏻‍💻 Simular o comportamento de um consumidor ao acessar o site.
-        * 👾 Generalizar a implementação para outras plataformas
-        * 🤖 Tornar a extração independente da categorização de cada marketplace atráves da busca por termos
-        * 🗄️ Cruzar com os registros de produtos homologados da Anatel.
-        * 📊 Categorizar e efetuar análises quantitativas
-        
-        **👈 Para iniciar primeiramente defina os parâmetros globais 
-        (aplicáveis a todos os _scrapers_) ao lado, depois é só navegar em qualquer página e seguir as instruções!**
-        """
+def run():
+    st.session_state.show_cache = False
+    scraper = SCRAPERS[st.session_state.mkplc](st.session_state.headless)
+    keyword = st.session_state.keyword
+    msg = st.toast("Iniciando a navegação...")
+    if not st.session_state.use_cache:
+        scraper.search(keyword=keyword)
+        msg.toast("Pesquisa de links realizada com sucesso!")
+    dados = scraper.inspect_pages(
+        keyword=keyword,
+        screenshot=st.session_state.screenshot,
+        sample=st.session_state.sample_size,
+        shuffle=st.session_state.shuffle,
     )
-    st.sidebar.title("Parâmetros Globais")
-
-    with st.sidebar.form("env_vars_form"):
-        st.text_input(
-            "PASTA",
-            key="folder",
-            value=str(Path.cwd()),
-        )
-        st.number_input("TEMPO DE RECONEXÃO(s)", min_value=2, key="reconnect", value=5)
-        st.number_input("TEMPO DE ESPERA(s)", min_value=1, key="timeout", value=2)
-        submit = st.form_submit_button(
-            "Definir Parâmetros",
-        )
-        if submit:
-            st.success("Variáveis globais definidas com sucesso!")
-
-
-intro_page = st.Page(intro, title="Introdução", icon=":material/login:")
-amazon_page = st.Page(amazon, title="Amazon")
-
-pg = st.navigation([intro_page, amazon_page])
-pg.run()
-
-
-# st.text_input(
-#     KEYWORD,
-#     key="keyword",
-# )
-# headless = st.checkbox(f"**{HIDE_BROWSER}**", key="headless")
-
-
-def search():
-    scraper = SCRAPERS[st.session_state.plataforma](
-        headless=st.session_state.headless,
+    msg.toast("Captação de Anúncios Concluída!")
+    table = Table(
+        scraper.name,
+        dados,
+        json_source=scraper.pages_file(st.session_state.keyword),
     )
-    with st.spinner(
-        f"Buscando - **{st.session_state.plataforma}** : _{st.session_state.keyword}_ ..."
-    ):
-        links = scraper.search(
-            keyword=st.session_state.keyword,
-            max_pages=st.session_state.max_pages,
-        )
-        st.success(f"Foram encontrados {len(links)} anúncios!")
-        st.info(f"Links salvos em {scraper.links_file(st.session_state.keyword)}")
-        st.write(list(links.values()))
-        st.session_state.links[st.session_state.plataforma][st.session_state.keyword][
-            "links"
-        ] = links
+    table.process()  # TODO: adicionar form para o fiscal inserir a categoria do SCH
+    msg.toast("Processamento dos dados finalizado!", icon="🎉")
+    st.dataframe(table.df.loc[:, COLUNAS])
+    st.snow()
 
 
-def search_page():
-    # global ITERATION  # gambiarra para não haver conflitos de chaves nos widgets
-    # ITERATION += 1
-    st.sidebar.title(SEARCH_PARAMETERS)
-    with st.sidebar.form("search_form"):
-        st.slider(
-            MAX_PAGES,
-            1,
-            40,
-            10,
-            key="max_pages",
-        )
-        st.form_submit_button(
-            SEARCH_LINKS,
-            on_click=search,
-            use_container_width=True,
-        )
+mkplc = st.sidebar.selectbox(
+    MARKETPLACE,
+    SCRAPERS.keys(),
+    key="_mkplc",
+    on_change=set_mkplc,
+    placeholder="Selecione uma opção",
+)
+
+if st.session_state.mkplc is None:
+    st.title("🤖 Regulatron")
+else:
+    st.sidebar.text_input(
+        KEYWORD,
+        placeholder="Qual a palavra-chave a pesquisar?",
+        key="_keyword",
+        on_change=set_keyword,
+    )
+    if st.session_state.keyword:
+        set_cache()
+        if cache := st.session_state.cache:
+            container = st.sidebar.container(border=True)
+            container.info(f"Existem **{len(cache)}** resultados de busca em cache")
+            if container.toggle("Visualizar cache", key="show_cache"):
+                show_links(st.empty())
+            container.radio(
+                "Pesquisa de links",
+                options=["Efetuar nova busca", "Utilizar resultados do cache"],
+                key="_use_cache",
+                on_change=use_cache,
+            )
+        else:
+            st.session_state.use_cache = False
 
 
-def inspect(keyword):
-    scraper = SCRAPERS[st.session_state.plataforma](headless=st.session_state.headless)
-    with st.spinner("Acessando os anúncios, aguarde..."):
-        dados = scraper.inspect_pages(
-            keyword=keyword,
-            screenshot=st.session_state.screenshot,
-            sample=st.session_state.sample,
-            shuffle=st.session_state.shuffle,
-        )
-        table = Table(scraper.name, dados, json_source=scraper.pages_file(keyword))
-        table.process()  # TODO: adicionar form para o fiscal inserir a categoria do SCH
-        st.balloons()
-        st.dataframe(table.df.loc[:, COLUNAS])
-
-
-def inspect_page():
-    st.sidebar.title(EXTRACTION_PARAMETERS)
-    with st.sidebar.form(f"**{EXTRACTION_PARAMETERS}**"):
-        st.info(f"{SEARCHED_TEXT}: **{st.session_state.keyword}**")
-        st.slider(
-            MAX_ADS,
-            1,
-            100,
-            50,
-            key="sample",
-        )
-        st.checkbox(f"**{RANDOM_SAMPLE}**", key="shuffle")
-        st.checkbox(f"**{CAPTURE_SCREENSHOT}**", key="screenshot")
-        st.form_submit_button(
-            f"**{NAVIGATE_ADS}**",
-            on_click=inspect,
-            args=(st.session_state.keyword,),
-        )
-
-
-@st.cache_data
-def get_dog():
-    response = requests.get("https://random.dog/doggos")
-    return [f"https://random.dog/{img}" for img in response.json()]
-
-
-# def main():
-#     handle_page_layout()
-#     if not st.session_state.links[
-#         st.session_state.plataforma
-#     ]:  # Show dog if empty dict of links
-#         dog = random.choice(get_dog())
-#         if dog[-4:] == ".mp4":
-#             st.video(
-#                 dog,
-#                 autoplay=True,
-#                 loop=True,
-#             )
-#         else:
-#             st.image(
-#                 dog,
-#                 caption="Aguardando a busca de anúncios...",
-#                 width=480,
-#             )
-
-
-# def intro_page():
-#     page_names_to_funcs = {"—": intro} | {k: main for k in SCRAPERS.keys()}
-
-#     try:
-#         st.session_state.plataforma = st.sidebar.selectbox(
-#             MARKETPLACE, page_names_to_funcs.keys()
-#         )
-#         page_names_to_funcs[st.session_state.plataforma]()
-#     except Exception as e:
-#         logging.error(
-#             f"An error occurred while selecting or executing page function: {str(e)}"
-#         )
-#         st.error("An error occurred while loading the page. Please try again later.")
-
-
-# intro_page()
+with st.sidebar:
+    if mkplc is not None:
+        with st.form("config", border=False):
+            with st.expander("CONFIGURAÇÕES", expanded=False):
+                st.text_input(
+                    FOLDER,
+                    key="folder",
+                    value=str(Path.cwd()),
+                )
+                st.number_input(
+                    "Tempo de reconexão (seg)", min_value=2, key="reconnect", value=5
+                )
+                st.number_input(
+                    "Tempo de espera (seg)", min_value=1, key="timeout", value=2
+                )
+                st.number_input(
+                    "Número máximo de páginas de busca a navegar",
+                    min_value=1,
+                    value=10,
+                    key="max_pages",
+                    disabled=st.session_state.use_cache,
+                )
+                st.number_input(
+                    "Número máximo de produtos a capturar",
+                    min_value=1,
+                    value=50,
+                    key="sample_size",
+                )
+                st.checkbox(RANDOM_SAMPLE, key="shuffle")
+                st.checkbox(CAPTURE_SCREENSHOT, key="screenshot")
+                st.toggle(HIDE_BROWSER, key="headless")
+            st.form_submit_button(NAVIGATE_ADS, on_click=run, use_container_width=True)
