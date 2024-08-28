@@ -59,7 +59,7 @@ class BaseScraper:
 
     @property
     def folder(self) -> Path:
-        folder = self.path / self.name
+        folder = Path(self.path) / self.name
         folder.mkdir(parents=True, exist_ok=True)
         return folder
 
