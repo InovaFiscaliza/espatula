@@ -61,7 +61,7 @@ class Table:
         assert (
             page_dict or json_source
         ), "Either page_dict or json_source must be provided."
-        self.source = json_source
+        self.json_source = json_source
         self.page_dict = page_dict
 
     @cached_property
@@ -69,7 +69,7 @@ class Table:
         """Return the DataFrame for the table."""
         if self.page_dict is not None:
             return pd.DataFrame(self.page_dict.values(), dtype="string")
-        return pd.DataFrame(self.source.read_json().values(), dtype="string")
+        return pd.DataFrame(self.json_source.read_json().values(), dtype="string")
 
     @staticmethod
     def preprocess_text(
@@ -155,9 +155,6 @@ class Table:
     def drop_incomplete_rows(self):
         for column in ["nome", "categoria", "url"]:
             self.df = self.df.dropna(subset=column).reset_index(drop=True)
-        for row in self.df.itertuples():
-            if not (self.folder / "screenshots" / f"{row.screenshot}").is_file():
-                self.df = self.df.drop(index=row.Index)
 
     def split_categories(self):
         categories = self.df["categoria"].str.split("|", expand=True)
@@ -189,7 +186,7 @@ class Table:
         """Write the dataframe to an Excel file."""
 
         writer = pd.ExcelWriter(
-            self.source.with_suffix(".xlsx"),
+            self.json_source.with_suffix(".xlsx"),
             engine="xlsxwriter",
             engine_kwargs={
                 "options": {
@@ -212,9 +209,9 @@ class Table:
         worksheet.freeze_panes(1, 0)
         if prefix := os.environ.get("PREFIX"):
             for i, link in enumerate(df["screenshot"], start=2):
-                worksheet.write_url(f"T{i}", prefix + link, string=f"#{i}")
+                worksheet.write_url(f"S{i}", prefix + link, string=f"#{i}")
         for i, row in enumerate(df.itertuples(), start=2):
-            worksheet.write_url(f"U{i}", row.url)
+            worksheet.write_url(f"T{i}", row.url)
         # Make the columns wider for clarity.
         worksheet.autofit()
         # # Create a format for the font size

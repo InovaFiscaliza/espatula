@@ -270,8 +270,9 @@ class BaseScraper:
 
                     result_page["palavra_busca"] = keyword
                     result_page["indice"] = i
-                    sampled_pages[result_page["url"]] = {**links[url], **result_page}
-
+                    output = {**links[url], **result_page}
+                    sampled_pages[result_page["url"]] = output
+                    yield output
                     if sample and len(sampled_pages) >= sample:
                         break
             finally:
@@ -281,7 +282,6 @@ class BaseScraper:
                     self.links_file(keyword).open("w"),
                     ensure_ascii=False,
                 )
-        return sampled_pages
 
     def input_search_params(self, driver: SB, keyword: str):
         self.highlight_element(driver, self.input_field)
@@ -304,6 +304,7 @@ class BaseScraper:
                     for url, link_data in products.items():
                         link_data["página_de_busca"] = page
                         results[url] = link_data
+                    yield link_data
                     if not driver.is_element_present(self.next_page_button):
                         break
                     page += 1
@@ -323,4 +324,3 @@ class BaseScraper:
                     self.links_file(keyword).open("w"),
                     ensure_ascii=False,
                 )
-        return results

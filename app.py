@@ -109,7 +109,9 @@ def show_links(main_page):
 
 
 def run():
+    container = st.container()
     st.session_state.show_cache = False
+    container.empty()
     scraper = SCRAPERS[st.session_state.mkplc](
         headless=st.session_state.headless,
         path=st.session_state.folder,
@@ -117,24 +119,47 @@ def run():
         timeout=st.session_state.timeout,
     )
     keyword = st.session_state.keyword
-    with st.status("Raspando páginas...🕷️"):
+
+    with container:
         if st.session_state.use_cache == CACHE[0]:
-            scraper.search(keyword=keyword, max_pages=st.session_state.max_search)
-            st.toast("Pesquisa de links realizada com sucesso!")
-        dados = scraper.inspect_pages(
-            keyword=keyword,
-            screenshot=st.session_state.screenshot,
-            sample=st.session_state.max_pages,
-            shuffle=st.session_state.shuffle,
-        )
-        st.toast("Captação de Anúncios Concluída!")
+            progress_text = "Realizando a busca de produtos...🕸️"
+            progress_bar = st.progress(0, text=progress_text)
+
+            for i, result in enumerate(
+                scraper.search(keyword=keyword, max_pages=st.session_state.max_search),
+                start=1,
+            ):
+                st.write(result)
+                progress_bar.progress(
+                    i * (100 // st.session_state.max_search), text=progress_text
+                )
+            progress_bar.empty()
+    container.empty()
+    with container:
+        progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
+        progress_bar = st.progress(0, text=progress_text)
+        for i, result in enumerate(
+            scraper.inspect_pages(
+                keyword=keyword,
+                screenshot=st.session_state.screenshot,
+                sample=st.session_state.max_pages,
+                shuffle=st.session_state.shuffle,
+            ),
+            start=1,
+        ):
+            progress_bar.progress(
+                i * (100 // st.session_state.max_pages), text=progress_text
+            )
+            st.write(result)
+        progress_bar.empty()
+
         table = Table(
             scraper.name,
-            dados,
             json_source=scraper.pages_file(st.session_state.keyword),
         )
         table.process()  # TODO: adicionar form para o fiscal inserir a categoria do SCH
-        st.toast("Processamento dos dados finalizado!", icon="🎉")
+        st.divider()
+        st.success("Processamento dos dados finalizado!", icon="🎉")
         st.dataframe(table.df.loc[:, COLUNAS])
         st.snow()
 
