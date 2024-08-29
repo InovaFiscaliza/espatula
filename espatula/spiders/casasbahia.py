@@ -3,8 +3,7 @@ from datetime import datetime
 
 from gazpacho import Soup
 
-from ..constantes import TIMEZONE
-from .base import BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 
 @dataclass
@@ -196,6 +195,7 @@ class CasasBahiaScraper(BaseScraper):
             "ean_gtin": ean,
             "características": características,
             "product_id": product_id,
+            "url": driver.get_current_url(),
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 

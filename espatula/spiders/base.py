@@ -1,16 +1,20 @@
+import os
 import base64
 import json
 import re
+from datetime import datetime
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
+from zoneinfo import ZoneInfo
+
 
 import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
 from pypdf import PdfReader, PdfWriter
-from rich import print, progress
+from rich import print
 from seleniumbase import SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
@@ -19,18 +23,19 @@ from seleniumbase.common.exceptions import (
 
 from espatula.constantes import (
     CERTIFICADO,
-    FOLDER,
-    RECONNECT,
-    TIMEOUT,
-    TODAY,
 )
 
-load_dotenv(find_dotenv(), override=True)
+load_dotenv(find_dotenv(), override=False)
+TIMEZONE = ZoneInfo("America/Sao_Paulo")
+TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
 
 
 @dataclass
 class BaseScraper:
     headless: bool = True
+    path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
+    reconnect: int = int(os.environ.get("RECONNECT", 10))
+    timeout: int = int(os.environ.get("TIMEOUT", 5))
     ad_block_on: bool = True
     incognito: bool = False
     do_not_track: bool = True
@@ -54,7 +59,7 @@ class BaseScraper:
 
     @property
     def folder(self) -> Path:
-        folder = FOLDER / self.name
+        folder = Path(self.path) / self.name
         folder.mkdir(parents=True, exist_ok=True)
         return folder
 
@@ -63,6 +68,10 @@ class BaseScraper:
             self.folder / f"{self.name}_{keyword.lower().replace(' ', '_')}_links.json"
         )
 
+    def pages_file(self, keyword: str) -> Path:
+        stem = self.links_file(keyword).stem.replace("_links", f"_pages_{TODAY}")
+        return self.links_file(keyword).with_stem(stem)
+
     def get_links(self, keyword: str) -> dict:
         links_file = self.links_file(keyword)
         if not links_file.is_file():
@@ -70,8 +79,20 @@ class BaseScraper:
             print(
                 "Execute primeiramente a busca de links pelo método 'search(keyword)'"
             )
-            raise FileNotFoundError(f"Arquivo {links_file} não encontrado")
+            return {}
         return loads(links_file.read_text())
+
+    def get_pages(self, keyword: str) -> dict:
+        pages_file = self.pages_file(keyword)
+        if not pages_file.is_file():
+            print(
+                f"Não foram arquivos de dados das páginas para {self.name} - {keyword}"
+            )
+            print(
+                "Caso já tenha feito a busca de links, execute o método 'inspect_pages(keyword)'"
+            )
+            return {}
+        return loads(pages_file.read_text())
 
     @staticmethod
     def click_turnstile_and_verify(sb):
@@ -91,7 +112,7 @@ class BaseScraper:
             do_not_track=self.do_not_track,
         ) as sb:
             sb.driver.maximize_window()
-            sb.uc_open_with_reconnect(self.url, reconnect_time=RECONNECT)
+            sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
             if self.turnstile:
                 self.click_turnstile_and_verify(sb)
             yield sb
@@ -160,7 +181,7 @@ class BaseScraper:
         if self.headless:
             return
         try:
-            driver.highlight(element, timeout=TIMEOUT // 2)
+            driver.highlight(element, timeout=self.timeout // 2)
         except (NoSuchElementException, ElementNotVisibleException) as e:
             print(e)
 
@@ -185,7 +206,7 @@ class BaseScraper:
         return bytes_stream.getvalue()
 
     def _save_screenshot(self, driver: SB, filename: str):
-        folder = FOLDER / "screenshots"
+        folder = self.folder / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
         screenshot = self.compress_images(BytesIO(screenshot))
@@ -204,22 +225,14 @@ class BaseScraper:
         return f"{base_filename}_{i}.pdf"
 
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
-        output_file = self.links_file(keyword).with_name(
-            f"{self.name}_{TODAY}_{keyword.lower().replace(' ', '_')}.json"
-        )
-        if output_file.is_file():
-            old_links = output_file.read_json()
-            old_links.update(sampled_pages)
-            sampled_pages = old_links
-
         json.dump(
             sampled_pages,
-            output_file.open("w"),
+            self.pages_file(keyword).open("w"),
             ensure_ascii=False,
         )
 
     def process_url(self, driver: SB, url: str) -> dict:
-        driver.uc_open_with_reconnect(url, reconnect_time=RECONNECT)
+        driver.uc_open_with_reconnect(url, reconnect_time=self.reconnect)
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
                 print(f"Falha ao navegar {url}")
@@ -245,22 +258,21 @@ class BaseScraper:
         with self.browser() as driver:
             driver.set_messenger_theme(location="top_center")
             try:
-                for i, url in progress.track(
-                    keys, description=f"{self.name} - {keyword}"
-                ):
+                for i, url in keys:
                     if not (result_page := self.process_url(driver, url)):
                         del links[url]
                         continue
 
                     if screenshot:
                         self.save_screenshot(driver, result_page, i)
+                    else:
+                        result_page["screenshot"] = ""
 
                     result_page["palavra_busca"] = keyword
-                    result_page["index"] = i
-                    result_page["url"] = url
-                    result_page.update(links[url])
-                    sampled_pages[url] = result_page
-
+                    result_page["indice"] = i
+                    output = {**links[url], **result_page}
+                    sampled_pages[result_page["url"]] = output
+                    yield output
                     if sample and len(sampled_pages) >= sample:
                         break
             finally:
@@ -273,9 +285,9 @@ class BaseScraper:
 
     def input_search_params(self, driver: SB, keyword: str):
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
 
-    def search(self, keyword: str, max_pages: int = 10, overwrite: bool = True):
+    def search(self, keyword: str, max_pages: int = 10, overwrite: bool = False):
         links = {} if overwrite else self.get_links(keyword)
         results = {}
         page = 1
@@ -284,7 +296,7 @@ class BaseScraper:
                 self.input_search_params(driver, keyword)
                 driver.set_messenger_theme(location="top_center")
                 while True:
-                    driver.sleep(TIMEOUT)
+                    driver.sleep(self.timeout)
                     products = self.discover_product_urls(driver, keyword)
                     print(f"Navegando página {page} da busca '{keyword}'...")
                     if not self.headless:
@@ -292,18 +304,19 @@ class BaseScraper:
                     for url, link_data in products.items():
                         link_data["página_de_busca"] = page
                         results[url] = link_data
-                    if page >= max_pages:
-                        if not self.headless:
-                            driver.post_message(
-                                f"Número máximo de páginas atingido - {max_pages}!"
-                            )
-                        driver.sleep(TIMEOUT)
-                        break
+                        yield link_data
                     if not driver.is_element_present(self.next_page_button):
                         break
-                    self.highlight_element(driver, self.next_page_button)
-                    driver.uc_click(self.next_page_button, timeout=TIMEOUT)
                     page += 1
+                    if page > max_pages:
+                        if not self.headless:
+                            driver.post_message(
+                                f"Número máximo de páginas atingido - #{max_pages}"
+                            )
+                        break
+                    self.highlight_element(driver, self.next_page_button)
+                    driver.uc_click(self.next_page_button, timeout=self.timeout)
+
             finally:
                 links.update(results)
                 json.dump(
@@ -311,4 +324,3 @@ class BaseScraper:
                     self.links_file(keyword).open("w"),
                     ensure_ascii=False,
                 )
-                return results

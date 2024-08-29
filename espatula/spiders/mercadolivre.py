@@ -4,12 +4,17 @@ from datetime import datetime
 
 from gazpacho import Soup
 
-from ..constantes import RECONNECT, TIMEOUT, TIMEZONE
-from .base import BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
     "smartphone": "https://www.mercadolivre.com.br/c/celulares-e-telefones#menu=categories"
 }
+
+URL = re.compile(
+    r"https://(?:produto\.|www\.)mercadolivre\.com\.br.*?(?:-_JM|(?=\?)|(?=#))"
+)
+
+PRODUCT_ID = re.compile(r"(MLB-?\d+)")
 
 
 @dataclass
@@ -32,10 +37,7 @@ class MercadoLivreScraper(BaseScraper):
 
     @staticmethod
     def find_single_url(text):
-        pattern = (
-            r"https://(?:produto\.|www\.)mercadolivre\.com\.br.*?(?:-_JM|(?=\?)|(?=#))"
-        )
-        match = re.search(pattern, text)
+        match = re.search(URL, text)
 
         # Return the first non-empty match
         return match[0] if match else text
@@ -246,6 +248,11 @@ class MercadoLivreScraper(BaseScraper):
             self.highlight_element(driver, "p[class=ui-pdp-description__content]")
             descrição = descrição.strip()
 
+        url = self.find_single_url(driver.get_current_url())
+
+        if product_id := re.match(PRODUCT_ID, url):
+            product_id = product_id[0]
+
         return {
             "categoria": categoria,
             "imagens": imgs,
@@ -263,12 +270,13 @@ class MercadoLivreScraper(BaseScraper):
             "ean_gtin": ean,
             "características": características,
             "descrição": descrição,
-            "product_id": driver.driver.current_url.split("/")[-1],
+            "url": url,
+            "product_id": product_id,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def input_search_params(self, driver, keyword):
         if department := CATEGORIES.get(keyword):
-            driver.uc_open_with_reconnect(department, reconnect_time=RECONNECT)
+            driver.uc_open_with_reconnect(department, reconnect_time=self.reconnect)
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)

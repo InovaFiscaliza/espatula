@@ -5,6 +5,7 @@ from typing import List, Union
 
 import nltk
 import pandas as pd
+from dotenv import find_dotenv, load_dotenv
 from fastcore.xtras import Path, listify
 from fuzzywuzzy import fuzz
 from nltk.corpus import stopwords
@@ -12,11 +13,12 @@ from nltk.tokenize import word_tokenize
 from rich import print
 
 from .certificacao import merge_to_sch
-from .constantes import FOLDER, SUBCATEGORIES
+from .constantes import SUBCATEGORIES
 from .modelos import SGD
 
-nltk.download("stopwords")
-nltk.download("punkt_tab")
+load_dotenv(find_dotenv(), override=False)
+nltk.download("stopwords", quiet=True)
+nltk.download("punkt_tab", quiet=True)
 
 
 COLUNAS = [
@@ -34,7 +36,7 @@ COLUNAS = [
     "modelo_score",
     "tipo_sch",
     "subcategoria",
-    "index",
+    "indice",
     "página_de_busca",
     "palavra_busca",
     "data",
@@ -54,13 +56,20 @@ COLUMN_SCORE_NAMES = [
 
 
 class Table:
-    def __init__(self, name: str, json_source: Path):
+    def __init__(self, name: str, page_dict: dict = None, json_source: Path = None):
         self.name = name
-        self.source = FOLDER / name / json_source
+        assert (
+            page_dict or json_source
+        ), "Either page_dict or json_source must be provided."
+        self.json_source = json_source
+        self.page_dict = page_dict
 
     @cached_property
     def df(self):
-        return pd.DataFrame(self.source.read_json().values(), dtype="string")
+        """Return the DataFrame for the table."""
+        if self.page_dict is not None:
+            return pd.DataFrame(self.page_dict.values(), dtype="string")
+        return pd.DataFrame(self.json_source.read_json().values(), dtype="string")
 
     @staticmethod
     def preprocess_text(
@@ -140,22 +149,12 @@ class Table:
         """
         return [
             Table.score_distance(row.loc[left], row.loc[right])
-            for left, right in COLUMN_PAIRS
+            for (left, right) in COLUMN_PAIRS
         ]
-
-    def delete_files(self, filter: pd.Series) -> None:
-        for row in self.df.loc[filter].itertuples():
-            if (file := FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-                print(f"Deleting {file} from discarded row")
-                # file.unlink()
 
     def drop_incomplete_rows(self):
         for column in ["nome", "categoria", "url"]:
-            self.delete_files(self.df[column].isna())
             self.df = self.df.dropna(subset=column).reset_index(drop=True)
-        for row in self.df.itertuples():
-            if not (FOLDER / "screenshots" / f"{row.screenshot}").is_file():
-                self.df = self.df.drop(index=row.Index)
 
     def split_categories(self):
         categories = self.df["categoria"].str.split("|", expand=True)
@@ -163,17 +162,20 @@ class Table:
         for cat in categories:
             categories[cat] = categories[cat].str.strip()
         self.df = pd.concat([self.df, categories], axis=1)
+        self.df["subcategoria"] = ""
         for cat in categories.columns:
             condition = self.df[cat].notna()
             self.df.loc[condition, "subcategoria"] = self.df.loc[condition, cat]
+
+        self.df = self.df.drop(columns="categoria")
 
     def filter_subcategories(self):
         if self.name not in SUBCATEGORIES:
             print(f"{self.name} has no subcategories defined, table unchanged!")
             return
-        irrelevant = self.df["subcategoria"].isin(SUBCATEGORIES[self.name])
-        self.delete_files(~irrelevant)
-        self.df = self.df.loc[irrelevant].reset_index(drop=True)
+        relevant = self.df["subcategoria"].isin(SUBCATEGORIES[self.name])
+        self.delete_files(~relevant)
+        self.df = self.df.loc[relevant].reset_index(drop=True)
 
     def clean(self):
         self.df["preço"] = (
@@ -181,13 +183,10 @@ class Table:
         )
 
     def write_excel(self):
-        df = self.df.loc[:, COLUNAS]
-        df["data"] = pd.to_datetime(self.df["data"], format="mixed").dt.strftime(
-            "%d/%m/%Y"
-        )
+        """Write the dataframe to an Excel file."""
 
         writer = pd.ExcelWriter(
-            self.source.with_suffix(".xlsx"),
+            self.json_source.with_suffix(".xlsx"),
             engine="xlsxwriter",
             engine_kwargs={
                 "options": {
@@ -195,29 +194,32 @@ class Table:
                 }
             },
         )
+
+        df = self.df.loc[:, COLUNAS]
+        df["data"] = pd.to_datetime(self.df["data"], format="mixed").dt.strftime(
+            "%d/%m/%Y"
+        )
         df.to_excel(writer, sheet_name=self.name, engine="xlsxwriter", index=False)
+        self.df.to_excel(
+            writer, sheet_name=f"{self.name}_bruto", engine="xlsxwriter", index=False
+        )
         worksheet = writer.sheets[self.name]
         worksheet.set_default_row(hide_unused_rows=True)
         # Freeze the first row
         worksheet.freeze_panes(1, 0)
         if prefix := os.environ.get("PREFIX"):
-            for i, link in enumerate(df["screenshot"], start=2):
-                worksheet.write_url(f"T{i}", prefix + link, string=f"#{i}")
+            for i, name in enumerate(df["screenshot"], start=2):
+                worksheet.write_url(
+                    f"S{i}", f"{prefix}/{self.name}/screenshots/{name}", string=f"#{i}"
+                )
         for i, row in enumerate(df.itertuples(), start=2):
-            worksheet.write_url(f"U{i}", row.url)
+            worksheet.write_url(f"T{i}", row.url)
         # Make the columns wider for clarity.
         worksheet.autofit()
-        # # Create a format for the font size
-        # cell_format = writer.book.add_format({"font_size": 9})
-
-        # # Apply the format to columns A and B
-        # worksheet.set_column("P:P", None, cell_format)
-        # worksheet.set_column("Q:Q", None, cell_format)
-        # Set font size 9 for column A and B
         writer.close()
 
     def compare_columns(self):
-        self.df[COLUMN_SCORE_NAMES] = self.df.fillna("").apply(
+        self.df.loc[:, COLUMN_SCORE_NAMES] = self.df.fillna("").apply(
             self.calculate_text_distance, axis=1, result_type="expand"
         )
         self.df.sort_values(
@@ -229,7 +231,7 @@ class Table:
 
     def classify(self):
         model = SGD()
-        prediction = model.predict(self.df["nome"].to_list())
+        prediction = model.predict(self.df["nome"].values)
         cat = prediction[:, 0].astype("bool")
         prob = prediction[:, 1]
         self.df["passível"] = cat
@@ -238,8 +240,9 @@ class Table:
     def process(self, update_sch: bool = False, tipo_sch: str = None):
         self.drop_incomplete_rows()
         self.split_categories()
-        self.filter_subcategories()
+        # self.filter_subcategories()
         self.clean()
         self.df = merge_to_sch(self.df, update=update_sch, tipo_sch=tipo_sch)
         self.compare_columns()
         self.classify()
+        self.write_excel()

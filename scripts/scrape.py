@@ -47,7 +47,7 @@ COLUNAS = [
 RENAME = {
     "palavra_busca": "Texto da Busca",
     "página_de_busca": "Página",
-    "index": "Item",
+    "indice": "Item",
     "screenshot": "Arquivo",
     "url": "URL",
     "nome": "Título",

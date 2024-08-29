@@ -4,8 +4,7 @@ from dataclasses import dataclass
 
 from gazpacho import Soup
 
-from ..constantes import RECONNECT, TIMEOUT, TIMEZONE
-from .base import BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
     "smartphone": 'a[href="/busca/smartphone/?from=submit&filters=category---TE"]'
@@ -158,7 +157,7 @@ class MagaluScraper(BaseScraper):
                 self.extrair_ean(características),
             )
 
-        if match := re.search(r"/p/([\w\d]+)/", driver.current_url):
+        if match := re.search(r"/p/([\w\d]+)/", driver.get_current_url()):
             product_id = match.group(1)
         else:
             product_id = None
@@ -177,11 +176,12 @@ class MagaluScraper(BaseScraper):
             "ean_gtin": ean,
             "características": características,
             "product_id": product_id,
+            "url": driver.get_current_url(),
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def input_search_params(self, driver, keyword):
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
         if department := CATEGORIES.get(keyword):
-            driver.uc_click(department, timeout=RECONNECT)
+            driver.uc_click(department, timeout=self.reconnect)

@@ -1,15 +1,18 @@
-name: espatula
+name: espatula_dev
 channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - scikit-learn=1.3.0
+  - scikit-learn
   - fuzzywuzzy
   - nltk
   - pandas
   - fastcore
+  - gazpacho
+  - pyautogui
   - pypdf
   - python-dotenv
   - rich
+  - streamlit
   - xlsxwriter
-prefix: /home/ronaldo/micromamba/envs/espatula
+prefix: /home/ronaldo/micromamba/envs/espatula_dev

@@ -6,8 +6,7 @@ from urllib.parse import unquote
 
 from gazpacho import Soup
 
-from ..constantes import RECONNECT, TIMEOUT, TIMEZONE
-from .base import BaseScraper
+from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {"smartphone": ['li[id="n/16243803011"] a', 'li[id="n/16243890011"] a']}
 
@@ -137,11 +136,11 @@ class AmazonScraper(BaseScraper):
         if imagens := re.findall(
             r"colorImages':.*'initial':\s*(\[.+?\])},\n", soup.html
         ):
-            imagens = "\n".join(
+            imagens = [
                 d.get("large", "")
                 for d in json.loads(imagens[0])
                 if isinstance(d, dict)
-            )
+            ]
 
         if preço := soup.find("span", attrs={"class": "a-offscreen"}, mode="first"):
             self.highlight_element(driver, 'span[class="a-offscreen"]')
@@ -234,6 +233,7 @@ class AmazonScraper(BaseScraper):
             "modelo": modelo,
             "vendas": vendas,
             "product_id": asin,
+            "url": driver.get_current_url(),
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
@@ -264,12 +264,12 @@ class AmazonScraper(BaseScraper):
         except Exception as e:
             print(e)
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=TIMEOUT)
+        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
         if department := CATEGORIES.get(keyword):
             for subcategory in department:
                 try:
                     subcategory_tag = driver.find_element(subcategory)
                     subcategory_tag.uc_click()
-                    driver.sleep(RECONNECT)
+                    driver.sleep(self.reconnect)
                 except Exception as e:
                     print(e)
