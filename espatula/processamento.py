@@ -213,7 +213,7 @@ class Table:
         writer.close()
 
     def compare_columns(self):
-        self.df.loc[:, COLUMN_SCORE_NAMES] = self.df.fillna("").apply(
+        self.df[COLUMN_SCORE_NAMES] = self.df.fillna("").apply(
             self.calculate_text_distance, axis=1, result_type="expand"
         )
         self.df.sort_values(
