@@ -89,8 +89,6 @@ def set_folder():
     # Callback function to save the keyword selection to Session State
     if Path(st.session_state._folder).is_dir():
         st.session_state.folder = st.session_state._folder
-    else:
-        st.session_state.folder = None
 
 
 @st.fragment
@@ -217,7 +215,7 @@ else:
     )
 
     if st.session_state.keyword:
-        if st.session_state.folder is not None:
+        if st.session_state.folder.is_dir():
             set_cache()
             if cache := st.session_state.cache:
                 container = st.sidebar.container(border=True)
