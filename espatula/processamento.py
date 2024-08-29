@@ -194,33 +194,28 @@ class Table:
                 }
             },
         )
-        self.df.to_excel(
-            writer, sheet_name=f"{self.name}_bruto", engine="xlsxwriter", index=False
-        )
 
         df = self.df.loc[:, COLUNAS]
         df["data"] = pd.to_datetime(self.df["data"], format="mixed").dt.strftime(
             "%d/%m/%Y"
         )
         df.to_excel(writer, sheet_name=self.name, engine="xlsxwriter", index=False)
+        self.df.to_excel(
+            writer, sheet_name=f"{self.name}_bruto", engine="xlsxwriter", index=False
+        )
         worksheet = writer.sheets[self.name]
         worksheet.set_default_row(hide_unused_rows=True)
         # Freeze the first row
         worksheet.freeze_panes(1, 0)
         if prefix := os.environ.get("PREFIX"):
-            for i, link in enumerate(df["screenshot"], start=2):
-                worksheet.write_url(f"S{i}", prefix + link, string=f"#{i}")
+            for i, name in enumerate(df["screenshot"], start=2):
+                worksheet.write_url(
+                    f"S{i}", f"{prefix}/{self.name}/screenshots/{name}", string=f"#{i}"
+                )
         for i, row in enumerate(df.itertuples(), start=2):
             worksheet.write_url(f"T{i}", row.url)
         # Make the columns wider for clarity.
         worksheet.autofit()
-        # # Create a format for the font size
-        # cell_format = writer.book.add_format({"font_size": 9})
-
-        # # Apply the format to columns A and B
-        # worksheet.set_column("P:P", None, cell_format)
-        # worksheet.set_column("Q:Q", None, cell_format)
-        # Set font size 9 for column A and B
         writer.close()
 
     def compare_columns(self):
