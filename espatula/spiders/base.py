@@ -304,7 +304,7 @@ class BaseScraper:
                     for url, link_data in products.items():
                         link_data["página_de_busca"] = page
                         results[url] = link_data
-                    yield link_data
+                        yield link_data
                     if not driver.is_element_present(self.next_page_button):
                         break
                     page += 1
