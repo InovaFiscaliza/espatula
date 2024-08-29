@@ -2,30 +2,32 @@ import time
 
 import streamlit as st
 from fastcore.xtras import Path
-from espatula.spiders import (
-    AmazonScraper,
-    MercadoLivreScraper,
-    MagaluScraper,
-    AmericanasScraper,
-    CasasBahiaScraper,
-    CarrefourScraper,
-)
-from espatula.processamento import Table, COLUNAS
+
 from config import (
-    MARKETPLACES,
-    MARKETPLACE,
-    TITLE,
-    KEYWORD,
     CACHE,
     FOLDER,
-    RECONNECT,
-    TIMEOUT,
-    MAX_SEARCH,
-    MAX_PAGES,
-    SHUFFLE,
-    SCREENSHOT,
     HIDE_BROWSER,
+    KEYWORD,
+    LOGOS,
+    MARKETPLACE,
+    MARKETPLACES,
+    MAX_PAGES,
+    MAX_SEARCH,
+    RECONNECT,
+    SCREENSHOT,
+    SHUFFLE,
     START,
+    TIMEOUT,
+    TITLE,
+)
+from espatula.processamento import COLUNAS, Table
+from espatula.spiders import (
+    AmazonScraper,
+    AmericanasScraper,
+    CarrefourScraper,
+    CasasBahiaScraper,
+    MagaluScraper,
+    MercadoLivreScraper,
 )
 
 SCRAPERS = {
@@ -72,6 +74,7 @@ def set_mkplc():
     # Callback function to save the mkplc selection to Session State
     st.session_state.mkplc = st.session_state._mkplc
     st.title(MARKETPLACES[st.session_state._mkplc])
+    st.logo(LOGOS[st.session_state._mkplc])
 
 
 @st.fragment
@@ -137,7 +140,7 @@ def run():
                     text=progress_text,
                 )
             time.sleep(1)
-            output.empty()
+            output.empty
             progress_bar.empty()
     with st.container():
         progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
