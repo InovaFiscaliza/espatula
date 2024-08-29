@@ -216,7 +216,7 @@ else:
     )
 
     if st.session_state.keyword:
-        if st.session_state.folder.is_dir():
+        if Path(st.session_state.folder).is_dir():
             set_cache()
             if cache := st.session_state.cache:
                 container = st.sidebar.container(border=True)
