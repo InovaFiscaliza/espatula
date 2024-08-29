@@ -1,0 +1,16 @@
+name: espatula_dev
+channels:
+  - defaults
+dependencies:
+  - fastcore
+  - fuzzywuzzy
+  - gazpacho
+  - nltk
+  - pandas
+  - pyautogui
+  - pypdf
+  - python-dotenv
+  - rich
+  - scikit-learn
+  - streamlit
+  - xlsxwriter
