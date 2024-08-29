@@ -52,7 +52,7 @@ if "keyword" not in st.session_state:
     st.session_state.keyword = ""
 
 if "folder" not in st.session_state:
-    st.session_state.folder = None
+    st.session_state.folder = f"{Path.home()}/regulatron"
 
 if "cache" not in st.session_state:
     st.session_state.cache = {}
