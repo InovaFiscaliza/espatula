@@ -52,7 +52,7 @@ if "keyword" not in st.session_state:
     st.session_state.keyword = ""
 
 if "folder" not in st.session_state:
-    st.session_state.folder = f"{Path.home()}\regulatron"
+    st.session_state.folder = rf"{Path.home()}\regulatron"
 
 if "cache" not in st.session_state:
     st.session_state.cache = {}
@@ -157,7 +157,7 @@ def run():
             start=1,
         ):
             with output.empty():
-                left, right = st.columns([1, 1])
+                left, right = st.columns([1, 1], vertical_alignment="top")
                 with left:
                     if imagem := result.get("imagens", [None])[0]:
                         left.write("Imagem do produto")
