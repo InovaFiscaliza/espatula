@@ -63,7 +63,7 @@ class CasasBahiaScraper(BaseScraper):
             "preço_original": price_higher,
             "avaliações": evals,
             "imagem": imgs,
-            "url": self.url + relative_url,
+            "url": relative_url,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
