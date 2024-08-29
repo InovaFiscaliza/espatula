@@ -1,12 +1,13 @@
-import streamlit
+import os
+import sys
+from pathlib import Path
 
 import streamlit.web.cli as stcli
-import os, sys
 
 
-def resolve_path(path):
-    resolved_path = os.path.abspath(os.path.join(os.getcwd(), path))
-    return resolved_path
+def resolve_path(path: str) -> str:
+    base_path = getattr(sys, "_MEIPASS", os.getcwd())
+    return str(Path(base_path) / path)
 
 
 if __name__ == "__main__":
@@ -15,5 +16,6 @@ if __name__ == "__main__":
         "run",
         resolve_path("app.py"),
         "--global.developmentMode=false",
+        "--server.headless=true",
     ]
     sys.exit(stcli.main())

@@ -10,7 +10,6 @@ from fastcore.xtras import Path, listify
 from fuzzywuzzy import fuzz
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from rich import print
 
 from .certificacao import merge_to_sch
 from .constantes import SUBCATEGORIES
