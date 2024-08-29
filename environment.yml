@@ -1,4 +1,4 @@
-name: espatula_dev
+name: espatula
 channels:
   - conda-forge
   - defaults
@@ -250,4 +250,3 @@ dependencies:
       - trio-websocket==0.11.1
       - websocket-client==1.8.0
       - wsproto==1.2.0
-prefix: D:\Applications\Scoop\apps\miniconda3\current\envs\espatula_dev
