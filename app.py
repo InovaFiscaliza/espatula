@@ -115,7 +115,6 @@ def show_links():
 
 def run():
     st.session_state.show_cache = False
-    container.empty()
     scraper = SCRAPERS[st.session_state.mkplc](
         headless=st.session_state.headless,
         path=st.session_state.folder,
@@ -129,6 +128,7 @@ def run():
             progress_text = "Realizando a busca de produtos...🕸️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
+            percentage = 100 / st.session_state.max_search
             for i, result in enumerate(
                 scraper.search(keyword=keyword, max_pages=st.session_state.max_search),
                 start=1,
@@ -136,16 +136,17 @@ def run():
                 with output.empty():
                     st.write(result)
                 progress_bar.progress(
-                    (i * (100 // st.session_state.max_search)) % 100,
+                    int((i * percentage) % 100),
                     text=progress_text,
                 )
             time.sleep(1)
-            output.empty
+            output.empty()
             progress_bar.empty()
     with st.container():
         progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
         progress_bar = st.progress(0, text=progress_text)
         output = st.empty()
+        percentage = 100 / st.session_state.max_pages
         for i, result in enumerate(
             scraper.inspect_pages(
                 keyword=keyword,
@@ -158,14 +159,14 @@ def run():
             with output.empty():
                 left, right = st.columns([1, 1])
                 with left:
-                    if imagem := result.get("imagem"):
+                    if imagem := result.get("imagens", [None])[0]:
+                        left.write("Imagem do produto")
                         nome = result.get("nome")
                         left.image(imagem, width=480, caption=nome)
                 with right:
+                    right.write("Dados do produto")
                     right.write(result)
-            progress_bar.progress(
-                (i * (100 // st.session_state.max_pages)) % 100, text=progress_text
-            )
+            progress_bar.progress(int((i * percentage) % 100), text=progress_text)
         time.sleep(1)
         output.empty()
         progress_bar.empty()
@@ -192,6 +193,15 @@ mkplc = config_container.selectbox(
 
 if st.session_state.mkplc is None:
     st.title(TITLE)
+    st.image(
+        LOGOS["Espatula"],
+        width=480,
+        caption="Raspagem de Dados de Produtos de Telecomunicações",
+    )
+    st.sidebar.success(
+        "Por favor, selecione uma plataforma para iniciar a pesquisa.",
+        icon="👆🏾",
+    )
 else:
     config_container.text_input(
         KEYWORD,

@@ -12,6 +12,7 @@ MARKETPLACES = {
 }
 
 LOGOS = {
+    "Espatula": "images/espatula.png",
     "Amazon": "images/amazon.svg",
     "Mercado Livre": "images/mercado_livre.png",
     "Magalu": "images/magalu.png",
