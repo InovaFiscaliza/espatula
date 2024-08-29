@@ -1,3 +1,5 @@
+import time
+
 import streamlit as st
 from fastcore.xtras import Path
 from espatula.spiders import (
@@ -109,7 +111,6 @@ def show_links(main_page):
 
 
 def run():
-    container = st.container()
     st.session_state.show_cache = False
     container.empty()
     scraper = SCRAPERS[st.session_state.mkplc](
@@ -120,24 +121,28 @@ def run():
     )
     keyword = st.session_state.keyword
 
-    with container.empty():
+    with st.container():
         if st.session_state.use_cache == CACHE[0]:
             progress_text = "Realizando a busca de produtos...🕸️"
             progress_bar = st.progress(0, text=progress_text)
+            output = st.empty()
             for i, result in enumerate(
                 scraper.search(keyword=keyword, max_pages=st.session_state.max_search),
                 start=1,
             ):
+                with output.empty():
+                    st.write(result)
                 progress_bar.progress(
                     (i * (100 // st.session_state.max_search)) % 100,
                     text=progress_text,
                 )
-                with st.container():
-                    st.write(result)
+            time.sleep(1)
+            output.empty()
             progress_bar.empty()
-    with container.empty():
+    with st.container():
         progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
         progress_bar = st.progress(0, text=progress_text)
+        output = st.empty()
         for i, result in enumerate(
             scraper.inspect_pages(
                 keyword=keyword,
@@ -147,13 +152,20 @@ def run():
             ),
             start=1,
         ):
+            with output.empty():
+                left, right = st.columns([1, 1])
+                with left:
+                    if imagem := result.get("imagem"):
+                        nome = result.get("nome")
+                        left.image(imagem, width=480, caption=nome)
+                with right:
+                    right.write(result)
             progress_bar.progress(
                 (i * (100 // st.session_state.max_pages)) % 100, text=progress_text
             )
-            with st.container():
-                st.write(result)
+        time.sleep(1)
+        output.empty()
         progress_bar.empty()
-
         table = Table(
             scraper.name,
             json_source=scraper.pages_file(st.session_state.keyword),
@@ -161,8 +173,8 @@ def run():
         table.process()  # TODO: adicionar form para o fiscal inserir a categoria do SCH
         st.divider()
         st.success("Processamento dos dados finalizado!", icon="🎉")
-        st.dataframe(table.df.loc[:, COLUNAS])
         st.snow()
+    st.dataframe(table.df.loc[:, COLUNAS])
 
 
 config_container = st.sidebar.container(border=True)
