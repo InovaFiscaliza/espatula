@@ -10,7 +10,6 @@ from config import (
     KEYWORD,
     LOGOS,
     MARKETPLACE,
-    MARKETPLACES,
     MAX_PAGES,
     MAX_SEARCH,
     RECONNECT,
@@ -73,8 +72,9 @@ for key in st.session_state:
 def set_mkplc():
     # Callback function to save the mkplc selection to Session State
     st.session_state.mkplc = st.session_state._mkplc
-    st.title(MARKETPLACES[st.session_state._mkplc])
-    st.logo(LOGOS[st.session_state._mkplc])
+    img = LOGOS[st.session_state._mkplc]
+    st.logo(img)
+    st.image(img, width=320)
 
 
 @st.fragment
@@ -107,8 +107,8 @@ def use_cache():
 
 
 @st.fragment
-def show_links(main_page):
-    with main_page.container():
+def show_links():
+    with st.container(height=720):
         if st.session_state.cache:
             st.write(st.session_state.cache)
 
@@ -213,7 +213,7 @@ else:
                 container = st.sidebar.container(border=True)
                 container.info(f"Existem **{len(cache)}** resultados de busca em cache")
                 if container.toggle("Visualizar cache", key="show_cache"):
-                    show_links(st.empty())
+                    show_links()
                 container.radio(
                     "Pesquisa de links",
                     options=CACHE,

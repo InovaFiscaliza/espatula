@@ -11,6 +11,15 @@ MARKETPLACES = {
     "Carrefour": "Carrefour",
 }
 
+LOGOS = {
+    "Amazon": "images/amazon.svg",
+    "Mercado Livre": "images/mercado_livre.png",
+    "Magalu": "images/magalu.png",
+    "Americanas": "images/americanas.png",
+    "Casas Bahia": "images/casas_bahia.svg",
+    "Carrefour": "images/carrefour.svg",
+}
+
 TITLE = "🤖 Regulatron"
 CACHE = ("Efetuar nova busca", "Utilizar resultados do cache")
 FOLDER = "Pasta de Trabalho"
