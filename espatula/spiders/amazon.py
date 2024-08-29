@@ -136,11 +136,11 @@ class AmazonScraper(BaseScraper):
         if imagens := re.findall(
             r"colorImages':.*'initial':\s*(\[.+?\])},\n", soup.html
         ):
-            imagens = "\n".join(
+            imagens = [
                 d.get("large", "")
                 for d in json.loads(imagens[0])
                 if isinstance(d, dict)
-            )
+            ]
 
         if preço := soup.find("span", attrs={"class": "a-offscreen"}, mode="first"):
             self.highlight_element(driver, 'span[class="a-offscreen"]')
