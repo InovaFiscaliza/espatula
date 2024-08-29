@@ -52,7 +52,7 @@ if "keyword" not in st.session_state:
     st.session_state.keyword = ""
 
 if "folder" not in st.session_state:
-    st.session_state.folder = f"{Path.home()}/regulatron"
+    st.session_state.folder = f"{Path.home()}\regulatron"
 
 if "cache" not in st.session_state:
     st.session_state.cache = {}
@@ -116,7 +116,7 @@ def show_links():
 def run():
     st.session_state.show_cache = False
     scraper = SCRAPERS[st.session_state.mkplc](
-        headless=st.session_state.headless,
+        headless=not st.session_state.show_browser,
         path=st.session_state.folder,
         reconnect=st.session_state.reconnect,
         timeout=st.session_state.timeout,
@@ -232,32 +232,33 @@ else:
                 )
             else:
                 st.session_state.use_cache = CACHE[0]
+
+            with st.sidebar:
+                with st.form("config", border=False):
+                    with st.expander("CONFIGURAÇÕES", expanded=False):
+                        st.number_input(
+                            RECONNECT, min_value=2, key="reconnect", value=5
+                        )
+                        st.number_input(TIMEOUT, min_value=1, key="timeout", value=2)
+                        st.number_input(
+                            MAX_SEARCH,
+                            min_value=1,
+                            value=10,
+                            key="max_search",
+                            disabled=(st.session_state.use_cache == CACHE[1]),
+                        )
+                        st.number_input(
+                            MAX_PAGES,
+                            min_value=1,
+                            value=50,
+                            key="max_pages",
+                        )
+                        st.checkbox(SHUFFLE, key="shuffle")
+                        st.checkbox(SCREENSHOT, key="screenshot")
+                        st.toggle(HIDE_BROWSER, key="show_browser")
+                    st.form_submit_button(START, on_click=run, use_container_width=True)
+
         else:
             st.sidebar.error("Insira um caminho válido!", icon="🚨")
     else:
         st.sidebar.warning("Insira uma palavra-chave não vazia!", icon="⚠️")
-
-
-with st.sidebar:
-    if mkplc is not None:
-        with st.form("config", border=False):
-            with st.expander("CONFIGURAÇÕES", expanded=False):
-                st.number_input(RECONNECT, min_value=2, key="reconnect", value=5)
-                st.number_input(TIMEOUT, min_value=1, key="timeout", value=2)
-                st.number_input(
-                    MAX_SEARCH,
-                    min_value=1,
-                    value=10,
-                    key="max_search",
-                    disabled=(st.session_state.use_cache == CACHE[1]),
-                )
-                st.number_input(
-                    MAX_PAGES,
-                    min_value=1,
-                    value=50,
-                    key="max_pages",
-                )
-                st.checkbox(SHUFFLE, key="shuffle")
-                st.checkbox(SCREENSHOT, key="screenshot")
-                st.toggle(HIDE_BROWSER, key="headless")
-            st.form_submit_button(START, on_click=run, use_container_width=True)
