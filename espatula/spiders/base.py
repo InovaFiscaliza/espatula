@@ -206,7 +206,7 @@ class BaseScraper:
         return bytes_stream.getvalue()
 
     def _save_screenshot(self, driver: SB, filename: str):
-        folder = self.path / "screenshots"
+        folder = self.folder / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
         screenshot = self.compress_images(BytesIO(screenshot))
