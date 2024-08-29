@@ -56,19 +56,13 @@ COLUMN_SCORE_NAMES = [
 
 
 class Table:
-    def __init__(self, name: str, page_dict: dict = None, json_source: Path = None):
+    def __init__(self, name: str, json_source: Path = None):
         self.name = name
-        assert (
-            page_dict or json_source
-        ), "Either page_dict or json_source must be provided."
         self.json_source = json_source
-        self.page_dict = page_dict
 
     @cached_property
     def df(self):
         """Return the DataFrame for the table."""
-        if self.page_dict is not None:
-            return pd.DataFrame(self.page_dict.values(), dtype="string")
         return pd.DataFrame(self.json_source.read_json().values(), dtype="string")
 
     @staticmethod
@@ -242,7 +236,12 @@ class Table:
         self.split_categories()
         # self.filter_subcategories()
         self.clean()
-        self.df = merge_to_sch(self.df, update=update_sch, tipo_sch=tipo_sch)
+        self.df = merge_to_sch(
+            self.df,
+            folder=self.json_source.parent.parent,
+            update=update_sch,
+            tipo_sch=tipo_sch,
+        )
         self.compare_columns()
         self.classify()
         self.write_excel()

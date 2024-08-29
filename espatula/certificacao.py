@@ -6,7 +6,7 @@ from urllib.parse import unquote
 import pandas as pd
 from fastcore.xtras import Path
 
-FOLDER = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
+FOLDER = Path(os.environ.get("FOLDER", f'{Path.home() / "espatula_data"}'))
 
 
 CERTIFICADOS = "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/certificacao_de_produtos/produtos_certificados.zip"
@@ -67,18 +67,19 @@ G5_COLUMNS = {
 COLS_SCH = ["nome_sch", "fabricante_sch", "modelo_sch", "tipo_sch"]
 
 
-def update_sch():
+def update_sch(folder=FOLDER) -> None:
+    folder.mkdir(exist_ok=True, parents=True)
     for source in [
         CERTIFICADOS,
         # CONFORMIDADE,
         G5,
     ]:
         urllib.request.urlretrieve(
-            source, Path(f"{FOLDER}/{unquote(source.split('/')[-1])}")
+            source, Path(f"{folder}/{unquote(source.split('/')[-1])}")
         )
 
 
-def read_sch(update: bool = False) -> pd.DataFrame:
+def read_sch(folder=FOLDER, update: bool = False) -> pd.DataFrame:
     """Reads SCH homologation data from cached files, updates if requested,
     concatenates and returns as DataFrame.
 
@@ -89,16 +90,16 @@ def read_sch(update: bool = False) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing concatenated homologation data.
     """
     if update:
-        update_sch()
+        update_sch(folder)
 
-    certificados_path = FOLDER / "produtos_certificados.zip"
+    certificados_path = folder / "produtos_certificados.zip"
     # conformidade_path = (
     #     FOLDER / "Produtos_Homologados_por_Declaração_de_Conformidade.zip"
     # )
-    celulares_path = FOLDER / "celulares_5g_homologados.zip"
+    celulares_path = folder / "celulares_5g_homologados.zip"
 
     if not certificados_path.is_file():
-        update_sch()
+        update_sch(folder)
     certificados = pd.read_csv(
         certificados_path,
         dtype="string",
@@ -118,7 +119,7 @@ def read_sch(update: bool = False) -> pd.DataFrame:
     # conformidade.rename(columns=CONFORMIDADE_COLUMNS, inplace=True)
 
     if not celulares_path.is_file():
-        update_sch()
+        update_sch(folder)
     celulares = pd.read_csv(
         celulares_path,
         dtype="string",
@@ -137,7 +138,7 @@ def read_sch(update: bool = False) -> pd.DataFrame:
 
 
 def merge_to_sch(
-    df: pd.DataFrame, update: bool = False, tipo_sch: str = None
+    df: pd.DataFrame, folder: Path = FOLDER, update: bool = False, tipo_sch: str = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Merges the given DataFrame df with the SCH homologation database table.
 
@@ -154,7 +155,7 @@ def merge_to_sch(
         },
     )
 
-    sch_table = read_sch(update)
+    sch_table = read_sch(folder, update)
     df["certificado"] = df["certificado"].astype("string", copy=False)
 
     df.loc[:, "certificado"] = df.certificado.str.replace(".0", "")
