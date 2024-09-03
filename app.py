@@ -1,7 +1,10 @@
 import time
 
 import streamlit as st
+import pandas as pd
 from fastcore.xtras import Path
+from gradio_client import Client, handle_file
+
 
 from config import (
     CACHE,
@@ -43,6 +46,7 @@ st.set_page_config(
     page_icon="🤖",
     layout="wide",
 )
+
 
 # Initialize st.session_state.mkplc to None
 if "mkplc" not in st.session_state:
@@ -111,6 +115,15 @@ def show_links():
             st.write(st.session_state.cache)
 
 
+def request_table(json_path):
+    client = Client("ronaldokun/ecomproc")
+    result = client.predict(
+        json_file=handle_file(str(json_path)),
+        api_name="/process_to_table",
+    )
+    return pd.DataFrame(result["data"], columns=result["headers"], dtype="string")
+
+
 def run():
     st.session_state.show_cache = False
     scraper = SCRAPERS[st.session_state.mkplc](
@@ -169,15 +182,11 @@ def run():
         time.sleep(1)
         output.empty()
         progress_bar.empty()
-        table = Table(
-            scraper.name,
-            json_source=scraper.pages_file(st.session_state.keyword),
-        )
-        table.process()  # TODO: adicionar form para o fiscal inserir a categoria do SCH
+        df = request_table(scraper.pages_file(st.session_state.keyword))
         st.divider()
         st.success("Processamento dos dados finalizado!", icon="🎉")
         st.snow()
-    st.dataframe(table.df.loc[:, COLUNAS])
+    st.dataframe(df.loc[:, COLUNAS], use_container_width=True)
 
 
 config_container = st.sidebar.container(border=True)
