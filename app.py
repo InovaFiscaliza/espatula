@@ -22,7 +22,6 @@ from config import (
     TIMEOUT,
     TITLE,
 )
-from espatula.processamento import COLUNAS, Table
 from espatula.spiders import (
     AmazonScraper,
     AmericanasScraper,
@@ -40,6 +39,29 @@ SCRAPERS = {
     "Casas Bahia": CasasBahiaScraper,
     "Carrefour": CarrefourScraper,
 }
+
+COLUNAS = [
+    "nome",
+    "fabricante",
+    "modelo",
+    "certificado",
+    "ean_gtin",
+    "passível?",
+    "probabilidade",
+    "nome_sch",
+    "fabricante_sch",
+    "modelo_sch",
+    "nome_score",
+    "modelo_score",
+    "tipo_sch",
+    "subcategoria",
+    "indice",
+    "página_de_busca",
+    "palavra_busca",
+    "data",
+    "screenshot",
+    "url",
+]
 
 st.set_page_config(
     page_title="Regulatron",
