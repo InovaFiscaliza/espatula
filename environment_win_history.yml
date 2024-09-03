@@ -3,13 +3,8 @@ channels:
   - defaults
 dependencies:
   - fastcore
-  - fuzzywuzzy
   - gazpacho
-  - nltk
-  - pandas
-  - pyautogui
   - pypdf
-  - python-dotenv
   - rich
   - streamlit
   - xlsxwriter

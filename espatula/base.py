@@ -10,7 +10,6 @@ from zoneinfo import ZoneInfo
 
 
 import requests
-from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
 from seleniumbase import SB
@@ -20,7 +19,6 @@ from seleniumbase.common.exceptions import (
 )
 
 
-load_dotenv(find_dotenv(), override=False)
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
 CERTIFICADO = re.compile(

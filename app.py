@@ -22,7 +22,7 @@ from config import (
     TIMEOUT,
     TITLE,
 )
-from espatula.spiders import (
+from espatula import (
     AmazonScraper,
     AmericanasScraper,
     CarrefourScraper,
