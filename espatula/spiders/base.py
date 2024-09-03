@@ -13,8 +13,6 @@ import requests
 from dotenv import find_dotenv, load_dotenv
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
-from pypdf import PdfReader, PdfWriter
-from rich import print
 from seleniumbase import SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
@@ -187,23 +185,29 @@ class BaseScraper:
 
     @staticmethod
     def compress_images(pdf_stream):
-        reader = PdfReader(pdf_stream)
-        writer = PdfWriter()
+        try:
+            from pypdf import PdfReader, PdfWriter
 
-        for page in reader.pages:
-            writer.add_page(page)
+            reader = PdfReader(pdf_stream)
+            writer = PdfWriter()
 
-        if reader.metadata is not None:
-            writer.add_metadata(reader.metadata)
+            for page in reader.pages:
+                writer.add_page(page)
 
-        for page in writer.pages:
-            for img in page.images:
-                img.replace(img.image, quality=80)
-            page.compress_content_streams(level=9)
+            if reader.metadata is not None:
+                writer.add_metadata(reader.metadata)
 
-        bytes_stream = BytesIO()
-        writer.write(bytes_stream)
-        return bytes_stream.getvalue()
+            for page in writer.pages:
+                for img in page.images:
+                    img.replace(img.image, quality=80)
+                page.compress_content_streams(level=9)
+
+            bytes_stream = BytesIO()
+            writer.write(bytes_stream)
+            return bytes_stream.getvalue()
+        except ImportError:
+            print("pypdf not installed, skipping screenshot compression")
+            return pdf_stream
 
     def _save_screenshot(self, driver: SB, filename: str):
         folder = self.folder / "screenshots"
