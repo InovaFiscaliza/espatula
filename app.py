@@ -1,7 +1,7 @@
 import time
 
 import streamlit as st
-from fastcore.xtras import Path, listify
+from fastcore.xtras import Path
 
 from config import (
     CACHE,

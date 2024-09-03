@@ -1,23 +1,22 @@
-import os
 import string
 from functools import cached_property
 from typing import List, Union
 
 import nltk
 import pandas as pd
-from dotenv import find_dotenv, load_dotenv
 from fastcore.xtras import Path, listify
 from fuzzywuzzy import fuzz
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from gradio_client import Client
+
 
 from .certificacao import merge_to_sch
 from .constantes import SUBCATEGORIES
-from .modelos import SGD
 
-load_dotenv(find_dotenv(), override=False)
 nltk.download("stopwords", quiet=True)
 nltk.download("punkt_tab", quiet=True)
+client = Client("ronaldokun/is_telecom")
 
 
 COLUNAS = [
@@ -26,7 +25,7 @@ COLUNAS = [
     "modelo",
     "certificado",
     "ean_gtin",
-    "passível",
+    "passível?",
     "probabilidade",
     "nome_sch",
     "fabricante_sch",
@@ -176,7 +175,9 @@ class Table:
         )
 
     def write_excel(self):
-        """Write the dataframe to an Excel file."""
+        """Write the dataframe to an Excel file.
+        prefix_link: The cloud link path to the parent folder where the spider folders are saved.
+        """
 
         writer = pd.ExcelWriter(
             self.json_source.with_suffix(".xlsx"),
@@ -200,11 +201,11 @@ class Table:
         worksheet.set_default_row(hide_unused_rows=True)
         # Freeze the first row
         worksheet.freeze_panes(1, 0)
-        if prefix := os.environ.get("PREFIX"):
-            for i, name in enumerate(df["screenshot"], start=2):
-                worksheet.write_url(
-                    f"S{i}", f"{prefix}/{self.name}/screenshots/{name}", string=f"#{i}"
-                )
+        for i, name in enumerate(df["screenshot"], start=2):
+            worksheet.write_url(
+                f"S{i}",
+                f"screenshots/{name}",
+            )
         for i, row in enumerate(df.itertuples(), start=2):
             worksheet.write_url(f"T{i}", row.url)
         # Make the columns wider for clarity.
@@ -223,12 +224,10 @@ class Table:
         )
 
     def classify(self):
-        model = SGD()
-        prediction = model.predict(self.df["nome"].values)
-        cat = prediction[:, 0].astype("bool")
-        prob = prediction[:, 1]
-        self.df["passível"] = cat
-        self.df["probabilidade"] = prob
+        response = client.predict(
+            texts="\n".join(self.df["nome"].to_list()), api_name="/predict"
+        )
+        self.df[["passível?", "probabilidade"]] = response["data"]
 
     def process(self, update_sch: bool = False, tipo_sch: str = None):
         self.drop_incomplete_rows()
@@ -237,7 +236,6 @@ class Table:
         self.clean()
         self.df = merge_to_sch(
             self.df,
-            folder=self.json_source.parent.parent,
             update=update_sch,
             tipo_sch=tipo_sch,
         )
