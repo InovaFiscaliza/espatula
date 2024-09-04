@@ -46,6 +46,8 @@ COLUNAS = [
     "modelo",
     "certificado",
     "ean_gtin",
+    "subcategoria",
+    "url",
     "passível?",
     "probabilidade",
     "nome_sch",
@@ -54,13 +56,6 @@ COLUNAS = [
     "nome_score",
     "modelo_score",
     "tipo_sch",
-    "subcategoria",
-    "indice",
-    "página_de_busca",
-    "palavra_busca",
-    "data",
-    "screenshot",
-    "url",
 ]
 
 st.set_page_config(
