@@ -195,7 +195,9 @@ def run():
             with output.empty():
                 left, right = st.columns([1, 1], vertical_alignment="top")
                 with left:
-                    if not (imagem := result.get("imagens", [])[0]):
+                    if imagem := result.get("imagens"):
+                        imagem = imagem[0]
+                    else:
                         imagem = result.get("imagem")
                     left.write("Imagem do produto")
                     nome = result.get("nome")
