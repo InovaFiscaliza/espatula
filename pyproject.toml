@@ -12,3 +12,6 @@ dependencies = [
     "seleniumbase>=4.30.1",
     "streamlit>=1.38.0",
 ]
+
+[tool.uv]
+dev-dependencies = []
