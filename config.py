@@ -1,7 +1,6 @@
-# Constants for string literals
-MARKETPLACE = "**Marketplace**"
-KEYWORD = "Palavra-Chave🔎"
+# Configurable default values
 
+# GUI Names
 MARKETPLACES = {
     "Amazon": "Amazon",
     "Mercado Livre": "Mercado Livre",
@@ -10,7 +9,7 @@ MARKETPLACES = {
     "Casas Bahia": "Casas Bahia",
     "Carrefour": "Carrefour",
 }
-
+# GUI Images
 LOGOS = {
     "Espatula": "images/espatula.png",
     "Amazon": "images/amazon.svg",
@@ -21,8 +20,11 @@ LOGOS = {
     "Carrefour": "images/carrefour.svg",
 }
 
+# Constants for string literals
+MARKETPLACE = "**Marketplace**"
+KEYWORD = "Palavra-Chave🔎"
 TITLE = "🤖 Regulatron"
-CACHE = ("Efetuar nova busca", "Utilizar resultados do cache")
+CACHE = ("Utilizar resultados do cache", "Efetuar nova busca")
 FOLDER = "Pasta de Trabalho"
 RECONNECT = "Tempo de reconexão do navegador (seg)"
 TIMEOUT = "Tempo de espera (seg)"

@@ -2,7 +2,7 @@ import time
 
 import streamlit as st
 import pandas as pd
-from fastcore.xtras import Path
+from fastcore.xtras import Path, loads
 from gradio_client import Client, handle_file
 
 
@@ -58,6 +58,12 @@ COLUNAS = [
     "tipo_sch",
 ]
 
+config_file = Path(__file__).parent / "config.json"
+if config_file.exists():
+    CONFIG = loads(config_file.read_text())
+else:
+    CONFIG = {}
+
 st.set_page_config(
     page_title="Regulatron",
     page_icon="🤖",
@@ -70,16 +76,18 @@ if "mkplc" not in st.session_state:
     st.session_state.mkplc = None
 
 if "keyword" not in st.session_state:
-    st.session_state.keyword = ""
+    st.session_state.keyword = CONFIG.get(KEYWORD, "")
 
 if "folder" not in st.session_state:
-    st.session_state.folder = rf"{Path.home()}\regulatron"
-
+    if not (folder := CONFIG.get(FOLDER, "")):
+        folder = rf"{Path.home()}"
+    st.session_state.folder = folder
 if "cache" not in st.session_state:
     st.session_state.cache = {}
 
 if "use_cache" not in st.session_state:
-    st.session_state.use_cache = CACHE[0]
+    use_cache = CACHE[0] if CONFIG.get(CACHE[0]) else CACHE[1]
+    st.session_state.use_cache = use_cache
 
 if "show_cache" not in st.session_state:
     st.session_state.show_cache = False
