@@ -146,8 +146,12 @@ class AmazonScraper(BaseScraper):
             self.highlight_element(driver, 'span[class="a-offscreen"]')
             preço = re.sub(r"R\$|\.", "", preço.text.strip()).replace(",", ".")
 
-        if nota := soup.find("i", attrs={"data-hook": "average-star-rating"}):
-            self.highlight_element(driver, 'i[data-hook="average-star-rating"]')
+        if nota := soup.find(
+            "i",
+            attrs={"class": "cm-cr-review-stars-spacing-big"},
+            mode="first",
+        ):
+            self.highlight_element(driver, 'i[class="cm-cr-review-stars-spacing-big"]')
             nota = nota.strip()
 
         if avaliações := soup.find(
@@ -255,12 +259,12 @@ class AmazonScraper(BaseScraper):
         try:
             section = "select[id=searchDropdownBox]"
             self.highlight_element(driver, section)
-            category = driver.find_element(section)
-            category.uc_click()
+            category = driver.find_element(section, timeout=self.timeout)
+            category.uc_click(timeout=self.timeout)
             electronics = driver.find_element(
-                'option[value="search-alias=electronics"]'
+                'option[value="search-alias=electronics"]', timeout=self.timeout
             )
-            electronics.uc_click()
+            electronics.uc_click(timeout=self.timeout)
         except Exception as e:
             print(e)
         self.highlight_element(driver, self.input_field)
@@ -268,8 +272,9 @@ class AmazonScraper(BaseScraper):
         if department := CATEGORIES.get(keyword):
             for subcategory in department:
                 try:
-                    subcategory_tag = driver.find_element(subcategory)
-                    subcategory_tag.uc_click()
-                    driver.sleep(self.reconnect)
+                    subcategory_tag = driver.find_element(
+                        subcategory, timeout=self.timeout
+                    )
+                    subcategory_tag.uc_click(timeout=self.timeout)
                 except Exception as e:
                     print(e)
