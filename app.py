@@ -266,7 +266,7 @@ else:
                     on_change=use_cache,
                 )
             else:
-                st.session_state.use_cache = CACHE[0]
+                st.session_state.use_cache = CACHE[1]
 
             with st.sidebar:
                 with st.form("config", border=False):
@@ -280,7 +280,7 @@ else:
                             min_value=1,
                             value=10,
                             key="max_search",
-                            disabled=(st.session_state.use_cache == CACHE[1]),
+                            disabled=(st.session_state.use_cache == CACHE[0]),
                         )
                         st.number_input(
                             MAX_PAGES,
