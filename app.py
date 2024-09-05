@@ -266,6 +266,7 @@ else:
                 container.radio(
                     "Pesquisa de links",
                     options=CACHE,
+                    index=0 if CONFIG[CACHE[0]] else 1,
                     key="_use_cache",
                     on_change=use_cache,
                 )
@@ -276,25 +277,43 @@ else:
                 with st.form("config", border=False):
                     with st.expander("CONFIGURAÇÕES", expanded=False):
                         st.number_input(
-                            RECONNECT, min_value=2, key="reconnect", value=5
+                            RECONNECT,
+                            min_value=2,
+                            key="reconnect",
+                            value=CONFIG.get(RECONNECT, 5),
                         )
-                        st.number_input(TIMEOUT, min_value=1, key="timeout", value=2)
+                        st.number_input(
+                            TIMEOUT,
+                            min_value=1,
+                            key="timeout",
+                            value=CONFIG.get(TIMEOUT, 2),
+                        )
                         st.number_input(
                             MAX_SEARCH,
                             min_value=1,
-                            value=10,
+                            value=CONFIG.get(MAX_SEARCH, 10),
                             key="max_search",
                             disabled=(st.session_state.use_cache == CACHE[0]),
                         )
                         st.number_input(
                             MAX_PAGES,
                             min_value=1,
-                            value=50,
+                            value=CONFIG.get(MAX_PAGES, 50),
                             key="max_pages",
                         )
-                        st.checkbox(SHUFFLE, key="shuffle")
-                        st.checkbox(SCREENSHOT, key="screenshot")
-                        st.toggle(HIDE_BROWSER, key="show_browser")
+                        st.checkbox(
+                            SHUFFLE, key="shuffle", value=CONFIG.get(SHUFFLE, False)
+                        )
+                        st.checkbox(
+                            SCREENSHOT,
+                            key="screenshot",
+                            value=CONFIG.get(SCREENSHOT, False),
+                        )
+                        st.toggle(
+                            HIDE_BROWSER,
+                            key="show_browser",
+                            value=CONFIG.get(HIDE_BROWSER, False),
+                        )
                     st.form_submit_button(START, on_click=run, use_container_width=True)
 
         else:
