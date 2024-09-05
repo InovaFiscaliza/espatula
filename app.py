@@ -160,7 +160,7 @@ def run():
     keyword = st.session_state.keyword
 
     with st.container():
-        if st.session_state.use_cache == CACHE[0]:
+        if st.session_state.use_cache == CACHE[1]:
             progress_text = "Realizando a busca de produtos...🕸️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
