@@ -6,7 +6,7 @@
     "Tempo de espera (seg)": 5,
     "Número máximo de páginas de busca a navegar": 40,
     "Número máximo de produtos a capturar": 100,
-    "Amostrar páginas aleatoriamente": true,
+    "Amostrar páginas aleatoriamente": false,
     "Capturar tela do anúncio": false,
     "Mostrar o navegador?": false
 }
