@@ -16,5 +16,6 @@ if __name__ == "__main__":
         resolve_path("app.py"),
         "--global.developmentMode=false",
         "--server.headless=true",
+        "--client.toolbarMode=viewer",
     ]
     sys.exit(stcli.main())
