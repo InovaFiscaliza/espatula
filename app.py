@@ -195,13 +195,17 @@ def run():
             with output.empty():
                 left, right = st.columns([1, 1], vertical_alignment="top")
                 with left:
-                    if imagem := result.get("imagens"):
-                        imagem = imagem[0]
-                    else:
-                        imagem = result.get("imagem")
-                    left.write("Imagem do produto")
-                    nome = result.get("nome")
-                    left.image(imagem, width=480, caption=nome)
+                    try:
+                        imagem = result.get("imagens", [])
+                        if len(imagem) > 1:
+                            imagem = imagem[0]
+                        else:
+                            imagem = result.get("imagem")
+                        left.write("Imagem do produto")
+                        nome = result.get("nome")
+                        left.image(imagem, width=480, caption=nome)
+                    except Exception:
+                        left.write("Não foi possível carregar a imagem do produto")
                 with right:
                     right.write("Dados do produto")
                     right.write(result)
