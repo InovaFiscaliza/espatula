@@ -165,7 +165,7 @@ class CasasBahiaScraper(BaseScraper):
             tag = 'p:contains("Especificações Técnicas")'
             self.highlight_element(driver, tag)
             driver.uc_click(tag)
-            soup = Soup(driver.get_page_source())
+            soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
 
         except Exception as e:
