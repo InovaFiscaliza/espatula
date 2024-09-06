@@ -1,6 +1,6 @@
 from datetime import datetime
 from dataclasses import dataclass
-from gazpacho import Soup
+from bs4 import BeautifulSoup
 
 from .base import TIMEZONE, BaseScraper
 
@@ -56,15 +56,13 @@ class AmericanasScraper(BaseScraper):
         }
 
     def discover_product_urls(self, driver, keyword):
-        soup = Soup(driver.get_page_source())
+        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         results = {}
-        for item in soup.find(
+        for item in soup.find_all(
             "div",
             attrs={
                 "class": "col__StyledCol-sc-1snw5v3-0 ehOuCD theme-grid-col src__ColGridItem-sc-122lblh-1 cJnBan"
-            },
-            partial=True,
-            mode="all",
+            }
         ):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword

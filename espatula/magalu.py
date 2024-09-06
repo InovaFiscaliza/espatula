@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from dataclasses import dataclass
 
-from gazpacho import Soup
+from bs4 import BeautifulSoup
 
 from .base import TIMEZONE, BaseScraper
 
@@ -65,13 +65,11 @@ class MagaluScraper(BaseScraper):
         }
 
     def discover_product_urls(self, driver, keyword):
-        soup = Soup(driver.get_page_source())
+        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         results = {}
-        for item in soup.find(
+        for item in soup.find_all(
             "a",
             attrs={"data-testid": "product-card-container"},
-            partial=True,
-            mode="all",
         ):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword

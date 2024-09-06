@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from gazpacho import Soup
+from bs4 import BeautifulSoup
 from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
@@ -82,10 +82,10 @@ class CarrefourScraper(BaseScraper):
         }
 
     def discover_product_urls(self, driver, keyword: str):
-        soup = Soup(driver.get_page_source())
+        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         results = {}
-        for div in soup.find(
-            "div", attrs={"class": "galleryItem"}, mode="all", partial=True
+        for div in soup.find_all(
+            "div", attrs={"class": "galleryItem"}
         ):
             if product_data := self.extract_search_data(div):
                 product_data["palavra_busca"] = keyword
