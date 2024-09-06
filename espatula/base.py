@@ -309,6 +309,24 @@ class BaseScraper:
                     print(f"Error: Could not find search input field '{self.input_field}' after {max_retries} attempts")
                     raise  # Re-raise the last exception
 
+    def go_to_next_page(self, driver):
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                if not driver.is_element_present(self.next_page_button):
+                    return False
+                self.highlight_element(driver, self.next_page_button)
+                driver.uc_click(self.next_page_button, timeout=self.timeout)
+                return True
+            except (NoSuchElementException, ElementNotVisibleException):
+                if attempt < max_retries - 1:
+                    print(f"Attempt {attempt + 1} failed. Retrying to go to next page...")
+                    driver.sleep(1)
+                else:
+                    print(f"Error: Could not find or click next page button after {max_retries} attempts")
+                    return False
+        return False
+
     def search(self, keyword: str, max_pages: int = 10, overwrite: bool = False):
         links = {} if overwrite else self.get_links(keyword)
         results = {}
@@ -327,8 +345,6 @@ class BaseScraper:
                         link_data["página_de_busca"] = page
                         results[url] = link_data
                     yield products
-                    if not driver.is_element_present(self.next_page_button):
-                        break
                     page += 1
                     if page > max_pages:
                         if not self.headless:
@@ -336,9 +352,8 @@ class BaseScraper:
                                 f"Número máximo de páginas atingido - #{max_pages}"
                             )
                         break
-                    self.highlight_element(driver, self.next_page_button)
-                    driver.uc_click(self.next_page_button, timeout=self.timeout)
-
+                    if not self.go_to_next_page(driver):
+                        break
             finally:
                 links.update(results)
                 json.dump(
