@@ -296,7 +296,11 @@ class BaseScraper:
 
     def input_search_params(self, driver: SB, keyword: str):
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+        try:
+            driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+        except NoSuchElementException:
+            print(f"Error: Could not find search input field '{self.input_field}'")
+            raise
 
     def search(self, keyword: str, max_pages: int = 10, overwrite: bool = False):
         links = {} if overwrite else self.get_links(keyword)
