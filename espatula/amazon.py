@@ -266,7 +266,7 @@ class AmazonScraper(BaseScraper):
                 'option[value="search-alias=electronics"]', timeout=self.timeout
             )
             electronics.uc_click(timeout=self.timeout)
-        except Exception as e:
+        except NoSuchElementException as e:
             print(e)
         self.highlight_element(driver, self.input_field)
         max_retries = 3
@@ -288,5 +288,5 @@ class AmazonScraper(BaseScraper):
                         subcategory, timeout=self.timeout
                     )
                     subcategory_tag.uc_click(timeout=self.timeout)
-                except Exception as e:
+                except NoSuchElementException as e:
                     print(e)
