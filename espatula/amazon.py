@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from urllib.parse import unquote
+from seleniumbase.common.exceptions import NoSuchElementException
 
 from gazpacho import Soup
 
@@ -268,7 +269,18 @@ class AmazonScraper(BaseScraper):
         except Exception as e:
             print(e)
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                break  # Success, exit the loop
+            except NoSuchElementException:
+                if attempt < max_retries - 1:  # if it's not the last attempt
+                    print(f"Attempt {attempt + 1} failed. Retrying...")
+                    driver.sleep(1)  # Wait for 1 second before retrying
+                else:
+                    print(f"Error: Could not find search input field '{self.input_field}' after {max_retries} attempts")
+                    raise  # Re-raise the last exception
         if department := CATEGORIES.get(keyword):
             for subcategory in department:
                 try:
