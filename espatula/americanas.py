@@ -70,7 +70,7 @@ class AmericanasScraper(BaseScraper):
         return results
 
     def extract_item_data(self, driver):
-        soup = Soup(driver.get_page_source())
+        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         if categoria := soup.find(
             "div", attrs={"class": "breadcrumb"}, mode="first", partial=True
         ):

@@ -93,7 +93,7 @@ class CarrefourScraper(BaseScraper):
         return results
 
     def extract_item_data(self, driver):
-        soup = Soup(driver.get_page_source())
+        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         if categoria := soup.find(
             "span", attrs={"class": "breadcrumb"}, mode="all", partial=True
         ):

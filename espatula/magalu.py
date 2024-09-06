@@ -93,7 +93,7 @@ class MagaluScraper(BaseScraper):
         return variant_data
 
     def extract_item_data(self, driver):
-        soup = Soup(driver.get_page_source())
+        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
 
         if categoria := soup.find(
             "a", attrs={"data-testid": "breadcrumb-item"}, mode="all", partial=False

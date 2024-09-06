@@ -80,7 +80,7 @@ class CasasBahiaScraper(BaseScraper):
         return results
 
     def extract_item_data(self, driver):
-        soup = Soup(driver.get_page_source())
+        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         if categoria := soup.find(
             "div", attrs={"class": "breadcrumb"}, mode="first", partial=True
         ):
@@ -156,7 +156,7 @@ class CasasBahiaScraper(BaseScraper):
             tag = 'p:contains("Características")'
             self.highlight_element(driver, tag)
             driver.uc_click(tag)
-            soup = Soup(driver.get_page_source())
+            soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
             características.update(self.parse_tables(soup, "Características"))
             driver.uc_click('button[aria-label="Fechar"]')
         except Exception as e:
