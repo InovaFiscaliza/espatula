@@ -97,7 +97,7 @@ class AmazonScraper(BaseScraper):
         return table_data
 
     def extract_item_data(self, driver):
-        soup = Soup(driver.get_page_source())
+        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         if nome := soup.find("span", attrs={"id": "productTitle"}):
             self.highlight_element(driver, 'span[id="productTitle"]')
             nome = nome.text.strip()
