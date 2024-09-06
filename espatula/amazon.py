@@ -74,21 +74,19 @@ class AmazonScraper(BaseScraper):
         """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
         soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         table_data = {}
-        tables = soup.find("table", attrs={"id": "productDetails"}, mode="all")
+        tables = soup.find_all("table", attrs={"id": "productDetails"})
         if tables:
             self.highlight_element(driver, 'table[id="productDetails"]')
         for table in tables:
-            for row in table.find("tr", mode="all"):
-                key = row.find("th", mode="first")
-                value = row.find("td", mode="first")
-                table_data[getattr(key, "text", "")] = getattr(
-                    value, "text", ""
-                ).replace("\u200e", "")
+            for row in table.find_all("tr"):
+                key = row.find("th")
+                value = row.find("td")
+                if key and value:
+                    table_data[key.text.strip()] = value.text.strip().replace("\u200e", "")
         if not tables:  # special pages like iphone
-            for table in soup.find(
-                "table", attrs={"class": "a-bordered"}, partial=False, mode="all"
-            ):
-                if rows := table.find("td", mode="all"):
+            for table in soup.find_all("table", attrs={"class": "a-bordered"}):
+                rows = table.find_all("td")
+                if rows:
                     table_data.update(
                         {
                             k.strip(): v.strip()
