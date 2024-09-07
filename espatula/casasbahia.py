@@ -88,48 +88,39 @@ class CasasBahiaScraper(BaseScraper):
             marca = origem.select_one("a")
             marca = marca.text.strip() if marca else None
 
-        # if imagens := soup.find("div", {"class": "Gallery"}, mode="first"):
+        # if imagens := soup.select_one("div.Gallery"):
         #     self.highlight_element(driver, 'div:contains("Gallery")')
         #     imagens = [
-        #         getattr(i, "attrs", {}).get("src")
-        #         for i in imagens.find("img", mode="all")
+        #         img.get("src") for img in imagens.select("img")
         #     ]
 
         nota, avaliações = None, None
-        if popularidade := soup.find(
-            "div", attrs={"data-testid": "star-rating"}, mode="first"
-        ):
+        popularidade = soup.select_one("div[data-testid='star-rating']")
+        if popularidade:
             # self.highlight_element(driver, "div[data-testid=mod-row]")
-            if nota := popularidade.find(
-                "p", attrs={"data-testid": "product-rating-value"}, mode="first"
-            ):
-                nota = nota.strip()
-            # if avaliações := popularidade.find(
-            #     "p", attrs={"data-testid": "product-rating-count"}, mode="first"
-            # ):
-            #     avaliações = avaliações.strip()
+            nota = popularidade.select_one("p[data-testid='product-rating-value']")
+            nota = nota.text.strip() if nota else None
+            # avaliações = popularidade.select_one("p[data-testid='product-rating-count']")
+            # avaliações = avaliações.text.strip() if avaliações else None
 
-        if preço := soup.find("p", attrs={"id": "product-price"}, mode="first"):
+        preço = soup.select_one("p#product-price")
+        if preço:
             # self.highlight_element(driver, "div[data-testid=mod-productprice]")
-            if preço := preço.find("span", attrs={"aria-hidden": "true"}, mode="first"):
-                preço = (
-                    preço.strip().replace("R$", "").replace(".", "").replace(",", ".")
-                )
+            preço = preço.select_one("span[aria-hidden='true']")
+            if preço:
+                preço = preço.text.strip().replace("R$", "").replace(".", "").replace(",", ".")
             else:
                 preço = None
-
         else:
             preço = None
 
-        if vendedor := soup.find("p", attrs={"data-testid": "sold-by"}, mode="first"):
-            if vendedor := vendedor.find("a", mode="first"):
-                vendedor = vendedor.strip()
-            else:
-                vendedor = None
+        vendedor = soup.select_one("p[data-testid='sold-by']")
+        if vendedor:
+            vendedor = vendedor.select_one("a")
+            vendedor = vendedor.text.strip() if vendedor else None
 
-        # if descrição := soup.find(
-        #     "div", attrs={"data-testid": "rich-content-container"}, mode="first"
-        # ):
+        # descrição = soup.select_one("div[data-testid='rich-content-container']")
+        # if descrição:
         #     self.highlight_element(driver, "div[data-testid=rich-content-container]")
         #     descrição = descrição.text.strip()
 
@@ -182,12 +173,13 @@ class CasasBahiaScraper(BaseScraper):
     def parse_tables(self, soup, id) -> dict:
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
-        if table := soup.find("div", attrs={"id": id}, mode="first"):
-            for rows in table.find("div", attrs={"class": "css-cs5a0t"}, mode="all"):
-                if (key := rows.find("p", mode="first")) and (
-                    value := rows.find("span", mode="first")
-                ):
-                    key = key.strip()
-                    value = value.strip()
+        table = soup.select_one(f"div#{id}")
+        if table:
+            for rows in table.select("div.css-cs5a0t"):
+                key = rows.select_one("p")
+                value = rows.select_one("span")
+                if key and value:
+                    key = key.text.strip()
+                    value = value.text.strip()
                     variant_data[key] = value
         return variant_data
