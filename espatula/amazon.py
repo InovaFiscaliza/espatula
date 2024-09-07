@@ -78,9 +78,8 @@ class AmazonScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def parse_tables(self, driver) -> dict:
+    def parse_tables(self, driver, soup) -> dict:
         """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
-        soup = driver.get_beautiful_soup()
         table_data = {}
         if tables := soup.select('table[id^="productDetails"]'):
             self.highlight_element(driver, 'table[id="productDetails"]')
@@ -187,7 +186,7 @@ class AmazonScraper(BaseScraper):
 
         modelo, ean, certificado, asin = None, None, None, None
 
-        if características := self.parse_tables(driver):
+        if características := self.parse_tables(driver, soup):
             if not marca:
                 marca = características.pop("Marca", "")
 
