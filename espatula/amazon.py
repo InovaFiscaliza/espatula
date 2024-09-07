@@ -49,21 +49,21 @@ class AmazonScraper(BaseScraper):
         return decoded_url
 
     def extract_search_results(self, div):
-        header = div.find("h2")
+        header = div.select_one("h2")
         link_relativo = (
-            header.find("a").get("href") if header and header.find("a") else None
+            header.select_one("a").get("href") if header and header.select_one("a") else None
         )
-        nome = header.find("span").text if header and header.find("span") else ""
+        nome = header.select_one("span").text if header and header.select_one("span") else ""
         preço = (
-            div.find("span", attrs={"class": "a-offscreen"}).text
-            if div.find("span", attrs={"class": "a-offscreen"})
+            div.select_one("span.a-offscreen").text
+            if div.select_one("span.a-offscreen")
             else ""
         )
-        stars = div.find("i", attrs={"class": "a-icon-star-small"})
-        stars = stars.find("span").text if stars and stars.find("span") else ""
-        evals = div.find("span", attrs={"class": "a-size-base s-underline-text"})
+        stars = div.select_one("i.a-icon-star-small")
+        stars = stars.select_one("span").text if stars and stars.select_one("span") else ""
+        evals = div.select_one("span.a-size-base.s-underline-text")
         evals = evals.text if evals else ""
-        imgs = div.find("img", attrs={"class": "s-image"})
+        imgs = div.select_one("img.s-image")
         imgs = imgs.get("srcset") if imgs else None
         link_produto = f"{self.url}{link_relativo}" if link_relativo else ""
         if not all([nome, preço, link_relativo, imgs]):
@@ -115,13 +115,11 @@ class AmazonScraper(BaseScraper):
 
     def extract_item_data(self, driver):
         soup = BeautifulSoup(driver.get_page_source(), "html.parser")
-        if nome := soup.find("span", attrs={"id": "productTitle"}):
+        if nome := soup.select_one("span#productTitle"):
             self.highlight_element(driver, 'span[id="productTitle"]')
             nome = nome.text.strip()
 
-        if categoria := soup.find(
-            "div", attrs={"id": "wayfinding-breadcrumbs_feature_div"}
-        ):
+        if categoria := soup.select_one("div#wayfinding-breadcrumbs_feature_div"):
             self.highlight_element(
                 driver, 'div[id="wayfinding-breadcrumbs_feature_div"]'
             )
@@ -129,9 +127,7 @@ class AmazonScraper(BaseScraper):
         elif nome and "iphone" in nome.lower():
             categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
 
-        if vendas := soup.find(
-            "span", attrs={"id": "social-proofing-faceout-title-tk_bought"}
-        ):
+        if vendas := soup.select_one("span#social-proofing-faceout-title-tk_bought"):
             self.highlight_element(
                 driver, 'span[id="social-proofing-faceout-title-tk_bought"]'
             )
@@ -146,35 +142,32 @@ class AmazonScraper(BaseScraper):
                 if isinstance(d, dict)
             ]
 
-        if preço := soup.find("span", attrs={"class": "a-offscreen"}):
+        if preço := soup.select_one("span.a-offscreen"):
             self.highlight_element(driver, 'span[class="a-offscreen"]')
             preço = re.sub(r"R\$|\.", "", preço.text.strip()).replace(",", ".")
 
-        if nota := soup.find(
-            "i",
-            attrs={"class": "cm-cr-review-stars-spacing-big"},
-        ):
+        if nota := soup.select_one("i.cm-cr-review-stars-spacing-big"):
             self.highlight_element(driver, 'i[class="cm-cr-review-stars-spacing-big"]')
             nota = nota.text.strip()
 
-        if avaliações := soup.find("div", attrs={"data-hook": "total-review-count"}):
+        if avaliações := soup.select_one('div[data-hook="total-review-count"]'):
             # self.highlight_element(driver, 'div[data-hook="total-review-count"]')
             avaliações = "".join(re.findall(r"\d", avaliações.text.strip()))
-        elif avaliações := soup.find("span", attrs={"id": "acrCustomerReviewText"}):
+        elif avaliações := soup.select_one("span#acrCustomerReviewText"):
             self.highlight_element(driver, 'span[id="acrCustomerReviewText"]')
             avaliações = avaliações.text.strip()
 
-        if marca := soup.find("a", attrs={"id": "bylineInfo"}):
+        if marca := soup.select_one("a#bylineInfo"):
             self.highlight_element(driver, 'a[id="bylineInfo"]')
             marca = (
                 f'{re.sub(r"Marca: |Visite a loja ", "", marca.text.strip())}'.title()
             )
 
-        if vendedor := soup.find("a", attrs={"id": "sellerProfileTriggerId"}):
+        if vendedor := soup.select_one("a#sellerProfileTriggerId"):
             self.highlight_element(driver, 'a[id="sellerProfileTriggerId"]')
             link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = vendedor.text.strip()
-        elif vendedor := soup.find("a", attrs={"id": "bylineInfo"}):
+        elif vendedor := soup.select_one("a#bylineInfo"):
             self.highlight_element(driver, 'a[id="bylineInfo"]')
             link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.text.strip())}'.title()
@@ -183,13 +176,13 @@ class AmazonScraper(BaseScraper):
 
         descrição = ""
 
-        if descrição_principal := soup.find("div", attrs={"id": "feature-bullets"}):
+        if descrição_principal := soup.select_one("div#feature-bullets"):
             self.highlight_element(driver, 'div[id="feature-bullets"]')
             descrição += "\n".join(
                 s.text.strip() for s in descrição_principal.select("span")
             )
 
-        if descrição_secundária := soup.find("div", attrs={"id": "productDescription"}):
+        if descrição_secundária := soup.select_one("div#productDescription"):
             self.highlight_element(driver, 'div[id="productDescription"]')
             descrição += "\n".join(
                 s.text.strip() for s in descrição_secundária.select("span")
@@ -237,10 +230,7 @@ class AmazonScraper(BaseScraper):
     def discover_product_urls(self, driver, keyword):
         soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         results = {}
-        for div in soup.select(
-            "div",
-            attrs={"class": "s-result-item", "data-component-type": "s-search-result"},
-        ):
+        for div in soup.select('div.s-result-item[data-component-type="s-search-result"]'):
             if product_data := self.extract_search_results(div):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
