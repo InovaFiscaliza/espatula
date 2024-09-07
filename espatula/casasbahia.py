@@ -25,36 +25,27 @@ class CasasBahiaScraper(BaseScraper):
         return 'a[aria-label="Próxima página"]'
 
     def extract_product_data(self, produto):
-        if title := produto.find("h3", attrs={"class": "product-card__title"}):
-            if relative_url := title.find("a"):
-                relative_url = relative_url.attrs.get("href")
-            if name := title.find("span", mode="first"):
-                name = name.strip()
-        if evals := produto.find(
-            "span", attrs={"class": "product-card__reviews-count-text"}, mode="first"
-        ):
-            evals = evals.strip()
-        if nota := produto.find(
-            "span", attrs={"data-testid": "product-card-rating"}, mode="first"
-        ):
-            nota = nota.strip()
-        if price_lower := produto.find(
-            "div", {"class": "product-card__highlight-price"}, mode="first"
-        ):
-            price_lower = price_lower.strip()
-
-        if price_higher := produto.find(
-            "div", {"class": "product-card__installment-text"}, mode="first"
-        ):
-            price_higher = price_higher.strip()
-
-        if hasattr(
-            imgs := produto.find(
-                "img", attrs={"class": "product-card__image"}, mode="first"
-            ),
-            "attrs",
-        ):
-            imgs = imgs.attrs.get("src")
+        title = produto.select_one("h3.product-card__title")
+        if title:
+            relative_url = title.select_one("a")
+            relative_url = relative_url["href"] if relative_url else None
+            name = title.select_one("span")
+            name = name.text.strip() if name else None
+        
+        evals = produto.select_one("span.product-card__reviews-count-text")
+        evals = evals.text.strip() if evals else None
+        
+        nota = produto.select_one("span[data-testid='product-card-rating']")
+        nota = nota.text.strip() if nota else None
+        
+        price_lower = produto.select_one("div.product-card__highlight-price")
+        price_lower = price_lower.text.strip() if price_lower else None
+        
+        price_higher = produto.select_one("div.product-card__installment-text")
+        price_higher = price_higher.text.strip() if price_higher else None
+        
+        imgs = produto.select_one("img.product-card__image")
+        imgs = imgs["src"] if imgs else None
         if not all([name, price_lower, imgs, relative_url]):
             return None
         return {
@@ -70,10 +61,7 @@ class CasasBahiaScraper(BaseScraper):
     def discover_product_urls(self, driver, keyword):
         soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         results = {}
-        for item in soup.find_all(
-            "div",
-            attrs={"class": "css-1enexmx"}
-        ):
+        for item in soup.select("div.css-1enexmx"):
             if product_data := self.extract_product_data(item):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
@@ -81,30 +69,24 @@ class CasasBahiaScraper(BaseScraper):
 
     def extract_item_data(self, driver):
         soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
-        if categoria := soup.find(
-            "div", attrs={"class": "breadcrumb"}, mode="first", partial=True
-        ):
-            # self.highlight_element(driver, "div:contains(breadcrumb)")
+        categoria = soup.select_one("div.breadcrumb")
+        if categoria:
             categoria = " | ".join(
-                i.strip()
-                for i in categoria.find("a", mode="all")
-                if hasattr(i, "strip") and i.strip()
+                a.text.strip() for a in categoria.select("a") if a.text.strip()
             )
 
-        if nome := soup.find("h1", attrs={"class": "heading"}, mode="first"):
-            # self.highlight_element(driver, 'h1:contains("product-title")')
-            nome = nome.strip()
+        nome = soup.select_one("h1.heading")
+        nome = nome.text.strip() if nome else None
         if not all([nome, categoria]):
             return None
 
         product_id, marca = None, None
-        if origem := soup.find(
-            "div", attrs={"class": "dsvia-flex css-uoygdh"}, mode="first"
-        ):
-            if product_id := origem.find("p", mode="first"):
-                product_id = "".join(d for d in product_id.strip() if d.isdigit())
-            if origem := origem.find("a", mode="first"):
-                marca = origem.strip()
+        origem = soup.select_one("div.dsvia-flex.css-uoygdh")
+        if origem:
+            product_id = origem.select_one("p")
+            product_id = "".join(d for d in product_id.text.strip() if d.isdigit()) if product_id else None
+            marca = origem.select_one("a")
+            marca = marca.text.strip() if marca else None
 
         # if imagens := soup.find("div", {"class": "Gallery"}, mode="first"):
         #     self.highlight_element(driver, 'div:contains("Gallery")')
