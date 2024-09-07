@@ -84,9 +84,7 @@ class CarrefourScraper(BaseScraper):
     def discover_product_urls(self, driver, keyword: str):
         soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         results = {}
-        for div in soup.find_all(
-            "div", attrs={"class": "galleryItem"}
-        ):
+        for div in soup.select("div.galleryItem"):
             if product_data := self.extract_search_data(div):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
