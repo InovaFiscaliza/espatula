@@ -148,12 +148,12 @@ class MercadoLivreScraper(BaseScraper):
                 avaliações = "".join(re.findall(r"\d+", avaliacoes_element.get_text().strip()))
 
         preço = None
-        if preço_element := soup.find("meta", attrs={"itemprop": "price"}):
+        if preço_element := soup.select_one("meta[itemprop='price']"):
             self.highlight_element(driver, "div[class=ui-pdp-price__second-line]")
             preço = preço_element.get("content")
 
         estoque = None
-        if estoque_element := soup.find("span", class_="quantity__available"):
+        if estoque_element := soup.select_one("span.quantity__available"):
             self.highlight_element(driver, "span[class=ui-pdp-buybox__quantity__available]")
             estoque = estoque_element.get_text().strip().split(" ")[0].replace("(", "")
 
@@ -162,11 +162,11 @@ class MercadoLivreScraper(BaseScraper):
             self.highlight_element(driver, "div[class=ui-pdp-seller__header__title]")
             vendedor = vendedor_element.get_text().strip()
 
-        if soup.find("button", attrs={"data-testid": "action-collapsable-target"}):
+        if soup.select_one("button[data-testid='action-collapsable-target']"):
             self.highlight_element(driver, "button[data-testid=action-collapsable-target]")
             driver.uc_click("button[data-testid=action-collapsable-target]")
 
-        if soup.find("a", attrs={"data-testid": "action-collapsable-target"}):
+        if soup.select_one("a[data-testid='action-collapsable-target']"):
             self.highlight_element(driver, 'a[title="Ver descrição completa"]')
             driver.uc_click('a[title="Ver descrição completa"]')
 
