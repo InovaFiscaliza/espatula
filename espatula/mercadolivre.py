@@ -44,22 +44,22 @@ class MercadoLivreScraper(BaseScraper):
 
     def extract_search_data(self, item):
         url_element = item.select_one("a.ui-search-link")
-        url = self.find_single_url(url_element['href']) if url_element else None
+        url = self.find_single_url(url_element.get('href')) if url_element else None
 
         imagem_element = item.select_one("img.ui-search-result")
-        imagem = imagem_element['src'] if imagem_element else None
+        imagem = imagem_element.get('src') if imagem_element else None
 
         nome_element = item.select_one("h2.ui-search-item__title")
-        nome = nome_element.text.strip() if nome_element else None
+        nome = nome_element.get_text().strip() if nome_element else None
 
         preço_element = item.select_one("span.andes-money-amount__fraction")
-        preço = preço_element.text.strip() if preço_element else None
+        preço = preço_element.get_text().strip() if preço_element else None
 
         avaliações_element = item.select_one("span.ui-search-reviews__amount")
-        avaliações = avaliações_element.text.strip() if avaliações_element else None
+        avaliações = avaliações_element.get_text().strip() if avaliações_element else None
 
         nota_element = item.select_one("span.ui-search-reviews__rating-number")
-        nota = nota_element.text.strip() if nota_element else None
+        nota = nota_element.get_text().strip() if nota_element else None
 
         if not all([nome, preço, imagem]):
             return False
@@ -98,7 +98,7 @@ class MercadoLivreScraper(BaseScraper):
         This method can be easily tested in isolation.
         """
         return {
-            row.select_one("th").text.strip(): row.select_one("td").text.strip()
+            row.select_one("th").get_text().strip(): row.select_one("td").get_text().strip()
             for table in tables
             for row in table.select("tr")
         }
@@ -109,7 +109,7 @@ class MercadoLivreScraper(BaseScraper):
         for list_div in lists:
             for li in list_div.select("li"):
                 if item := li.select_one("p"):
-                    k, v = item.text.strip().split(":", 1)
+                    k, v = item.get_text().strip().split(":", 1)
                     items[k.strip()] = v.strip()
         return items
 
@@ -120,7 +120,7 @@ class MercadoLivreScraper(BaseScraper):
         if categoria_elements := soup.find_all("a", class_="andes-breadcrumb__link"):
             self.highlight_element(driver, "div[id=breadcrumb]")
             categoria = "|".join(
-                i.text.strip() for i in categoria_elements if i.text.strip()
+                i.get_text().strip() for i in categoria_elements if i.get_text().strip()
             )
 
         imgs = None
@@ -131,21 +131,21 @@ class MercadoLivreScraper(BaseScraper):
         estado, vendas = None, None
         if info_vendas := soup.find("span", class_="ui-pdp-subtitle"):
             self.highlight_element(driver, "span[class=ui-pdp-subtitle]")
-            if len(info_vendas := info_vendas.text.strip().split(" | ")) == 2:
+            if len(info_vendas := info_vendas.get_text().strip().split(" | ")) == 2:
                 estado, vendas = info_vendas
 
         nome = None
         if nome_element := soup.find("h1", class_="ui-pdp-title"):
             self.highlight_element(driver, "h1[class=ui-pdp-title]")
-            nome = nome_element.text.strip()
+            nome = nome_element.get_text().strip()
 
         nota, avaliações = None, None
         if info_avaliacoes := soup.find("div", class_="ui-pdp-header__info"):
             self.highlight_element(driver, "div[class=ui-pdp-header__info]")
             if nota_element := info_avaliacoes.find("span", class_="ui-pdp-review__rating"):
-                nota = nota_element.text.strip()
+                nota = nota_element.get_text().strip()
             if avaliacoes_element := info_avaliacoes.find("span", class_="ui-pdp-review__amount"):
-                avaliações = "".join(re.findall(r"\d+", avaliacoes_element.text.strip()))
+                avaliações = "".join(re.findall(r"\d+", avaliacoes_element.get_text().strip()))
 
         preço = None
         if preço_element := soup.find("meta", attrs={"itemprop": "price"}):
@@ -155,12 +155,12 @@ class MercadoLivreScraper(BaseScraper):
         estoque = None
         if estoque_element := soup.find("span", class_="quantity__available"):
             self.highlight_element(driver, "span[class=ui-pdp-buybox__quantity__available]")
-            estoque = estoque_element.text.strip().split(" ")[0].replace("(", "")
+            estoque = estoque_element.get_text().strip().split(" ")[0].replace("(", "")
 
         vendedor = None
         if vendedor_element := soup.find("div", class_="ui-pdp-seller__header"):
             self.highlight_element(driver, "div[class=ui-pdp-seller__header__title]")
-            vendedor = vendedor_element.text.strip()
+            vendedor = vendedor_element.get_text().strip()
 
         if soup.find("button", attrs={"data-testid": "action-collapsable-target"}):
             self.highlight_element(driver, "button[data-testid=action-collapsable-target]")
@@ -182,7 +182,7 @@ class MercadoLivreScraper(BaseScraper):
         descrição = None
         if descrição_element := soup.find("p", class_="ui-pdp-description__content"):
             self.highlight_element(driver, "p[class=ui-pdp-description__content]")
-            descrição = descrição_element.text.strip()
+            descrição = descrição_element.get_text().strip()
 
         url = self.find_single_url(driver.get_current_url())
 
