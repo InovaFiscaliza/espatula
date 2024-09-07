@@ -43,54 +43,23 @@ class MercadoLivreScraper(BaseScraper):
         return match[0] if match else text
 
     def extract_search_data(self, item):
-        if hasattr(
-            url := item.find("a", attrs={"class": "ui-search-link"}, mode="first"),
-            "attrs",
-        ):
-            url = self.find_single_url(url.attrs.get("href"))
+        url_element = item.select_one("a.ui-search-link")
+        url = self.find_single_url(url_element['href']) if url_element else None
 
-        if hasattr(
-            imagem := item.find(
-                "img",
-                attrs={"class": "ui-search-result"},
-                partial=True,
-                mode="first",
-            ),
-            "attrs",
-        ):
-            imagem = imagem.attrs.get("src")
+        imagem_element = item.select_one("img.ui-search-result")
+        imagem = imagem_element['src'] if imagem_element else None
 
-        if nome := item.find(
-            "h2",
-            attrs={"class": "ui-search-item"},
-            partial=True,
-            mode="first",
-        ):
-            nome = nome.strip()
+        nome_element = item.select_one("h2.ui-search-item__title")
+        nome = nome_element.text.strip() if nome_element else None
 
-        if preço := item.find(
-            "span",
-            attrs={"class": "andes-money-amount__fraction"},
-            partial=True,
-            mode="first",
-        ):
-            preço = preço.strip()
+        preço_element = item.select_one("span.andes-money-amount__fraction")
+        preço = preço_element.text.strip() if preço_element else None
 
-        if avaliações := item.find(
-            "span",
-            attrs={"class": "ui-search-reviews__amount"},
-            partial=True,
-            mode="first",
-        ):
-            avaliações = avaliações.strip()
+        avaliações_element = item.select_one("span.ui-search-reviews__amount")
+        avaliações = avaliações_element.text.strip() if avaliações_element else None
 
-        if nota := item.find(
-            "span",
-            attrs={"class": "ui-search-reviews__rating-number"},
-            partial=True,
-            mode="first",
-        ):
-            nota = nota.strip()
+        nota_element = item.select_one("span.ui-search-reviews__rating-number")
+        nota = nota_element.text.strip() if nota_element else None
 
         if not all([nome, preço, imagem]):
             return False
@@ -108,7 +77,7 @@ class MercadoLivreScraper(BaseScraper):
     def discover_product_urls(self, driver, keyword):
         soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
         results = {}
-        for item in soup.find_all("li", class_="ui-search-layout__item"):
+        for item in soup.select("li.ui-search-layout__item"):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
@@ -116,10 +85,10 @@ class MercadoLivreScraper(BaseScraper):
 
     def parse_specs(self, element) -> dict:
         specs = {}
-        if tables := element.find_all("table", class_="andes-table"):
-            specs.update(self.parse_tables(tables))
-        if lists := element.find_all("div", class_="ui-pdp-list ui-pdp-specs__list"):
-            specs.update(self.parse_lists(lists))
+        tables = element.select("table.andes-table")
+        lists = element.select("div.ui-pdp-list.ui-pdp-specs__list")
+        specs.update(self.parse_tables(tables))
+        specs.update(self.parse_lists(lists))
         return specs
 
     @staticmethod
@@ -128,19 +97,18 @@ class MercadoLivreScraper(BaseScraper):
         Parses tables from the product detail page to extract specifications and returns them as a dictionary.
         This method can be easily tested in isolation.
         """
-        # Implement table parsing logic
         return {
-            row.find("th").text: row.find("td").text
+            row.select_one("th").text.strip(): row.select_one("td").text.strip()
             for table in tables
-            for row in table.find_all("tr")
+            for row in table.select("tr")
         }
 
     @staticmethod
     def parse_lists(lists: list) -> dict:
         items = {}
         for list_div in lists:
-            for li in list_div.find_all("li"):
-                if item := li.find("p"):
+            for li in list_div.select("li"):
+                if item := li.select_one("p"):
                     k, v = item.text.strip().split(":", 1)
                     items[k.strip()] = v.strip()
         return items
