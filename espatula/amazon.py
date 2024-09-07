@@ -3,7 +3,10 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from urllib.parse import unquote
-from seleniumbase.common.exceptions import NoSuchElementException
+from seleniumbase.common.exceptions import (
+    NoSuchElementException,
+    ElementNotVisibleException,
+)
 
 from bs4 import BeautifulSoup
 
@@ -47,9 +50,15 @@ class AmazonScraper(BaseScraper):
 
     def extract_search_results(self, div):
         header = div.find("h2")
-        link_relativo = header.find("a").get("href") if header and header.find("a") else None
+        link_relativo = (
+            header.find("a").get("href") if header and header.find("a") else None
+        )
         nome = header.find("span").text if header and header.find("span") else ""
-        preço = div.find("span", attrs={"class": "a-offscreen"}).text if div.find("span", attrs={"class": "a-offscreen"}) else ""
+        preço = (
+            div.find("span", attrs={"class": "a-offscreen"}).text
+            if div.find("span", attrs={"class": "a-offscreen"})
+            else ""
+        )
         stars = div.find("i", attrs={"class": "a-icon-star-small"})
         stars = stars.find("span").text if stars and stars.find("span") else ""
         evals = div.find("span", attrs={"class": "a-size-base s-underline-text"})
@@ -72,7 +81,7 @@ class AmazonScraper(BaseScraper):
 
     def parse_tables(self, driver) -> dict:
         """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         table_data = {}
         tables = soup.find_all("table", attrs={"id": "productDetails"})
         if tables:
@@ -82,7 +91,9 @@ class AmazonScraper(BaseScraper):
                 key = row.find("th")
                 value = row.find("td")
                 if key and value:
-                    table_data[key.text.strip()] = value.text.strip().replace("\u200e", "")
+                    table_data[key.text.strip()] = value.text.strip().replace(
+                        "\u200e", ""
+                    )
         if not tables:  # special pages like iphone
             for table in soup.find_all("table", attrs={"class": "a-bordered"}):
                 rows = table.find_all("td")
@@ -97,7 +108,7 @@ class AmazonScraper(BaseScraper):
         return table_data
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         if nome := soup.find("span", attrs={"id": "productTitle"}):
             self.highlight_element(driver, 'span[id="productTitle"]')
             nome = nome.text.strip()
@@ -108,9 +119,7 @@ class AmazonScraper(BaseScraper):
             self.highlight_element(
                 driver, 'div[id="wayfinding-breadcrumbs_feature_div"]'
             )
-            categoria = "|".join(
-                s.text.strip() for s in categoria.find_all("a")
-            )
+            categoria = "|".join(s.text.strip() for s in categoria.find_all("a"))
         elif nome and "iphone" in nome.lower():
             categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
 
@@ -142,14 +151,10 @@ class AmazonScraper(BaseScraper):
             self.highlight_element(driver, 'i[class="cm-cr-review-stars-spacing-big"]')
             nota = nota.text.strip()
 
-        if avaliações := soup.find(
-            "div", attrs={"data-hook": "total-review-count"}
-        ):
+        if avaliações := soup.find("div", attrs={"data-hook": "total-review-count"}):
             # self.highlight_element(driver, 'div[data-hook="total-review-count"]')
             avaliações = "".join(re.findall(r"\d", avaliações.text.strip()))
-        elif avaliações := soup.find(
-            "span", attrs={"id": "acrCustomerReviewText"}
-        ):
+        elif avaliações := soup.find("span", attrs={"id": "acrCustomerReviewText"}):
             self.highlight_element(driver, 'span[id="acrCustomerReviewText"]')
             avaliações = avaliações.text.strip()
 
@@ -159,9 +164,7 @@ class AmazonScraper(BaseScraper):
                 f'{re.sub(r"Marca: |Visite a loja ", "", marca.text.strip())}'.title()
             )
 
-        if vendedor := soup.find(
-            "a", attrs={"id": "sellerProfileTriggerId"}
-        ):
+        if vendedor := soup.find("a", attrs={"id": "sellerProfileTriggerId"}):
             self.highlight_element(driver, 'a[id="sellerProfileTriggerId"]')
             link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = vendedor.text.strip()
@@ -174,17 +177,13 @@ class AmazonScraper(BaseScraper):
 
         descrição = ""
 
-        if descrição_principal := soup.find(
-            "div", attrs={"id": "feature-bullets"}
-        ):
+        if descrição_principal := soup.find("div", attrs={"id": "feature-bullets"}):
             self.highlight_element(driver, 'div[id="feature-bullets"]')
             descrição += "\n".join(
                 s.text.strip() for s in descrição_principal.find_all("span")
             )
 
-        if descrição_secundária := soup.find(
-            "div", attrs={"id": "productDescription"}
-        ):
+        if descrição_secundária := soup.find("div", attrs={"id": "productDescription"}):
             self.highlight_element(driver, 'div[id="productDescription"]')
             descrição += "\n".join(
                 s.text.strip() for s in descrição_secundária.find_all("span")
@@ -230,7 +229,7 @@ class AmazonScraper(BaseScraper):
         }
 
     def discover_product_urls(self, driver, keyword):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         results = {}
         for div in soup.find_all(
             "div",
@@ -242,29 +241,28 @@ class AmazonScraper(BaseScraper):
         return results
 
     def input_search_params(self, driver, keyword):
-        try:
-            section = "select[id=searchDropdownBox]"
-            self.highlight_element(driver, section)
-            category = driver.find_element(section, timeout=self.timeout)
-            category.uc_click(timeout=self.timeout)
-            electronics = driver.find_element(
-                'option[value="search-alias=electronics"]', timeout=self.timeout
-            )
-            electronics.uc_click(timeout=self.timeout)
-        except NoSuchElementException as e:
-            print(e)
-        self.highlight_element(driver, self.input_field)
         max_retries = 3
         for attempt in range(max_retries):
             try:
+                section = "select[id=searchDropdownBox]"
+                self.highlight_element(driver, section)
+                category = driver.find_element(section, timeout=self.timeout)
+                category.uc_click(timeout=self.timeout)
+                electronics = driver.find_element(
+                    'option[value="search-alias=electronics"]', timeout=self.timeout
+                )
+                electronics.uc_click(timeout=self.timeout)
+                self.highlight_element(driver, self.input_field)
                 driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
                 break  # Success, exit the loop
-            except NoSuchElementException:
+            except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < max_retries - 1:  # if it's not the last attempt
                     print(f"Attempt {attempt + 1} failed. Retrying...")
                     driver.sleep(1)  # Wait for 1 second before retrying
                 else:
-                    print(f"Error: Could not find search input field '{self.input_field}' after {max_retries} attempts")
+                    print(
+                        f"Error: Could not find search input field '{self.input_field}' after {max_retries} attempts"
+                    )
                     raise  # Re-raise the last exception
         if department := CATEGORIES.get(keyword):
             for subcategory in department:
@@ -273,5 +271,5 @@ class AmazonScraper(BaseScraper):
                         subcategory, timeout=self.timeout
                     )
                     subcategory_tag.uc_click(timeout=self.timeout)
-                except NoSuchElementException as e:
+                except (NoSuchElementException, ElementNotVisibleException) as e:
                     print(e)
