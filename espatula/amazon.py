@@ -37,9 +37,11 @@ class AmazonScraper(BaseScraper):
     def transform_url(source_url):
         decoded_url = unquote(source_url)
         patterns = [
-            (r"https://www\.amazon\.com\.br/sspa/click.*?/(.*?)/dp/(.*?)/", 
-             lambda m: f"https://www.amazon.com.br/{m.group(1)}/dp/{m.group(2)}"),
-            (r"(^http.*)\/ref=.*", lambda m: m.group(1))
+            (
+                r"https://www\.amazon\.com\.br/sspa/click.*?/(.*?)/dp/(.*?)/",
+                lambda m: f"https://www.amazon.com.br/{m.group(1)}/dp/{m.group(2)}",
+            ),
+            (r"(^http.*)\/ref=.*", lambda m: m.group(1)),
         ]
         for pattern, replacement in patterns:
             if match := re.search(pattern, decoded_url):
@@ -53,19 +55,18 @@ class AmazonScraper(BaseScraper):
                 return default
             return element.get(attr) if attr else element.get_text().strip()
 
-        header = div.select_one("h2")
         link_relativo = safe_get("h2 a", "href")
         nome = safe_get("h2 span")
         preço = safe_get("span.a-offscreen")
         stars = safe_get("i.a-icon-star-small span")
         evals = safe_get("span.a-size-base.s-underline-text")
         imgs = safe_get("img.s-image", "srcset")
-        
+
         link_produto = f"{self.url}{link_relativo}" if link_relativo else ""
-        
+
         if not all([nome, preço, link_relativo, imgs]):
             return False
-        
+
         Link = self.transform_url(link_produto)
         return {
             "nome": nome,
@@ -79,9 +80,9 @@ class AmazonScraper(BaseScraper):
 
     def parse_tables(self, driver) -> dict:
         """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+        soup = driver.get_beautiful_soup()
         table_data = {}
-        if tables := soup.select('table[id="productDetails"]'):
+        if tables := soup.select('table[id^="productDetails"]'):
             self.highlight_element(driver, 'table[id="productDetails"]')
             for table in tables:
                 for row in table.select("tr"):
@@ -112,7 +113,7 @@ class AmazonScraper(BaseScraper):
         return table_data
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+        soup = driver.get_beautiful_soup()
         if nome := soup.select_one("span#productTitle"):
             self.highlight_element(driver, 'span[id="productTitle"]')
             nome = nome.get_text().strip()
@@ -140,11 +141,11 @@ class AmazonScraper(BaseScraper):
                 if isinstance(d, dict)
             ]
 
-        if preço := soup.select_one("span.a-offscreen"):
-            self.highlight_element(driver, 'span[class="a-offscreen"]')
+        if preço := soup.select_one('span[class="aok-offscreen"]'):
+            self.highlight_element(driver, 'span[class="aok-offscreen"]')
             preço = re.sub(r"R\$|\.", "", preço.get_text().strip()).replace(",", ".")
 
-        if nota := soup.select_one("i.cm-cr-review-stars-spacing-big"):
+        if nota := soup.select_one('i[class="cm-cr-review-stars-spacing-big"]'):
             self.highlight_element(driver, 'i[class="cm-cr-review-stars-spacing-big"]')
             nota = nota.get_text().strip()
 
@@ -161,11 +162,11 @@ class AmazonScraper(BaseScraper):
 
         if vendedor := soup.select_one("a#sellerProfileTriggerId"):
             self.highlight_element(driver, 'a[id="sellerProfileTriggerId"]')
-            link_vendedor = f"{self.url}{vendedor.select_one('> href')}"
+            link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = vendedor.get_text().strip()
         elif vendedor := soup.select_one("a#bylineInfo"):
             self.highlight_element(driver, 'a[id="bylineInfo"]')
-            link_vendedor = f"{self.url}{vendedor.select_one('> href')}"
+            link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.get_text().strip())}'.title()
         else:
             link_vendedor = ""
@@ -223,8 +224,7 @@ class AmazonScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, driver, keyword):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+    def discover_product_urls(self, soup, keyword):
         results = {}
         for div in soup.select(
             'div.s-result-item[data-component-type="s-search-result"]'
