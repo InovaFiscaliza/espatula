@@ -83,26 +83,32 @@ class AmazonScraper(BaseScraper):
         """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
         soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         table_data = {}
-        tables = soup.find_all("table", attrs={"id": "productDetails"})
-        if tables:
+        if tables := soup.select('table[id="productDetails"]'):
             self.highlight_element(driver, 'table[id="productDetails"]')
-        for table in tables:
-            for row in table.find_all("tr"):
-                key = row.find("th")
-                value = row.find("td")
-                if key and value:
-                    table_data[key.text.strip()] = value.text.strip().replace(
-                        "\u200e", ""
-                    )
-        if not tables:  # special pages like iphone
-            for table in soup.find_all("table", attrs={"class": "a-bordered"}):
-                rows = table.find_all("td")
+            for table in tables:
+                for row in table.select("tr"):
+                    key = row.select_one("th")
+                    value = row.select_one("td")
+                    if key and value:
+                        table_data[key.text.strip()] = value.text.strip().replace(
+                            "\u200e", ""
+                        )
+        elif tables := soup.find_all(
+            "table", attrs={"class": "a-bordered"}
+        ):  # special pages like iphone
+            self.highlight_element(driver, 'table[class="a-bordered"]')
+            for table in tables:
+                rows = table.select("td")
                 if rows:
                     table_data.update(
                         {
-                            k.strip(): v.strip()
+                            k.text.strip(): v.text.strip()
                             for k, v in zip(rows[::2], rows[1::2])
-                            if ("R$" not in k.strip() and "R$" not in v.strip())
+                            if (
+                                hasattr(k, "text")
+                                and "R$" not in k.text.strip()
+                                and "R$" not in v.text.strip()
+                            )
                         }
                     )
         return table_data
@@ -119,7 +125,7 @@ class AmazonScraper(BaseScraper):
             self.highlight_element(
                 driver, 'div[id="wayfinding-breadcrumbs_feature_div"]'
             )
-            categoria = "|".join(s.text.strip() for s in categoria.find_all("a"))
+            categoria = "|".join(s.text.strip() for s in categoria.select("a"))
         elif nome and "iphone" in nome.lower():
             categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
 
@@ -180,13 +186,13 @@ class AmazonScraper(BaseScraper):
         if descrição_principal := soup.find("div", attrs={"id": "feature-bullets"}):
             self.highlight_element(driver, 'div[id="feature-bullets"]')
             descrição += "\n".join(
-                s.text.strip() for s in descrição_principal.find_all("span")
+                s.text.strip() for s in descrição_principal.select("span")
             )
 
         if descrição_secundária := soup.find("div", attrs={"id": "productDescription"}):
             self.highlight_element(driver, 'div[id="productDescription"]')
             descrição += "\n".join(
-                s.text.strip() for s in descrição_secundária.find_all("span")
+                s.text.strip() for s in descrição_secundária.select("span")
             )
 
         modelo, ean, certificado, asin = None, None, None, None
@@ -231,7 +237,7 @@ class AmazonScraper(BaseScraper):
     def discover_product_urls(self, driver, keyword):
         soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         results = {}
-        for div in soup.find_all(
+        for div in soup.select(
             "div",
             attrs={"class": "s-result-item", "data-component-type": "s-search-result"},
         ):
@@ -244,14 +250,17 @@ class AmazonScraper(BaseScraper):
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                section = "select[id=searchDropdownBox]"
-                self.highlight_element(driver, section)
-                category = driver.find_element(section, timeout=self.timeout)
-                category.uc_click(timeout=self.timeout)
-                electronics = driver.find_element(
-                    'option[value="search-alias=electronics"]', timeout=self.timeout
-                )
-                electronics.uc_click(timeout=self.timeout)
+                # section = 'select[id="searchDropdownBox"]'
+                # section = '//*[@id="searchDropdownBox"]'
+                # self.highlight_element(driver, section)
+                # category = driver.find_element(
+                #     section, timeout=self.timeout, by="xpath"
+                # )
+                # category.uc_click()
+                # electronics = driver.find_element(
+                #     'option[value="search-alias=electronics"]', timeout=self.timeout
+                # )
+                # electronics.uc_click()
                 self.highlight_element(driver, self.input_field)
                 driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
                 break  # Success, exit the loop
@@ -270,6 +279,6 @@ class AmazonScraper(BaseScraper):
                     subcategory_tag = driver.find_element(
                         subcategory, timeout=self.timeout
                     )
-                    subcategory_tag.uc_click(timeout=self.timeout)
+                    subcategory_tag.uc_click()
                 except (NoSuchElementException, ElementNotVisibleException) as e:
                     print(e)
