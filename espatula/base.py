@@ -41,7 +41,8 @@ class BaseScraper:
     path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
     reconnect: int = int(os.environ.get("RECONNECT", 10))
     timeout: int = int(os.environ.get("TIMEOUT", 5))
-    ad_block_on: bool = True
+    user_data_dir = f'{Path(os.environ["LOCALAPPDATA"])}/Google/Chrome/User Data'
+    ad_block_on: bool = False
     incognito: bool = False
     do_not_track: bool = True
     turnstile: bool = False
@@ -115,6 +116,7 @@ class BaseScraper:
             ad_block_on=self.ad_block_on,
             incognito=self.incognito,
             do_not_track=self.do_not_track,
+            user_data_dir=self.user_data_dir,
         ) as sb:
             sb.driver.maximize_window()
             sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
@@ -301,12 +303,14 @@ class BaseScraper:
             try:
                 driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
                 return  # Success, exit the function
-            except NoSuchElementException:
+            except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < max_retries - 1:  # if it's not the last attempt
                     print(f"Attempt {attempt + 1} failed. Retrying...")
                     driver.sleep(1)  # Wait for 1 second before retrying
                 else:
-                    print(f"Error: Could not find search input field '{self.input_field}' after {max_retries} attempts")
+                    print(
+                        f"Error: Could not find search input field '{self.input_field}' after {max_retries} attempts"
+                    )
                     raise  # Re-raise the last exception
 
     def go_to_next_page(self, driver):
@@ -320,10 +324,14 @@ class BaseScraper:
                 return True
             except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < max_retries - 1:
-                    print(f"Attempt {attempt + 1} failed. Retrying to go to next page...")
+                    print(
+                        f"Attempt {attempt + 1} failed. Retrying to go to next page..."
+                    )
                     driver.sleep(1)
                 else:
-                    print(f"Error: Could not find or click next page button after {max_retries} attempts")
+                    print(
+                        f"Error: Could not find or click next page button after {max_retries} attempts"
+                    )
                     return False
         return False
 
