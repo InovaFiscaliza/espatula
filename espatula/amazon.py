@@ -51,18 +51,18 @@ class AmazonScraper(BaseScraper):
     def extract_search_results(self, div):
         header = div.select_one("h2")
         link_relativo = (
-            header.select_one("a").get("href") if header and header.select_one("a") else None
+            header.select_one("a > href") if header and header.select_one("a") else None
         )
-        nome = header.select_one("span").text if header and header.select_one("span") else ""
+        nome = header.select_one("span").get_text() if header and header.select_one("span") else ""
         preço = (
             div.select_one("span.a-offscreen").text
             if div.select_one("span.a-offscreen")
             else ""
         )
         stars = div.select_one("i.a-icon-star-small")
-        stars = stars.select_one("span").text if stars and stars.select_one("span") else ""
+        stars = stars.select_one("span").get_text() if stars and stars.select_one("span") else ""
         evals = div.select_one("span.a-size-base.s-underline-text")
-        evals = evals.text if evals else ""
+        evals = evals.get_text() if evals else ""
         imgs = div.select_one("img.s-image")
         imgs = imgs.get("srcset") if imgs else None
         link_produto = f"{self.url}{link_relativo}" if link_relativo else ""
@@ -117,7 +117,7 @@ class AmazonScraper(BaseScraper):
         soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         if nome := soup.select_one("span#productTitle"):
             self.highlight_element(driver, 'span[id="productTitle"]')
-            nome = nome.text.strip()
+            nome = nome.get_text().strip()
 
         if categoria := soup.select_one("div#wayfinding-breadcrumbs_feature_div"):
             self.highlight_element(
@@ -131,7 +131,7 @@ class AmazonScraper(BaseScraper):
             self.highlight_element(
                 driver, 'span[id="social-proofing-faceout-title-tk_bought"]'
             )
-            vendas = vendas.text.strip()
+            vendas = vendas.get_text().strip()
 
         if imagens := re.findall(
             r"colorImages':.*'initial':\s*(\[.+?\])},\n", str(soup)
@@ -144,33 +144,33 @@ class AmazonScraper(BaseScraper):
 
         if preço := soup.select_one("span.a-offscreen"):
             self.highlight_element(driver, 'span[class="a-offscreen"]')
-            preço = re.sub(r"R\$|\.", "", preço.text.strip()).replace(",", ".")
+            preço = re.sub(r"R\$|\.", "", preço.get_text().strip()).replace(",", ".")
 
         if nota := soup.select_one("i.cm-cr-review-stars-spacing-big"):
             self.highlight_element(driver, 'i[class="cm-cr-review-stars-spacing-big"]')
-            nota = nota.text.strip()
+            nota = nota.get_text().strip()
 
         if avaliações := soup.select_one('div[data-hook="total-review-count"]'):
             # self.highlight_element(driver, 'div[data-hook="total-review-count"]')
-            avaliações = "".join(re.findall(r"\d", avaliações.text.strip()))
+            avaliações = "".join(re.findall(r"\d", avaliações.get_text().strip()))
         elif avaliações := soup.select_one("span#acrCustomerReviewText"):
             self.highlight_element(driver, 'span[id="acrCustomerReviewText"]')
-            avaliações = avaliações.text.strip()
+            avaliações = avaliações.get_text().strip()
 
         if marca := soup.select_one("a#bylineInfo"):
             self.highlight_element(driver, 'a[id="bylineInfo"]')
             marca = (
-                f'{re.sub(r"Marca: |Visite a loja ", "", marca.text.strip())}'.title()
+                f'{re.sub(r"Marca: |Visite a loja ", "", marca.get_text().strip())}'.title()
             )
 
         if vendedor := soup.select_one("a#sellerProfileTriggerId"):
             self.highlight_element(driver, 'a[id="sellerProfileTriggerId"]')
-            link_vendedor = f"{self.url}{vendedor.get('href')}"
-            vendedor = vendedor.text.strip()
+            link_vendedor = f"{self.url}{vendedor.select_one('> href')}"
+            vendedor = vendedor.get_text().strip()
         elif vendedor := soup.select_one("a#bylineInfo"):
             self.highlight_element(driver, 'a[id="bylineInfo"]')
-            link_vendedor = f"{self.url}{vendedor.get('href')}"
-            vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.text.strip())}'.title()
+            link_vendedor = f"{self.url}{vendedor.select_one('> href')}"
+            vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.get_text().strip())}'.title()
         else:
             link_vendedor = ""
 
