@@ -41,6 +41,7 @@ class BaseScraper:
     path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
     reconnect: int = int(os.environ.get("RECONNECT", 10))
     timeout: int = int(os.environ.get("TIMEOUT", 5))
+    demo: bool = (False,)
     user_data_dir = f'{Path(os.environ["LOCALAPPDATA"])}/Google/Chrome/User Data'
     ad_block_on: bool = False
     incognito: bool = False
@@ -187,10 +188,11 @@ class BaseScraper:
     def highlight_element(self, driver, element):
         if self.headless:
             return
-        try:
-            driver.highlight(element, timeout=self.timeout // 2)
-        except (NoSuchElementException, ElementNotVisibleException) as e:
-            print(e)
+        if self.demo:
+            try:
+                driver.highlight(element, timeout=self.timeout // 2)
+            except (NoSuchElementException, ElementNotVisibleException) as e:
+                print(e)
 
     @staticmethod
     def compress_images(pdf_stream):
@@ -344,8 +346,8 @@ class BaseScraper:
                 self.input_search_params(driver, keyword)
                 driver.set_messenger_theme(location="top_center")
                 while True:
-                    driver.sleep(self.timeout)
-                    products = self.discover_product_urls(driver, keyword)
+                    soup = driver.get_beautiful_soup()
+                    products = self.discover_product_urls(soup, keyword)
                     print(f"Navegando página {page} da busca '{keyword}'...")
                     if not self.headless:
                         driver.post_message(f"🕷️ Links da página {page} coletados! 🕸️")
