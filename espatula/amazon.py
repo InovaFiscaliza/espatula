@@ -53,14 +53,22 @@ class AmazonScraper(BaseScraper):
         link_relativo = (
             header.select_one("a > href") if header and header.select_one("a") else None
         )
-        nome = header.select_one("span").get_text() if header and header.select_one("span") else ""
+        nome = (
+            header.select_one("span").get_text()
+            if header and header.select_one("span")
+            else ""
+        )
         preço = (
             div.select_one("span.a-offscreen").text
             if div.select_one("span.a-offscreen")
             else ""
         )
         stars = div.select_one("i.a-icon-star-small")
-        stars = stars.select_one("span").get_text() if stars and stars.select_one("span") else ""
+        stars = (
+            stars.select_one("span").get_text()
+            if stars and stars.select_one("span")
+            else ""
+        )
         evals = div.select_one("span.a-size-base.s-underline-text")
         evals = evals.get_text() if evals else ""
         imgs = div.select_one("img.s-image")
@@ -93,8 +101,8 @@ class AmazonScraper(BaseScraper):
                         table_data[key.text.strip()] = value.text.strip().replace(
                             "\u200e", ""
                         )
-        elif tables := soup.find_all(
-            "table", attrs={"class": "a-bordered"}
+        elif tables := soup.select(
+            'table[class="a-bordered"]'
         ):  # special pages like iphone
             self.highlight_element(driver, 'table[class="a-bordered"]')
             for table in tables:
@@ -159,9 +167,7 @@ class AmazonScraper(BaseScraper):
 
         if marca := soup.select_one("a#bylineInfo"):
             self.highlight_element(driver, 'a[id="bylineInfo"]')
-            marca = (
-                f'{re.sub(r"Marca: |Visite a loja ", "", marca.get_text().strip())}'.title()
-            )
+            marca = f'{re.sub(r"Marca: |Visite a loja ", "", marca.get_text().strip())}'.title()
 
         if vendedor := soup.select_one("a#sellerProfileTriggerId"):
             self.highlight_element(driver, 'a[id="sellerProfileTriggerId"]')
@@ -230,7 +236,9 @@ class AmazonScraper(BaseScraper):
     def discover_product_urls(self, driver, keyword):
         soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         results = {}
-        for div in soup.select('div.s-result-item[data-component-type="s-search-result"]'):
+        for div in soup.select(
+            'div.s-result-item[data-component-type="s-search-result"]'
+        ):
             if product_data := self.extract_search_results(div):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
