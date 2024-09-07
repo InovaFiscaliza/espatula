@@ -35,47 +35,37 @@ class AmazonScraper(BaseScraper):
 
     @staticmethod
     def transform_url(source_url):
-        pattern1 = re.compile(
-            r"https://www\.amazon\.com\.br/sspa/click.*?/(.*?)/dp/(.*?)/"
-        )
-        pattern2 = re.compile(r"(^http.*)\/ref=.*")
         decoded_url = unquote(source_url)
-        if match := re.search(pattern1, decoded_url):
-            product_description = match.group(1)
-            product_code = match.group(2)
-            return f"https://www.amazon.com.br/{product_description}/dp/{product_code}"
-        if match := re.search(pattern2, decoded_url):
-            return match.group(1)
+        patterns = [
+            (r"https://www\.amazon\.com\.br/sspa/click.*?/(.*?)/dp/(.*?)/", 
+             lambda m: f"https://www.amazon.com.br/{m.group(1)}/dp/{m.group(2)}"),
+            (r"(^http.*)\/ref=.*", lambda m: m.group(1))
+        ]
+        for pattern, replacement in patterns:
+            if match := re.search(pattern, decoded_url):
+                return replacement(match)
         return decoded_url
 
     def extract_search_results(self, div):
+        def safe_get(selector, attr=None, default=""):
+            element = div.select_one(selector)
+            if not element:
+                return default
+            return element.get(attr) if attr else element.get_text().strip()
+
         header = div.select_one("h2")
-        link_relativo = (
-            header.select_one("a > href") if header and header.select_one("a") else None
-        )
-        nome = (
-            header.select_one("span").get_text()
-            if header and header.select_one("span")
-            else ""
-        )
-        preço = (
-            div.select_one("span.a-offscreen").text
-            if div.select_one("span.a-offscreen")
-            else ""
-        )
-        stars = div.select_one("i.a-icon-star-small")
-        stars = (
-            stars.select_one("span").get_text()
-            if stars and stars.select_one("span")
-            else ""
-        )
-        evals = div.select_one("span.a-size-base.s-underline-text")
-        evals = evals.get_text() if evals else ""
-        imgs = div.select_one("img.s-image")
-        imgs = imgs.get("srcset") if imgs else None
+        link_relativo = safe_get("h2 a", "href")
+        nome = safe_get("h2 span")
+        preço = safe_get("span.a-offscreen")
+        stars = safe_get("i.a-icon-star-small span")
+        evals = safe_get("span.a-size-base.s-underline-text")
+        imgs = safe_get("img.s-image", "srcset")
+        
         link_produto = f"{self.url}{link_relativo}" if link_relativo else ""
+        
         if not all([nome, preço, link_relativo, imgs]):
             return False
+        
         Link = self.transform_url(link_produto)
         return {
             "nome": nome,
