@@ -38,11 +38,13 @@ CERTIFICADO = re.compile(
 @dataclass
 class BaseScraper:
     headless: bool = True
-    path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
+    path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__).parent}/data"))
     reconnect: int = int(os.environ.get("RECONNECT", 10))
     timeout: int = int(os.environ.get("TIMEOUT", 5))
-    demo: bool = (False,)
-    user_data_dir = f'{Path(os.environ["LOCALAPPDATA"])}/Google/Chrome/User Data'
+    demo: bool = False
+    user_data_dir = (
+        f'{Path(os.environ.get("LOCALAPPDATA", "."))}/Google/Chrome/User Data'
+    )
     ad_block_on: bool = False
     incognito: bool = False
     do_not_track: bool = True

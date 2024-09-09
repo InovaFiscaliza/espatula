@@ -8,8 +8,6 @@ from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
 )
 
-from bs4 import BeautifulSoup
-
 from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {"smartphone": ['li[id="n/16243803011"] a', 'li[id="n/16243890011"] a']}
