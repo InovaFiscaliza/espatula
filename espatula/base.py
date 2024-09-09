@@ -41,6 +41,7 @@ class BaseScraper:
     path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__).parent}/data"))
     reconnect: int = int(os.environ.get("RECONNECT", 10))
     timeout: int = int(os.environ.get("TIMEOUT", 5))
+    retries: int = int(os.environ.get("RETRIES", 3))
     demo: bool = False
     user_data_dir = (
         f'{Path(os.environ.get("LOCALAPPDATA", "."))}/Google/Chrome/User Data'
