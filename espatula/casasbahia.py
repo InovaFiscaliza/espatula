@@ -130,15 +130,17 @@ class CasasBahiaScraper(BaseScraper):
         try:
             tag = 'p:contains("Características")'
             get_selector(tag)
-            driver.uc_click(tag)
+            driver.uc_click(tag, timeout=self.timeout)
+            soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Características"))
-            driver.uc_click('button[aria-label="Fechar"]')
+            driver.uc_click('button[aria-label="Fechar"]', timeout=self.timeout)
         except Exception as e:
             print(e)
         try:
             tag = 'p:contains("Especificações Técnicas")'
             get_selector(tag)
-            driver.uc_click(tag)
+            driver.uc_click(tag, timeout=self.timeout)
+            soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
 
         except Exception as e:
@@ -170,10 +172,10 @@ class CasasBahiaScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def parse_tables(self, soup, id) -> dict:
+    def parse_tables(self, soup, id_) -> dict:
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
-        if table := soup.select_one(f'div[id*="{id}"'):
+        if table := soup.select_one(f'div[id*="{id_}"]'):
             for key in table.select("p"):
                 if value := getattr(key, "next_sibling", None):
                     variant_data[key.get_text().strip()] = value.get_text().strip()
