@@ -28,3 +28,8 @@ $filesToZip = @(
 Compress-Archive -Path $filesToZip -DestinationPath "..\Regulatron.zip" -Force
 
 Write-Host "Created release Regulatron.zip file with required contents"
+
+
+Remove-Item -Path "app.zip" -Force -ErrorAction SilentlyContinue
+
+
