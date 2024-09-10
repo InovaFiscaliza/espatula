@@ -63,7 +63,7 @@ class MercadoLivreScraper(BaseScraper):
         if nota := item.select_one("span.ui-search-reviews__rating-number"):
             nota = nota.get_text().strip()
 
-        if not all([nome, preço, imagem]):
+        if not all([url, nome, preço, imagem]):
             return False
 
         return {

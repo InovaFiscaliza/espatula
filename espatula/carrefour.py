@@ -90,27 +90,36 @@ class CarrefourScraper(BaseScraper):
         return results
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
-        categoria = soup.select("span.breadcrumb")
-        categoria = "|".join(i.text.strip() for i in categoria if i.text.strip() != "")
+        soup = driver.get_beautiful_soup()
 
-        marca = soup.select_one("span.productBrandName")
-        marca = marca.text.strip() if marca else None
+        def get_selector(selector):
+            self.highlight_element(driver, selector)
+            return soup.select_one(selector)
 
-        vendedor = soup.select_one("span.carrefourSeller")
-        vendedor = vendedor.text.strip() if vendedor else None
+        categoria = ""
+        for i in soup.select("span.breadcrumb"):
+            if hasattr(i, "get_text") and i.get_text().strip():
+                categoria += f"|{i.get_text().strip()}"
 
-        desconto = soup.select_one("span.PriceSavings")
-        desconto = desconto.text.strip() if desconto else None
+        if marca := get_selector("span.productBrandName"):
+            marca = marca.get_text().strip()
 
-        cod_produto = soup.select_one("span.product-identifier__value")
-        cod_produto = cod_produto.text.strip() if cod_produto else None
+        if vendedor := get_selector("span.carrefourSeller"):
+            vendedor = vendedor.get_text().strip()
 
-        descrição = soup.select_one("td.ItemSpecifications")
-        descrição = descrição.get("data-specification") if descrição else None
+        if desconto := get_selector("span.PriceSavings"):
+            desconto = desconto.get_text().strip()
 
-        imagens = soup.select("img.thumbImg")
-        imagens = [i.get("src") for i in imagens if i.get("src")]
+        if cod_produto := get_selector("span.product-identifier__value"):
+            cod_produto = cod_produto.get_text().strip()
+
+        if descrição := get_selector("td.ItemSpecifications"):
+            descrição = descrição.get("data-specification")
+
+        imagens = []
+        for img in soup.select("img.thumbImg"):
+            if i := img.get("src"):
+                imagens.append(i)
 
         certificado, ean, modelo = None, None, None
         if características := self.parse_tables(soup):
@@ -137,10 +146,9 @@ class CarrefourScraper(BaseScraper):
     def parse_tables(self, soup):
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         table_data = {}
-        table = soup.select_one("div.table_main_container")
-        if table:
+        if table := soup.select_one("div.table_main_container"):
             for row in table.select("tr"):
                 cols = row.select("th")
                 if len(cols) == 2:
-                    table_data[cols[0].text.strip()] = cols[1].text.strip()
+                    table_data[cols[0].get_text().strip()] = cols[1].get_text().strip()
         return table_data
