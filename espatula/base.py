@@ -91,7 +91,7 @@ class BaseScraper:
                 "Execute primeiramente a busca de links pelo método 'search(keyword)'"
             )
             return {}
-        return loads(links_file.read_text())
+        return loads(links_file.read_text(encoding="utf-8"))
 
     def get_pages(self, keyword: str) -> dict:
         pages_file = self.pages_file(keyword)
@@ -103,7 +103,7 @@ class BaseScraper:
                 "Caso já tenha feito a busca de links, execute o método 'inspect_pages(keyword)'"
             )
             return {}
-        return loads(pages_file.read_text())
+        return loads(pages_file.read_text(encoding="utf-8"))
 
     @staticmethod
     def click_turnstile_and_verify(sb):
@@ -246,7 +246,7 @@ class BaseScraper:
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
         json.dump(
             sampled_pages,
-            self.pages_file(keyword).open("w"),
+            self.pages_file(keyword).open("w", encoding="utf-8"),
             ensure_ascii=False,
         )
 
@@ -298,7 +298,7 @@ class BaseScraper:
                 self.save_sampled_pages(keyword, sampled_pages)
                 json.dump(
                     links,
-                    self.links_file(keyword).open("w"),
+                    self.links_file(keyword).open("w", encoding="utf-8"),
                     ensure_ascii=False,
                 )
 
@@ -374,6 +374,6 @@ class BaseScraper:
                 links.update(results)
                 json.dump(
                     links,
-                    self.links_file(keyword).open("w"),
+                    self.links_file(keyword).open("w", encoding="utf-8"),
                     ensure_ascii=False,
                 )
