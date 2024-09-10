@@ -54,19 +54,19 @@ class CarrefourScraper(BaseScraper):
                     raise  # Re-raise the last exception
 
     def extract_search_data(self, product_tag):
-        if url := product_tag.select_one("a.product-summary"):
+        if url := product_tag.select_one('a[class*="product-summary"]'):
             url = self.url + url.get("href")
 
-        if nome := product_tag.select_one("h2.productName"):
+        if nome := product_tag.select_one('h2[class*="productName"]'):
             nome = nome.get_text().strip()
 
-        if imagem := product_tag.select_one("img.product-summary"):
+        if imagem := product_tag.select_one('img[class*="product-summary"]'):
             imagem = imagem.get("src")
 
-        if preço_original := product_tag.select_one("span.listPrice"):
+        if preço_original := product_tag.select_one('span[class*="listPrice"]'):
             preço_original = preço_original.get_text().strip()
 
-        if preço := product_tag.select_one("span.spotPriceValue"):
+        if preço := product_tag.select_one('span[class*="spotPriceValue"]'):
             preço = preço.get_text().strip()
 
         if not all([url, nome, preço, imagem]):
@@ -83,7 +83,7 @@ class CarrefourScraper(BaseScraper):
 
     def discover_product_urls(self, soup, keyword: str):
         results = {}
-        for div in soup.select("div.galleryItem"):
+        for div in soup.select('div[class*="galleryItem"]'):
             if product_data := self.extract_search_data(div):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
@@ -97,27 +97,27 @@ class CarrefourScraper(BaseScraper):
             return soup.select_one(selector)
 
         categoria = ""
-        for i in soup.select("span.breadcrumb"):
+        for i in soup.select('span[class*="breadcrumb"]'):
             if hasattr(i, "get_text") and i.get_text().strip():
                 categoria += f"|{i.get_text().strip()}"
 
-        if marca := get_selector("span.productBrandName"):
+        if marca := get_selector('span[class*="productBrandName"]'):
             marca = marca.get_text().strip()
 
-        if vendedor := get_selector("span.carrefourSeller"):
+        if vendedor := get_selector('span[class*="carrefourSeller"]'):
             vendedor = vendedor.get_text().strip()
 
-        if desconto := get_selector("span.PriceSavings"):
+        if desconto := get_selector('span[class*="PriceSavings"]'):
             desconto = desconto.get_text().strip()
 
-        if cod_produto := get_selector("span.product-identifier__value"):
+        if cod_produto := get_selector('span[class*="product-identifier__value"]'):
             cod_produto = cod_produto.get_text().strip()
 
-        if descrição := get_selector("td.ItemSpecifications"):
+        if descrição := get_selector('td[class*="ItemSpecifications"]'):
             descrição = descrição.get("data-specification")
 
         imagens = []
-        for img in soup.select("img.thumbImg"):
+        for img in soup.select('img[class*="thumbImg"]'):
             if i := img.get("src"):
                 imagens.append(i)
 
