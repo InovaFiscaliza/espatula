@@ -44,7 +44,7 @@ class MagaluScraper(BaseScraper):
         return {
             "nome": name,
             "preço": price_lower,
-            "preço_Original": price_higher,
+            "preço_original": price_higher,
             "avaliações": evals,
             "imagem": imgs,
             "url": self.url + relative_url,
