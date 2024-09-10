@@ -30,13 +30,13 @@ class MagaluScraper(BaseScraper):
     def extract_search_data(self, produto):
         relative_url = produto.get("href")
         if name := produto.select_one('h2[data-testid="product-title"]'):
-            name = name.get_text.strip()
+            name = name.get_text().strip()
         if evals := produto.select_one('div[data-testid="review"]'):
-            evals = evals.get_text.strip()
+            evals = evals.get_text().strip()
         if price_lower := produto.select_one('p[data-testid="price-value"]'):
-            price_lower = price_lower.get_text.strip()
+            price_lower = price_lower.get_text().strip()
         if price_higher := produto.select_one('p[data-testid="price-original"]'):
-            price_higher = price_higher.get_text.strip()
+            price_higher = price_higher.get_text().strip()
         if imgs := produto.select_one('img[data-testid="image"]'):
             imgs = imgs.get("src")
         if not all([name, price_lower, imgs]):
@@ -66,7 +66,7 @@ class MagaluScraper(BaseScraper):
         variant_data = {}
         for table in soup.select("table"):
             rows = table.select("td")
-            if rows and rows[0].get_text.strip() == "Informações complementares":
+            if rows and rows[0].get_text().strip() == "Informações complementares":
                 continue
             variant_data.update(
                 {
