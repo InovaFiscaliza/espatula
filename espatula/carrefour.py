@@ -146,7 +146,7 @@ class CarrefourScraper(BaseScraper):
     def parse_tables(self, soup):
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         table_data = {}
-        if table := soup.select_one("div.table_main_container"):
+        if table := soup.select_one('div[class*="table_main_container"]'):
             for row in table.select("tr"):
                 cols = row.select("th")
                 if len(cols) == 2:
