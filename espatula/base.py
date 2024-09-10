@@ -313,7 +313,7 @@ class BaseScraper:
                     driver.sleep(2)  # Wait for 1 second before retrying
                 else:
                     print(
-                        f"Error: Could not find search input field '{self.input_field}' after {max_retries} attempts"
+                        f"Error: Could not find search input field '{self.input_field}' after {self.retries} attempts"
                     )
                     raise  # Re-raise the last exception
 

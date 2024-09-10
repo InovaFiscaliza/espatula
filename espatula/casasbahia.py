@@ -23,19 +23,23 @@ class CasasBahiaScraper(BaseScraper):
         return 'a[aria-label="Próxima página"]'
 
     def extract_search_data(self, produto):
-        if title := produto.select_one('h3[class*="product-card__title"]')
+        if title := produto.select_one('h3[class*="product-card__title"]'):
             if url := title.select_one("a"):
                 url = url.get("href")
             if name := title.select_one("span"):
                 name = name.text.strip()
 
-        if evals := produto.select_one('span[class*="product-card__reviews-count-text"]'):
+        if evals := produto.select_one(
+            'span[class*="product-card__reviews-count-text"]'
+        ):
             evals = evals.text.strip()
 
         if nota := produto.select_one('span[data-testid="product-card-rating"]'):
             nota = nota.text.strip()
 
-        if price_lower := produto.select_one('div[class*="product-card__highlight-price"]'):
+        if price_lower := produto.select_one(
+            'div[class*="product-card__highlight-price"]'
+        ):
             price_lower = price_lower.text.strip()
 
         if price_higher := produto.select_one(
@@ -45,7 +49,7 @@ class CasasBahiaScraper(BaseScraper):
 
         if imagem := produto.select_one('img[class*="product-card__image"]'):
             imagem = imagem.get("src")
-        
+
         if not all([name, price_lower, imagem, url]):
             return None
         return {
@@ -68,10 +72,11 @@ class CasasBahiaScraper(BaseScraper):
 
     def extract_item_data(self, driver):
         soup = driver.get_beautiful_soup()
+
         def get_selector(selector):
             self.highlight_element(driver, selector)
             return soup.select_one(selector)
-        
+
         categoria = ""
         if cat := get_selector('div[class*="breadcrumb"]'):
             for a in cat.select("a"):
@@ -80,31 +85,35 @@ class CasasBahiaScraper(BaseScraper):
 
         if nome := get_selector('h1[class*="heading"]'):
             nome = nome.text.strip()
-        
+
         product_id, marca = None, None
         if origem := get_selector("div.dsvia-flex.css-uoygdh"):
             if product_id := origem.select_one("p"):
-                product_id = "".join(d for d in product_id.get_text().strip() if d.isdigit())                
+                product_id = "".join(
+                    d for d in product_id.get_text().strip() if d.isdigit()
+                )
             if marca := origem.select_one("a"):
                 marca = marca.text.strip()
 
-
         if imagens := get_selector('div[class*="Gallery"]'):
-            imagens = [
-                img.get("src") for img in imagens.select("img")
-            ]
+            imagens = [img.get("src") for img in imagens.select("img")]
 
         nota, avaliações = None, None
         if popularidade := get_selector("div[data-testid*='star-rating']"):
-            if nota := popularidade.select_one("p[data-testid*='product-rating-value']"):
+            if nota := popularidade.select_one(
+                "p[data-testid*='product-rating-value']"
+            ):
                 nota = nota.text.strip()
-            if avaliações := popularidade.select_one("p[data-testid*='product-rating-count']"):
+            if avaliações := popularidade.select_one(
+                "p[data-testid*='product-rating-count']"
+            ):
                 avaliações = avaliações.text.strip()
 
         if preço := get_selector("p#product-price"):
             if preço := preço.select_one("span[aria-hidden*='true']"):
                 preço = (
-                    preço.get_text().strip()
+                    preço.get_text()
+                    .strip()
                     .replace("R$", "")
                     .replace(".", "")
                     .replace(",", ".")
