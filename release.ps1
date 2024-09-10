@@ -6,7 +6,6 @@ $filesToCopy = @(
     "app.py",
     "config.py",
     "LICENSE",
-    "packages.txt",
     "pyproject.toml",
     "README.md",
     "run.py",
@@ -24,7 +23,7 @@ foreach ($item in $filesToCopy) {
     Copy-Item -Path $item -Destination $destinationFolder -Recurse -Force
 }
 
-Write-Host "Created app.zip file with required contents"
+Write-Host "Created app folder with the required contents"
 
 $filesToZip = @(
     "app",
