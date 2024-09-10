@@ -1,6 +1,6 @@
 
 # Create app.zip file
-$filesToZip = @(
+$filesToCopy = @(
     "espatula",
     "images",
     "app.py",
@@ -14,12 +14,20 @@ $filesToZip = @(
     "uv.exe"
 )
 
-Compress-Archive -Path $filesToZip -DestinationPath "app.zip" -Force
+$destinationFolder = "app"
+
+# Create the destination folder if it doesn't exist
+New-Item -ItemType Directory -Force -Path $destinationFolder
+
+# Copy each item to the destination folder
+foreach ($item in $filesToCopy) {
+    Copy-Item -Path $item -Destination $destinationFolder -Recurse -Force
+}
 
 Write-Host "Created app.zip file with required contents"
 
 $filesToZip = @(
-    "app.zip",
+    "app",
     "config.json",
     "Regulatron.bat"
 
@@ -30,6 +38,5 @@ Compress-Archive -Path $filesToZip -DestinationPath "..\Regulatron.zip" -Force
 Write-Host "Created release Regulatron.zip file with required contents"
 
 
-Remove-Item -Path "app.zip" -Force -ErrorAction SilentlyContinue
-
+Remove-Item -Path "app" -Recurse -Force -ErrorAction SilentlyContinue
 
