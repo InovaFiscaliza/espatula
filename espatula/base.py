@@ -14,6 +14,7 @@ import requests
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
 from seleniumbase import SB
+from seleniumbase.undetected.options import ChromeOptions
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
@@ -116,12 +117,12 @@ class BaseScraper:
     @contextmanager
     def browser(self):
         with SB(
-            headless=self.headless,
+            headless2=self.headless,
             uc=True,  # Always true
             ad_block_on=self.ad_block_on,
             incognito=self.incognito,
             do_not_track=self.do_not_track,
-            user_data_dir=self.user_data_dir,
+            user_data_dir=self.user_data_dir,  # TODO: Reimplement to use profiles
         ) as sb:
             sb.driver.maximize_window()
             sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
