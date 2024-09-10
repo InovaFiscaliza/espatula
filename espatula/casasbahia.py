@@ -20,7 +20,7 @@ class CasasBahiaScraper(BaseScraper):
 
     @property
     def next_page_button(self) -> str:
-        return 'a[aria-label="Próxima página"]'
+        return 'button[aria-label*="Próxima página"]'
 
     def extract_search_data(self, produto):
         if title := produto.select_one('h3[class*="product-card__title"]'):
@@ -64,7 +64,7 @@ class CasasBahiaScraper(BaseScraper):
 
     def discover_product_urls(self, soup, keyword):
         results = {}
-        for item in soup.select('div[class*="css-1enexmx"]'):
+        for item in soup.select('div[id^="product-card"]'):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
