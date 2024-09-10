@@ -1,8 +1,6 @@
 import re
-from datetime import datetime
 from dataclasses import dataclass
-
-from bs4 import BeautifulSoup
+from datetime import datetime
 
 from .base import TIMEZONE, BaseScraper
 
@@ -111,7 +109,7 @@ class MagaluScraper(BaseScraper):
 
         preço = None
         if preço_div := get_selector('div[data-testid="mod-productprice"]'):
-            if preço := preço_div.select_one('p[data-testid="price-value"]')
+            if preço := preço_div.select_one('p[data-testid="price-value"]'):
                 preço = (
                     preço.get_text()
                     .strip()
