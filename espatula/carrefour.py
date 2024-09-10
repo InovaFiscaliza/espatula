@@ -54,22 +54,24 @@ class CarrefourScraper(BaseScraper):
                     raise  # Re-raise the last exception
 
     def extract_search_data(self, product_tag):
-        url = product_tag.select_one("a.product-summary")
-        url = url.get("href") if url else None
+        if url := product_tag.select_one("a.product-summary"):
+            url = self.url + url.get("href")
 
-        nome = product_tag.select_one("h2.productName")
-        nome = nome.text.strip() if nome else None
+        if nome := product_tag.select_one("h2.productName"):
+            nome = nome.get_text().strip()
 
-        imagem = product_tag.select_one("img.product-summary")
-        imagem = imagem.get("src") if imagem else None
+        if imagem := product_tag.select_one("img.product-summary"):
+            imagem = imagem.get("src")
 
-        preço_original = product_tag.select_one("span.listPrice")
-        preço_original = preço_original.text.strip() if preço_original else None
+        if preço_original := product_tag.select_one("span.listPrice"):
+            preço_original = preço_original.get_text().strip()
 
-        preço = product_tag.select_one("span.spotPriceValue")
-        preço = preço.text.strip() if preço else None
+        if preço := product_tag.select_one("span.spotPriceValue"):
+            preço = preço.get_text().strip()
 
-        url = self.url + url if url else None
+        if not all([url, nome, preço, imagem]):
+            return False
+
         return {
             "nome": nome,
             "preço_original": preço_original,
