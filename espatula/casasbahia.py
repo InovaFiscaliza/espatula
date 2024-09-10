@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from bs4 import BeautifulSoup
-
 from .base import TIMEZONE, BaseScraper
 
 
@@ -24,130 +22,114 @@ class CasasBahiaScraper(BaseScraper):
     def next_page_button(self) -> str:
         return 'a[aria-label="Próxima página"]'
 
-    def extract_product_data(self, produto):
-        title = produto.select_one("h3.product-card__title")
-        if title:
-            relative_url = title.select_one("a")
-            relative_url = relative_url["href"] if relative_url else None
-            name = title.select_one("span")
-            name = name.text.strip() if name else None
+    def extract_search_data(self, produto):
+        if title := produto.select_one('h3[class*="product-card__title"]')
+            if url := title.select_one("a"):
+                url = url.get("href")
+            if name := title.select_one("span"):
+                name = name.text.strip()
 
-        evals = produto.select_one("span.product-card__reviews-count-text")
-        evals = evals.text.strip() if evals else None
+        if evals := produto.select_one('span[class*="product-card__reviews-count-text"]'):
+            evals = evals.text.strip()
 
-        nota = produto.select_one("span[data-testid='product-card-rating']")
-        nota = nota.text.strip() if nota else None
+        if nota := produto.select_one('span[data-testid="product-card-rating"]'):
+            nota = nota.text.strip()
 
-        price_lower = produto.select_one("div.product-card__highlight-price")
-        price_lower = price_lower.text.strip() if price_lower else None
+        if price_lower := produto.select_one('div[class*="product-card__highlight-price"]'):
+            price_lower = price_lower.text.strip()
 
-        price_higher = produto.select_one("div.product-card__installment-text")
-        price_higher = price_higher.text.strip() if price_higher else None
+        if price_higher := produto.select_one(
+            'div[class*="product-card__installment-text"]'
+        ):
+            price_higher = price_higher.text.strip()
 
-        imgs = produto.select_one("img.product-card__image")
-        imgs = imgs["src"] if imgs else None
-        if not all([name, price_lower, imgs, relative_url]):
+        if imagem := produto.select_one('img[class*="product-card__image"]'):
+            imagem = imagem.get("src")
+        
+        if not all([name, price_lower, imagem, url]):
             return None
         return {
             "nome": name,
             "preço": price_lower,
             "preço_original": price_higher,
             "avaliações": evals,
-            "imagem": imgs,
-            "url": relative_url,
+            "imagem": imagem,
+            "url": url,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, driver, keyword):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+    def discover_product_urls(self, soup, keyword):
         results = {}
-        for item in soup.select("div.css-1enexmx"):
-            if product_data := self.extract_product_data(item):
+        for item in soup.select('div[class*="css-1enexmx"]'):
+            if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
         return results
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
-        categoria = soup.select_one("div.breadcrumb")
-        if categoria:
-            categoria = " | ".join(
-                a.text.strip() for a in categoria.select("a") if a.text.strip()
-            )
+        soup = driver.get_beautiful_soup()
+        def get_selector(selector):
+            self.highlight_element(driver, selector)
+            return soup.select_one(selector)
+        
+        categoria = ""
+        if cat := get_selector('div[class*="breadcrumb"]'):
+            for a in cat.select("a"):
+                if hasattr(a, "get_text") and a.get_text().strip():
+                    categoria += f"|{a.get_text().strip()}"
 
-        nome = soup.select_one("h1.heading")
-        nome = nome.text.strip() if nome else None
-        if not all([nome, categoria]):
-            return None
-
+        if nome := get_selector('h1[class*="heading"]'):
+            nome = nome.text.strip()
+        
         product_id, marca = None, None
-        origem = soup.select_one("div.dsvia-flex.css-uoygdh")
-        if origem:
-            product_id = origem.select_one("p")
-            product_id = (
-                "".join(d for d in product_id.text.strip() if d.isdigit())
-                if product_id
-                else None
-            )
-            marca = origem.select_one("a")
-            marca = marca.text.strip() if marca else None
+        if origem := get_selector("div.dsvia-flex.css-uoygdh"):
+            if product_id := origem.select_one("p"):
+                product_id = "".join(d for d in product_id.get_text().strip() if d.isdigit())                
+            if marca := origem.select_one("a"):
+                marca = marca.text.strip()
 
-        # if imagens := soup.select_one("div.Gallery"):
-        #     self.highlight_element(driver, 'div:contains("Gallery")')
-        #     imagens = [
-        #         img.get("src") for img in imagens.select("img")
-        #     ]
+
+        if imagens := get_selector('div[class*="Gallery"]'):
+            imagens = [
+                img.get("src") for img in imagens.select("img")
+            ]
 
         nota, avaliações = None, None
-        popularidade = soup.select_one("div[data-testid='star-rating']")
-        if popularidade:
-            # self.highlight_element(driver, "div[data-testid=mod-row]")
-            nota = popularidade.select_one("p[data-testid='product-rating-value']")
-            nota = nota.text.strip() if nota else None
-            # avaliações = popularidade.select_one("p[data-testid='product-rating-count']")
-            # avaliações = avaliações.text.strip() if avaliações else None
+        if popularidade := get_selector("div[data-testid*='star-rating']"):
+            if nota := popularidade.select_one("p[data-testid*='product-rating-value']"):
+                nota = nota.text.strip()
+            if avaliações := popularidade.select_one("p[data-testid*='product-rating-count']"):
+                avaliações = avaliações.text.strip()
 
-        preço = soup.select_one("p#product-price")
-        if preço:
-            # self.highlight_element(driver, "div[data-testid=mod-productprice]")
-            preço = preço.select_one("span[aria-hidden='true']")
-            if preço:
+        if preço := get_selector("p#product-price"):
+            if preço := preço.select_one("span[aria-hidden*='true']"):
                 preço = (
-                    preço.text.strip()
+                    preço.get_text().strip()
                     .replace("R$", "")
                     .replace(".", "")
                     .replace(",", ".")
                 )
-            else:
-                preço = None
-        else:
-            preço = None
 
-        vendedor = soup.select_one("p[data-testid='sold-by']")
-        if vendedor:
-            vendedor = vendedor.select_one("a")
-            vendedor = vendedor.text.strip() if vendedor else None
+        if vendedor := get_selector("p[data-testid*='sold-by']"):
+            if vendedor := vendedor.select_one("a"):
+                vendedor = vendedor.text.strip()
 
-        # descrição = soup.select_one("div[data-testid='rich-content-container']")
-        # if descrição:
-        #     self.highlight_element(driver, "div[data-testid=rich-content-container]")
-        #     descrição = descrição.text.strip()
+        if descrição := get_selector('div[data-testid*="rich-content-container"]'):
+            descrição = descrição.text.strip()
 
         características, modelo, certificado, ean = {}, None, None, None
         try:
             tag = 'p:contains("Características")'
-            self.highlight_element(driver, tag)
+            get_selector(tag)
             driver.uc_click(tag)
-            soup = BeautifulSoup(driver.get_page_source(), "html.parser")
             características.update(self.parse_tables(soup, "Características"))
             driver.uc_click('button[aria-label="Fechar"]')
         except Exception as e:
             print(e)
         try:
             tag = 'p:contains("Especificações Técnicas")'
-            self.highlight_element(driver, tag)
+            get_selector(tag)
             driver.uc_click(tag)
-            soup = BeautifulSoup(driver.get_page_source(), "html.parser")
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
 
         except Exception as e:
@@ -166,8 +148,8 @@ class CasasBahiaScraper(BaseScraper):
             "preço": preço,
             "nota": nota,
             "avaliações": avaliações,
-            # "imagens": imagens,
-            # "descrição": descrição,
+            "imagens": imagens,
+            "descrição": descrição,
             "vendedor": vendedor,
             "marca": marca,
             "modelo": modelo,
@@ -184,7 +166,7 @@ class CasasBahiaScraper(BaseScraper):
         variant_data = {}
         table = soup.select_one(f"div#{id}")
         if table:
-            for rows in table.select("div.css-cs5a0t"):
+            for rows in table.select('div[class*="css-cs5a0t"]'):
                 key = rows.select_one("p")
                 value = rows.select_one("span")
                 if key and value:
