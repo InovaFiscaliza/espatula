@@ -2,6 +2,10 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 
+from seleniumbase.common.exceptions import (
+    NoSuchElementException,
+    ElementNotVisibleException,
+)
 from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
@@ -151,7 +155,19 @@ class MagaluScraper(BaseScraper):
         }
 
     def input_search_params(self, driver, keyword):
-        self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
-        if department := CATEGORIES.get(keyword):
-            driver.uc_click(department, timeout=self.reconnect)
+        for attempt in range(self.retries):
+            try:
+                self.highlight_element(driver, self.input_field)
+                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                if department := CATEGORIES.get(keyword):
+                    driver.uc_click(department, timeout=self.reconnect)
+                break
+            except (NoSuchElementException, ElementNotVisibleException):
+                if attempt < self.retries - 1:  # if it's not the last attempt
+                    print(f"Attempt {attempt + 1} failed. Retrying...")
+                    driver.sleep(2)  # Wait for 1 second before retrying
+                else:
+                    print(
+                        f"Error: Could not find search input field '{self.input_field}' after {self.retries} attempts"
+                    )
+                    raise  # Re-raise the last exception
