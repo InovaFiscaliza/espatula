@@ -24,99 +24,90 @@ class AmericanasScraper(BaseScraper):
         return 'svg[class="src__ArrowRotate-sc-82ugau-2 hWXbQX"]'
 
     def extract_search_data(self, produto):
-        relative_url = produto.select_one("a")
-        relative_url = relative_url["href"] if relative_url else None
+        if url := produto.select_one("a"):
+            url = self.url + url.get("href")
 
-        nome = produto.select_one("h3")
-        nome = nome.text.strip() if nome else None
+        if nome := produto.select_one("h3"):
+            nome = nome.get_text().strip()
 
-        avaliações = produto.select_one("span.src__Count-sc-r5o9d7-1.eDRxIY")
-        avaliações = avaliações.text.strip() if avaliações else None
+        if avaliações := produto.select_one(
+            'span[class*="src__Count-sc-r5o9d7-1.eDRxIY"]'
+        ):
+            avaliações = avaliações.get_text().strip()
 
-        preço = produto.select_one("span.list-price")
-        preço = preço.text.strip() if preço else None
+        if imagem := produto.select_one("img"):
+            imagem = imagem["src"]
 
-        preço_original = produto.select_one("span.sales-price")
-        preço_original = preço_original.text.strip() if preço_original else None
+        if preço := produto.select_one('span[class*="list-price"]'):
+            preço = preço.get_text().strip()
 
-        imagens = produto.select_one("img")
-        imagens = imagens["src"] if imagens else None
+        if preço_original := produto.select_one('span[class*="sales-price"]'):
+            preço_original = preço_original.get_text().strip()
+
+        if not all([nome, preço, imagem, url]):
+            return None
 
         return {
             "nome": nome,
             "preço": preço,
             "preço_Original": preço_original,
             "avaliações": avaliações,
-            "imagem": imagens,
-            "url": self.url + (relative_url or ""),
+            "imagem": imagem,
+            "url": url,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, driver, keyword):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+    def discover_product_urls(self, soup, keyword):
         results = {}
-        for item in soup.find_all(
-            "div",
-            attrs={
-                "class": "col__StyledCol-sc-1snw5v3-0 ehOuCD theme-grid-col src__ColGridItem-sc-122lblh-1 cJnBan"
-            },
-        ):
+        for item in soup.select('div[class*="ColGridItem"]'):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
         return results
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+        soup = driver.get_beautiful_soup()
 
-        categoria = soup.select_one("div.breadcrumb")
-        if categoria:
-            self.highlight_element(driver, "div:contains(breadcrumb)")
-            categoria = " | ".join(
-                a.text.strip() for a in categoria.select("a") if a.text.strip()
-            )
+        def get_selector(selector):
+            self.highlight_element(driver, selector)
+            return soup.select_one(selector)
 
-        nome = soup.select_one("h1.product-title")
-        if nome:
-            self.highlight_element(driver, 'h1:contains("product-title")')
-            nome = nome.text.strip()
+        categoria = ""
+        if cat := get_selector('div[class*="breadcrumb"]'):
+            for a in cat.select("a"):
+                if hasattr(a, "get_text") and a.get_text().strip():
+                    categoria += f"|{a.get_text().strip()}"
+
+        if nome := get_selector('h1[class*="product-title"]'):
+            nome = nome.get_text().strip()
 
         imagens = []
-        gallery = soup.select_one("div.Gallery")
-        if gallery:
-            self.highlight_element(driver, 'div:contains("Gallery")')
-            imagens = [
-                img.get("src") for img in gallery.select("img") if img.get("src")
-            ]
+        if gallery := get_selector('div[class*="Gallery"]'):
+            for img in gallery.select("img"):
+                if img.get("src"):
+                    imagens.append(img.get("src"))
 
-        nota, avaliações = None, None
-        popularidade = soup.select_one(
-            "div[data-testid='mod-row'] span[format='score-count']"
-        )
-        if popularidade:
-            self.highlight_element(driver, "div[data-testid=mod-row]")
-            nota, avaliações = popularidade.text.strip().split(" ")
-            avaliações = avaliações.strip("()")
+        if avaliações := get_selector('div[class*="Count"]'):
+            avaliações = avaliações.get_text().strip("()")
 
-        preço = soup.select_one("div.priceSales")
-        if preço:
-            self.highlight_element(driver, "div[data-testid=mod-productprice]")
+        if nota := get_selector('div[class*="Rating"]'):
+            nota = nota.get_text().strip()
+
+        if preço := get_selector('div[class*="PriceText"]'):
             preço = (
-                preço.text.strip()
+                preço.get_text()
+                .strip()
                 .replace("R$", "")
                 .replace(".", "")
                 .replace(",", ".")
                 .strip()
             )
 
-        descrição = soup.select_one("div[data-testid='rich-content-container']")
-        if descrição:
-            self.highlight_element(driver, "div[data-testid=rich-content-container]")
-            descrição = descrição.text.strip()
+        if descrição := get_selector('div[data-testid="rich-content-container"]'):
+            descrição = descrição.get_text().strip()
 
         marca, modelo, certificado, ean, product_id = None, None, None, None, None
-        características = self.parse_tables(soup)
-        if características:
+        if características := self.parse_tables(soup):
             driver.uc_click('button[aria-expanded="false"]')
             marca = características.get("Marca")
             modelo = características.get("Modelo")
@@ -146,14 +137,12 @@ class AmericanasScraper(BaseScraper):
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
         for table in soup.select("table"):
-            rows = table.select("td")
-            if rows and rows[0].text.strip() == "Informações complementares":
-                continue
-            variant_data.update(
-                {
-                    k.text.strip(): v.text.strip()
-                    for k, v in zip(rows[::2], rows[1::2])
-                    if ("R$" not in k.text.strip() and "R$" not in v.text.strip())
-                }
-            )
+            for row in table.select("tr:has(> td:nth-child(2):last-child)"):
+                left = row.select_one("td:nth-of-type(1)")
+                right = row.select_one("td:nth-of-type(2)")
+                if "Informações complementares" in left.get_text():
+                    continue
+                if "R$" in left.get_text() or "R$" in right.get_text():
+                    continue
+                variant_data[left.get_text().strip()] = right.get_text().strip()
         return variant_data
