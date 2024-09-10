@@ -48,7 +48,7 @@ class MercadoLivreScraper(BaseScraper):
         if url := item.select_one("a.ui-search-link"):
             url = self.find_single_url(url.get("href"))
 
-        if imagem := item.select_one("img.ui-search-result"):
+        if imagem := item.select_one("img.ui-search-result-image__element"):
             imagem = imagem.get("src")
 
         if nome := item.select_one("h2.ui-search-item__title"):
