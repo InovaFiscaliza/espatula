@@ -25,23 +25,23 @@ class AmericanasScraper(BaseScraper):
 
     def extract_search_data(self, produto):
         relative_url = produto.select_one("a")
-        relative_url = relative_url['href'] if relative_url else None
-        
+        relative_url = relative_url["href"] if relative_url else None
+
         nome = produto.select_one("h3")
         nome = nome.text.strip() if nome else None
-        
+
         avaliações = produto.select_one("span.src__Count-sc-r5o9d7-1.eDRxIY")
         avaliações = avaliações.text.strip() if avaliações else None
-        
+
         preço = produto.select_one("span.list-price")
         preço = preço.text.strip() if preço else None
-        
+
         preço_original = produto.select_one("span.sales-price")
         preço_original = preço_original.text.strip() if preço_original else None
-        
+
         imagens = produto.select_one("img")
-        imagens = imagens['src'] if imagens else None
-        
+        imagens = imagens["src"] if imagens else None
+
         return {
             "nome": nome,
             "preço": preço,
@@ -53,13 +53,13 @@ class AmericanasScraper(BaseScraper):
         }
 
     def discover_product_urls(self, driver, keyword):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         results = {}
         for item in soup.find_all(
             "div",
             attrs={
                 "class": "col__StyledCol-sc-1snw5v3-0 ehOuCD theme-grid-col src__ColGridItem-sc-122lblh-1 cJnBan"
-            }
+            },
         ):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
@@ -67,12 +67,14 @@ class AmericanasScraper(BaseScraper):
         return results
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
-        
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+
         categoria = soup.select_one("div.breadcrumb")
         if categoria:
             self.highlight_element(driver, "div:contains(breadcrumb)")
-            categoria = " | ".join(a.text.strip() for a in categoria.select("a") if a.text.strip())
+            categoria = " | ".join(
+                a.text.strip() for a in categoria.select("a") if a.text.strip()
+            )
 
         nome = soup.select_one("h1.product-title")
         if nome:
@@ -83,10 +85,14 @@ class AmericanasScraper(BaseScraper):
         gallery = soup.select_one("div.Gallery")
         if gallery:
             self.highlight_element(driver, 'div:contains("Gallery")')
-            imagens = [img.get('src') for img in gallery.select("img") if img.get('src')]
+            imagens = [
+                img.get("src") for img in gallery.select("img") if img.get("src")
+            ]
 
         nota, avaliações = None, None
-        popularidade = soup.select_one("div[data-testid='mod-row'] span[format='score-count']")
+        popularidade = soup.select_one(
+            "div[data-testid='mod-row'] span[format='score-count']"
+        )
         if popularidade:
             self.highlight_element(driver, "div[data-testid=mod-row]")
             nota, avaliações = popularidade.text.strip().split(" ")
@@ -95,7 +101,13 @@ class AmericanasScraper(BaseScraper):
         preço = soup.select_one("div.priceSales")
         if preço:
             self.highlight_element(driver, "div[data-testid=mod-productprice]")
-            preço = preço.text.strip().replace("R$", "").replace(".", "").replace(",", ".").strip()
+            preço = (
+                preço.text.strip()
+                .replace("R$", "")
+                .replace(".", "")
+                .replace(",", ".")
+                .strip()
+            )
 
         descrição = soup.select_one("div[data-testid='rich-content-container']")
         if descrição:

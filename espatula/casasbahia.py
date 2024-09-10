@@ -31,19 +31,19 @@ class CasasBahiaScraper(BaseScraper):
             relative_url = relative_url["href"] if relative_url else None
             name = title.select_one("span")
             name = name.text.strip() if name else None
-        
+
         evals = produto.select_one("span.product-card__reviews-count-text")
         evals = evals.text.strip() if evals else None
-        
+
         nota = produto.select_one("span[data-testid='product-card-rating']")
         nota = nota.text.strip() if nota else None
-        
+
         price_lower = produto.select_one("div.product-card__highlight-price")
         price_lower = price_lower.text.strip() if price_lower else None
-        
+
         price_higher = produto.select_one("div.product-card__installment-text")
         price_higher = price_higher.text.strip() if price_higher else None
-        
+
         imgs = produto.select_one("img.product-card__image")
         imgs = imgs["src"] if imgs else None
         if not all([name, price_lower, imgs, relative_url]):
@@ -59,7 +59,7 @@ class CasasBahiaScraper(BaseScraper):
         }
 
     def discover_product_urls(self, driver, keyword):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         results = {}
         for item in soup.select("div.css-1enexmx"):
             if product_data := self.extract_product_data(item):
@@ -68,7 +68,7 @@ class CasasBahiaScraper(BaseScraper):
         return results
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         categoria = soup.select_one("div.breadcrumb")
         if categoria:
             categoria = " | ".join(
@@ -84,7 +84,11 @@ class CasasBahiaScraper(BaseScraper):
         origem = soup.select_one("div.dsvia-flex.css-uoygdh")
         if origem:
             product_id = origem.select_one("p")
-            product_id = "".join(d for d in product_id.text.strip() if d.isdigit()) if product_id else None
+            product_id = (
+                "".join(d for d in product_id.text.strip() if d.isdigit())
+                if product_id
+                else None
+            )
             marca = origem.select_one("a")
             marca = marca.text.strip() if marca else None
 
@@ -108,7 +112,12 @@ class CasasBahiaScraper(BaseScraper):
             # self.highlight_element(driver, "div[data-testid=mod-productprice]")
             preço = preço.select_one("span[aria-hidden='true']")
             if preço:
-                preço = preço.text.strip().replace("R$", "").replace(".", "").replace(",", ".")
+                preço = (
+                    preço.text.strip()
+                    .replace("R$", "")
+                    .replace(".", "")
+                    .replace(",", ".")
+                )
             else:
                 preço = None
         else:
@@ -129,7 +138,7 @@ class CasasBahiaScraper(BaseScraper):
             tag = 'p:contains("Características")'
             self.highlight_element(driver, tag)
             driver.uc_click(tag)
-            soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+            soup = BeautifulSoup(driver.get_page_source(), "html.parser")
             características.update(self.parse_tables(soup, "Características"))
             driver.uc_click('button[aria-label="Fechar"]')
         except Exception as e:
@@ -138,7 +147,7 @@ class CasasBahiaScraper(BaseScraper):
             tag = 'p:contains("Especificações Técnicas")'
             self.highlight_element(driver, tag)
             driver.uc_click(tag)
-            soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+            soup = BeautifulSoup(driver.get_page_source(), "html.parser")
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
 
         except Exception as e:

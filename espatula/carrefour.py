@@ -63,7 +63,7 @@ class CarrefourScraper(BaseScraper):
         }
 
     def discover_product_urls(self, driver, keyword: str):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         results = {}
         for div in soup.select("div.galleryItem"):
             if product_data := self.extract_search_data(div):
@@ -72,7 +72,7 @@ class CarrefourScraper(BaseScraper):
         return results
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
         categoria = soup.select("span.breadcrumb")
         categoria = "|".join(i.text.strip() for i in categoria if i.text.strip() != "")
 
