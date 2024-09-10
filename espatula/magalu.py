@@ -69,19 +69,15 @@ class MagaluScraper(BaseScraper):
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
         for table in soup.select("table"):
-            rows = table.select("td")
-            if rows and rows[0].get_text().strip() == "Informações complementares":
-                continue
-            variant_data.update(
-                {
-                    k.get_text().strip(): v.get_text().strip()
-                    for k, v in zip(rows[::2], rows[1::2])
-                    if (
-                        "R$" not in k.get_text().strip()
-                        and "R$" not in v.get_text().strip()
-                    )
-                }
-            )
+            for row in table.select("tr:has(> td:nth-child(2):last-child)"):
+                left = row.select_one("td:nth-of-type(1)")
+                right = row.select_one("td:nth-of-type(2)")
+                if "Informações complementares" in left.get_text():
+                    continue
+                if "R$" in left.get_text() or "R$" in right.get_text():
+                    continue
+                variant_data[left.get_text().strip()] = right.get_text().strip()
+
         return variant_data
 
     def extract_item_data(self, driver):
@@ -91,12 +87,11 @@ class MagaluScraper(BaseScraper):
             self.highlight_element(driver, selector)
             return soup.select_one(selector)
 
-        categoria = soup.select_one('a[data-testid="breadcrumb-item"]')
-        if categoria:
-            self.highlight_element(driver, "div[data-testid=breadcrumb-container]")
-            categoria = " | ".join(
-                i.get_text().strip() for i in categoria if i.get_text().strip()
-            )
+        categoria = ""
+        if categoria_div := get_selector("div[data-testid=breadcrumb-container]"):
+            for i in categoria_div.select('a[data-testid="breadcrumb-item"]'):
+                if hasattr(i, "get_text") and i.get_text().strip():
+                    categoria += "|" + i.get_text().strip()
 
         if nome := get_selector('h1[data-testid="heading-product-title"]'):
             nome = nome.get_text().strip()
