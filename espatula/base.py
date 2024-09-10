@@ -31,7 +31,6 @@ CERTIFICADO = re.compile(
     (                      # Start of main capturing group
         (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
     )
-    $                      # End of the string
 """,
     re.VERBOSE,
 )
