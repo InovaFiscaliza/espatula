@@ -93,7 +93,8 @@ if "show_cache" not in st.session_state:
 
 # Retrieve previous Session State to initialize the widgets
 for key in st.session_state:
-    st.session_state["_" + key] = st.session_state[key]
+    if key != "use_cache":
+        st.session_state["_" + key] = st.session_state[key]
 
 
 @st.fragment
