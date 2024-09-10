@@ -3,6 +3,7 @@ set "REGULATRON=%APPDATA%\Anatel\Regulatron"
 set "UV_CACHE_DIR=%REGULATRON%\uv-cache"
 set "UV_TOOL_BIN_DIR=%REGULATRON%\uv-tool"
 set "UV_PYTHON_INSTALL_DIR=%REGULATRON%\uv-python"
+set "PYTHONUTF8=1"
 if not exist "%REGULATRON%" (
     mkdir "%REGULATRON%"
 )
@@ -11,9 +12,9 @@ if not exist "%REGULATRON%" (
 @REM     mkdir "%REGULATRON%"
 @REM )
 
-powershell -Command "Expand-Archive -Path .\app.zip -DestinationPath  $Env:REGULATRON -Force"
+powershell -Command "robocopy .\app $Env:REGULATRON /E /XO"
 powershell -Command "[Environment]::SetEnvironmentVariable('PYTHONUTF8','1', 'User')"
-copy .\config.json %REGULATRON%\config.json
+powershell -Command "robocopy .\config.json $Env:REGULATRON%\config.json /XO"
 cd %REGULATRON%
 call "%REGULATRON%\uv.exe" sync --locked --no-progress
 start "" "%REGULATRON%\uv.exe" run run.py --locked
