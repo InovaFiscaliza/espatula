@@ -9,8 +9,8 @@ $filesToCopy = @(
     "pyproject.toml",
     "README.md",
     "run.py",
-    "uv.lock",
-    "uv.exe"
+    "uv.lock"
+    "D:\Applications\Scoop\apps\uv\current\uv.exe"
 )
 
 $destinationFolder = "app"
