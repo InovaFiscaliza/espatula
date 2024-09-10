@@ -31,16 +31,16 @@ class MagaluScraper(BaseScraper):
 
     def extract_search_data(self, produto):
         relative_url = produto.get("href")
-        name = produto.find("h2", attrs={"data-testid": "product-title"})
-        name = name.text.strip() if name else None
-        evals = produto.find("div", attrs={"data-testid": "review"})
-        evals = evals.text.strip() if evals else None
-        price_lower = produto.find("p", {"data-testid": "price-value"})
-        price_lower = price_lower.text.strip() if price_lower else None
-        price_higher = produto.find("p", {"data-testid": "price-original"})
-        price_higher = price_higher.text.strip() if price_higher else None
-        imgs = produto.find("img", {"data-testid": "image"})
-        imgs = imgs.get("src") if imgs else None
+        if name := produto.select_one('h2[data-testid="product-title"]'):
+            name = name.get_text.strip()
+        if evals := produto.select_one('div[data-testid="review"]'):
+            evals = evals.get_text.strip()
+        if price_lower := produto.select_one('p[data-testid="price-value"]'):
+            price_lower = price_lower.get_text.strip()
+        if price_higher := produto.select_one('p[data-testid="price-original"]'):
+            price_higher = price_higher.get_text.strip()
+        if imgs := produto.select_one('img[data-testid="image"]'):
+            imgs = imgs.get("src")
         if not all([name, price_lower, imgs]):
             return None
         return {
@@ -53,12 +53,10 @@ class MagaluScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, driver, keyword):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+    def discover_product_urls(self, soup, keyword):
         results = {}
-        for item in soup.find_all(
-            "a",
-            attrs={"data-testid": "product-card-container"},
+        for item in soup.select(
+            'a[data-testid="product-card-container"]',
         ):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
@@ -82,7 +80,7 @@ class MagaluScraper(BaseScraper):
         return variant_data
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), 'html.parser')
+        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
 
         categoria = soup.find_all("a", attrs={"data-testid": "breadcrumb-item"})
         if categoria:
