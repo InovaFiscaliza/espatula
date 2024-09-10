@@ -45,25 +45,23 @@ class MercadoLivreScraper(BaseScraper):
         return match[0] if match else text
 
     def extract_search_data(self, item):
-        url_element = item.select_one("a.ui-search-link")
-        url = self.find_single_url(url_element.get("href")) if url_element else None
+        if url := item.select_one("a.ui-search-link"):
+            url = self.find_single_url(url.get("href"))
 
-        imagem_element = item.select_one("img.ui-search-result")
-        imagem = imagem_element.get("src") if imagem_element else None
+        if imagem := item.select_one("img.ui-search-result"):
+            imagem = imagem.get("src")
 
-        nome_element = item.select_one("h2.ui-search-item__title")
-        nome = nome_element.get_text().strip() if nome_element else None
+        if nome := item.select_one("h2.ui-search-item__title"):
+            nome = nome.get_text().strip()
 
-        preço_element = item.select_one("span.andes-money-amount__fraction")
-        preço = preço_element.get_text().strip() if preço_element else None
+        if preço := item.select_one("span.andes-money-amount__fraction"):
+            preço = preço.get_text().strip()
 
-        avaliações_element = item.select_one("span.ui-search-reviews__amount")
-        avaliações = (
-            avaliações_element.get_text().strip() if avaliações_element else None
-        )
+        if avaliações := item.select_one("span.ui-search-reviews__amount"):
+            avaliações = avaliações.get_text().strip()
 
-        nota_element = item.select_one("span.ui-search-reviews__rating-number")
-        nota = nota_element.get_text().strip() if nota_element else None
+        if nota := item.select_one("span.ui-search-reviews__rating-number"):
+            nota = nota.get_text().strip()
 
         if not all([nome, preço, imagem]):
             return False
