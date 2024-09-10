@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from bs4 import BeautifulSoup
+from seleniumbase.common.exceptions import (
+    NoSuchElementException,
+    ElementNotVisibleException,
+)
+
 from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
@@ -30,11 +34,24 @@ class CarrefourScraper(BaseScraper):
         return "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
 
     def input_search_params(self, driver, keyword):
-        if department := CATEGORIES.get(keyword):
-            driver.uc_open_with_reconnect(department, reconnect_time=self.reconnect)
-        else:
-            self.highlight_element(driver, self.input_field)
-            driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+        for attempt in range(self.retries):
+            try:
+                if department := CATEGORIES.get(keyword):
+                    driver.uc_open_with_reconnect(
+                        department, reconnect_time=self.reconnect
+                    )
+                self.highlight_element(driver, self.input_field)
+                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                break
+            except (NoSuchElementException, ElementNotVisibleException):
+                if attempt < self.retries - 1:  # if it's not the last attempt
+                    print(f"Attempt {attempt + 1} failed. Retrying...")
+                    driver.sleep(2)  # Wait for 1 second before retrying
+                else:
+                    print(
+                        f"Error: Could not find search input field '{self.input_field}' after {self.retries} attempts"
+                    )
+                    raise  # Re-raise the last exception
 
     def extract_search_data(self, product_tag):
         url = product_tag.select_one("a.product-summary")
