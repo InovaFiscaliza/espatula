@@ -6,6 +6,7 @@ from datetime import datetime
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
+from typing import Generator
 from zoneinfo import ZoneInfo
 
 
@@ -266,7 +267,7 @@ class BaseScraper:
         screenshot: bool = False,
         sample: int = 65,
         shuffle: bool = False,
-    ) -> Path:
+    ) -> Generator[dict, None, None]:
         links = self.get_links(keyword)
         keys = L((i, k) for i, k in enumerate(links.keys()))
         if shuffle:
@@ -340,7 +341,9 @@ class BaseScraper:
                     return False
         return False
 
-    def search(self, keyword: str, max_pages: int = 10, overwrite: bool = False):
+    def search(
+        self, keyword: str, max_pages: int = 10, overwrite: bool = False
+    ) -> Generator[dict, None, None]:
         links = {} if overwrite else self.get_links(keyword)
         results = {}
         page = 1
