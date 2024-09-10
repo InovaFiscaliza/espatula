@@ -303,15 +303,14 @@ class BaseScraper:
 
     def input_search_params(self, driver: SB, keyword: str):
         self.highlight_element(driver, self.input_field)
-        max_retries = 3
-        for attempt in range(max_retries):
+        for attempt in range(self.retries):
             try:
                 driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
-                return  # Success, exit the function
+                break  # Success, exit the function
             except (NoSuchElementException, ElementNotVisibleException):
-                if attempt < max_retries - 1:  # if it's not the last attempt
+                if attempt < self.max_retries - 1:  # if it's not the last attempt
                     print(f"Attempt {attempt + 1} failed. Retrying...")
-                    driver.sleep(1)  # Wait for 1 second before retrying
+                    driver.sleep(2)  # Wait for 1 second before retrying
                 else:
                     print(
                         f"Error: Could not find search input field '{self.input_field}' after {max_retries} attempts"
