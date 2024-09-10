@@ -173,13 +173,8 @@ class CasasBahiaScraper(BaseScraper):
     def parse_tables(self, soup, id) -> dict:
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
-        table = soup.select_one(f"div#{id}")
-        if table:
-            for rows in table.select('div[class*="css-cs5a0t"]'):
-                key = rows.select_one("p")
-                value = rows.select_one("span")
-                if key and value:
-                    key = key.text.strip()
-                    value = value.text.strip()
-                    variant_data[key] = value
+        if table := soup.select_one(f'div[id*="{id}"'):
+            for key in table.select("p"):
+                if value := getattr(key, "next_sibling", None):
+                    variant_data[key.get_text().strip()] = value.get_text().strip()
         return variant_data
