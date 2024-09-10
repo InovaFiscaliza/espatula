@@ -180,7 +180,7 @@ class MercadoLivreScraper(BaseScraper):
             self.highlight_element(driver, 'a[title="Ver descrição completa"]')
             driver.uc_click('a[title="Ver descrição completa"]')
 
-        marca, modelo, ean, certificado = None, None, None, None
+        características, marca, modelo, ean, certificado = None, None, None, None, None
         if características_element := get_selector(
             'div[class="ui-vpp-highlighted-specs__striped-specs"]'
         ):
