@@ -86,8 +86,7 @@ if "cache" not in st.session_state:
     st.session_state.cache = {}
 
 if "use_cache" not in st.session_state:
-    use_cache = CACHE[0] if CONFIG.get(CACHE[0]) else CACHE[1]
-    st.session_state.use_cache = use_cache
+    st.session_state.use_cache = CACHE[0] if CONFIG.get(CACHE[0]) else CACHE[1]
 
 if "show_cache" not in st.session_state:
     st.session_state.show_cache = False
