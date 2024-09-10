@@ -66,67 +66,64 @@ class MagaluScraper(BaseScraper):
     def parse_tables(self, soup) -> dict:
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
-        for table in soup.find_all("table"):
-            rows = table.find_all("td")
-            if rows and rows[0].text.strip() == "Informações complementares":
+        for table in soup.select("table"):
+            rows = table.select("td")
+            if rows and rows[0].get_text.strip() == "Informações complementares":
                 continue
             variant_data.update(
                 {
-                    k.text.strip(): v.text.strip()
+                    k.get_text().strip(): v.get_text().strip()
                     for k, v in zip(rows[::2], rows[1::2])
-                    if ("R$" not in k.text.strip() and "R$" not in v.text.strip())
+                    if (
+                        "R$" not in k.get_text().strip()
+                        and "R$" not in v.get_text().strip()
+                    )
                 }
             )
         return variant_data
 
     def extract_item_data(self, driver):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+        soup = driver.get_beautiful_soup()
 
-        categoria = soup.find_all("a", attrs={"data-testid": "breadcrumb-item"})
+        def get_selector(selector):
+            self.highlight_element(driver, selector)
+            return soup.select_one(selector)
+
+        categoria = soup.select_one('a[data-testid="breadcrumb-item"]')
         if categoria:
             self.highlight_element(driver, "div[data-testid=breadcrumb-container]")
-            categoria = " | ".join(i.text.strip() for i in categoria if i.text.strip())
+            categoria = " | ".join(
+                i.get_text().strip() for i in categoria if i.get_text().strip()
+            )
 
-        nome = soup.find("h1", attrs={"data-testid": "heading-product-title"})
-        if nome:
-            self.highlight_element(driver, "h1[data-testid=heading-product-title]")
-            nome = nome.text.strip()
+        if nome := get_selector('h1[data-testid="heading-product-title"]'):
+            nome = nome.get_text().strip()
 
-        imagens = soup.find_all("img", {"data-testid": "media-gallery-image"})
-        if imagens:
+        if imagens := soup.select('img[data-testid="media-gallery-image"]'):
             self.highlight_element(driver, "div[data-testid=media-gallery-image]")
             imagens = [i.get("src") for i in imagens if i.get("src")]
 
         nota, avaliações = None, None
-        popularidade = soup.find("div", attrs={"data-testid": "mod-row"})
-        if popularidade:
-            self.highlight_element(driver, "div[data-testid=mod-row]")
-            popularidade = popularidade.find("span", attrs={"format": "score-count"})
-            if popularidade:
-                nota, avaliações = popularidade.text.strip().split(" ")
+        if eval_div := get_selector('div[data-testid="mod-row"]'):
+            if popularidade := eval_div.select_one('span[format="score-count"]'):
+                nota, avaliações = popularidade.get_text().strip().split(" ")
                 avaliações = avaliações.replace("(", "").replace(")", "")
 
         preço = None
-        preço_div = soup.find("div", attrs={"data-testid": "mod-productprice"})
-        if preço_div:
-            self.highlight_element(driver, "div[data-testid=mod-productprice]")
-            preço = preço_div.find("p", {"data-testid": "price-value"})
-            if preço:
+        if preço_div := get_selector('div[data-testid="mod-productprice"]'):
+            if preço := preço_div.select_one('p[data-testid="price-value"]')
                 preço = (
-                    preço.text.strip()
+                    preço.get_text()
+                    .strip()
                     .replace("R$", "")
                     .replace(".", "")
                     .replace(",", ".")
                 )
-
-        descrição = soup.find("div", attrs={"data-testid": "rich-content-container"})
-        if descrição:
-            self.highlight_element(driver, "div[data-testid=rich-content-container]")
-            descrição = descrição.text.strip()
+        if descrição := get_selector('div[data-testid="rich-content-container"]'):
+            descrição = descrição.get_text().strip()
 
         marca, modelo, certificado, ean = None, None, None, None
-        características = self.parse_tables(soup)
-        if características:
+        if características := self.parse_tables(soup):
             marca = características.get("Marca")
             modelo = características.get("Modelo")
             certificado = self.extrair_certificado(características)
