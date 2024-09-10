@@ -14,7 +14,6 @@ import requests
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
 from seleniumbase import SB
-from seleniumbase.undetected.options import ChromeOptions
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
