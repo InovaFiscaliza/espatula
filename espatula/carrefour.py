@@ -81,8 +81,7 @@ class CarrefourScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, driver, keyword: str):
-        soup = BeautifulSoup(driver.get_page_source(), "html.parser")
+    def discover_product_urls(self, soup, keyword: str):
         results = {}
         for div in soup.select("div.galleryItem"):
             if product_data := self.extract_search_data(div):
