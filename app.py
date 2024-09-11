@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 from fastcore.xtras import Path
 from gradio_client import Client, handle_file
-
+import streamlit as st
 
 from config import (
     CACHE,
@@ -246,7 +246,32 @@ def process_data(pages_file: Path):
     st.divider()
     st.success("Processamento dos dados finalizado!", icon="🎉")
     st.snow()
-    st.dataframe(df.loc[:, COLUNAS], use_container_width=True)
+    
+    # Define column configurations
+    column_config = {
+        "nome": st.column_config.TextColumn("Nome", width="medium"),
+        "fabricante": st.column_config.TextColumn("Fabricante", width="small"),
+        "modelo": st.column_config.TextColumn("Modelo", width="small"),
+        "certificado": st.column_config.TextColumn("Certificado", width="small"),
+        "ean_gtin": st.column_config.TextColumn("EAN/GTIN", width="small"),
+        "subcategoria": st.column_config.TextColumn("Subcategoria", width="small"),
+        "url": st.column_config.LinkColumn("URL", width="small"),
+        "nome_sch": st.column_config.TextColumn("Nome SCH", width="medium"),
+        "fabricante_sch": st.column_config.TextColumn("Fabricante SCH", width="small"),
+        "modelo_sch": st.column_config.TextColumn("Modelo SCH", width="small"),
+        "tipo_sch": st.column_config.TextColumn("Tipo SCH", width="small"),
+        "nome_score": st.column_config.NumberColumn("Nome Score", format="%.2f", width="small"),
+        "modelo_score": st.column_config.NumberColumn("Modelo Score", format="%.2f", width="small"),
+        "passível?": st.column_config.CheckboxColumn("Passível?"),
+        "probabilidade": st.column_config.ProgressColumn("Probabilidade", format="%.1f%%", min_value=0, max_value=100)
+    }
+    
+    st.dataframe(
+        df.loc[:, COLUNAS],
+        use_container_width=True,
+        column_config=column_config,
+        hide_index=True
+    )
 
 
 def run():
