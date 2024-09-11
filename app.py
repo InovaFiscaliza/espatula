@@ -269,8 +269,6 @@ def process_data(pages_file: Path):
         ]
     )
 
-    df.columns = columns
-
     # Define column configurations
     column_config = {
         ("Dados do Anúncio", "url"): st.column_config.LinkColumn(
@@ -312,18 +310,24 @@ def process_data(pages_file: Path):
         ("Taxa de Sobreposição", "modelo_score"): st.column_config.ProgressColumn(
             "Modelo", width="small"
         ),
-        ("Classificação", "passível?"): st.column_config.CheckboxColumn("Passível?"),
+        ("Classificação", "passível?"): st.column_config.CheckboxColumn(
+            "Homologação Compulsória", width="small"
+        ),
         ("Classificação", "probabilidade"): st.column_config.ProgressColumn(
             "Probabilidade", format="%.4f%%", min_value=0, max_value=100
         ),
     }
 
-    df[("Classificação", "probabilidade")] *= 100
+    df_show = df.loc[:, list(COLUNAS.keys())]
+
+    df_show.columns = columns
+
+    df_show[("Classificação", "probabilidade")] *= 100
 
     st.dataframe(
-        df,
+        df_show,
         use_container_width=True,
-        column_config=column_config,
+        # column_config=column_config,
         hide_index=True,
     )
 
