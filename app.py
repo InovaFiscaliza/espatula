@@ -88,33 +88,34 @@ st.set_page_config(
     layout="wide",
 )
 
+STATE = st.session_state
 
-# Initialize st.session_state.mkplc to None
-if "mkplc" not in st.session_state:
-    st.session_state.mkplc = None
+# Initialize STATE.mkplc to None
+if "mkplc" not in STATE:
+    STATE.mkplc = None
 
-if (key := "keyword") not in st.session_state:
-    st.session_state[key] = CONFIG.get(KEYS[key], "")
+if (key := "keyword") not in STATE:
+    STATE[key] = CONFIG.get(KEYS[key], "")
 
-if (key := "folder") not in st.session_state:
+if (key := "folder") not in STATE:
     if not (folder := CONFIG.get(KEYS[key], "")):
         folder = rf"{Path.home()}"
-    st.session_state[key] = folder
-if "cache" not in st.session_state:
-    st.session_state.cache = {}
+    STATE[key] = folder
+if "cache" not in STATE:
+    STATE.cache = {}
 
-if (key := "use_cache") not in st.session_state:
-    st.session_state[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
+if (key := "use_cache") not in STATE:
+    STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
 
-if "show_cache" not in st.session_state:
-    st.session_state.show_cache = False
+if "show_cache" not in STATE:
+    STATE.show_cache = False
 
 # Retrieve previous Session State to initialize the widgets
-for key in st.session_state:
+for key in STATE:
     if key != "use_cache":
-        st.session_state["_" + key] = st.session_state[key]
+        STATE["_" + key] = STATE[key]
     if key in KEYS:
-        CONFIG[KEYS[key]] = st.session_state[key]
+        CONFIG[KEYS[key]] = STATE[key]
 
 
 def save_config():
@@ -129,8 +130,8 @@ def save_config():
 @st.fragment
 def set_mkplc():
     # Callback function to save the mkplc selection to Session State
-    st.session_state.mkplc = st.session_state._mkplc
-    img = LOGOS[st.session_state._mkplc]
+    STATE.mkplc = STATE._mkplc
+    img = LOGOS[STATE._mkplc]
     st.logo(img)
     st.image(img, width=320)
 
@@ -138,35 +139,35 @@ def set_mkplc():
 @st.fragment
 def set_keyword():
     # Callback function to save the keyword selection to Session State
-    keyword = st.session_state._keyword.strip()
-    st.session_state.keyword = keyword
+    keyword = STATE._keyword.strip()
+    STATE.keyword = keyword
 
 
 @st.fragment
 def set_folder():
     # Callback function to save the keyword selection to Session State
-    if Path(st.session_state._folder).is_dir():
-        st.session_state.folder = st.session_state._folder
+    if Path(STATE._folder).is_dir():
+        STATE.folder = STATE._folder
 
 
 @st.fragment
 def set_cache():
     # Callback function to save the keyword selection to Session State
-    scraper = SCRAPERS[st.session_state.mkplc](path=st.session_state.folder)
-    st.session_state.cache = scraper.get_links(st.session_state.keyword)
+    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
+    STATE.cache = scraper.get_links(STATE.keyword)
 
 
 @st.fragment
 def use_cache():
     # Callback function to save the keyword selection to Session State
-    st.session_state.use_cache = st.session_state._use_cache
+    STATE.use_cache = STATE._use_cache
 
 
 @st.fragment
 def show_links():
     with st.container(height=720):
-        if st.session_state.cache:
-            st.write(st.session_state.cache)
+        if STATE.cache:
+            st.write(STATE.cache)
 
 
 def request_table(json_path: Path) -> pd.DataFrame:
@@ -183,11 +184,11 @@ def run_search(scraper):
         progress_text = "Realizando a busca de produtos...🕸️"
         progress_bar = st.progress(0, text=progress_text)
         output = st.empty()
-        percentage = 100 / st.session_state.max_search
+        percentage = 100 / STATE.max_search
         for i, result in enumerate(
             scraper.search(
-                keyword=st.session_state.keyword,
-                max_pages=st.session_state.max_search,
+                keyword=STATE.keyword,
+                max_pages=STATE.max_search,
             ),
             start=1,
         ):
@@ -207,13 +208,13 @@ def inspect_pages(scraper):
         progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
         progress_bar = st.progress(0, text=progress_text)
         output = st.empty()
-        percentage = 100 / st.session_state.max_pages
+        percentage = 100 / STATE.max_pages
         for i, result in enumerate(
             scraper.inspect_pages(
-                keyword=st.session_state.keyword,
-                screenshot=st.session_state.screenshot,
-                sample=st.session_state.max_pages,
-                shuffle=st.session_state.shuffle,
+                keyword=STATE.keyword,
+                screenshot=STATE.screenshot,
+                sample=STATE.max_pages,
+                shuffle=STATE.shuffle,
             ),
             start=1,
         ):
@@ -250,19 +251,19 @@ def process_data(pages_file: Path):
 
 def run():
     save_config()
-    st.session_state.show_cache = False
-    scraper = SCRAPERS[st.session_state.mkplc](
-        headless=not st.session_state.show_browser,
-        path=st.session_state.folder,
-        reconnect=st.session_state.reconnect,
-        timeout=st.session_state.timeout,
+    STATE.show_cache = False
+    scraper = SCRAPERS[STATE.mkplc](
+        headless=not STATE.show_browser,
+        path=STATE.folder,
+        reconnect=STATE.reconnect,
+        timeout=STATE.timeout,
     )
-    if st.session_state.use_cache == CACHE[1]:
+    if STATE.use_cache == CACHE[1]:
         run_search(scraper)
 
     inspect_pages(scraper)
 
-    process_data(scraper.pages_file(st.session_state.keyword))
+    process_data(scraper.pages_file(STATE.keyword))
 
 
 config_container = st.sidebar.container(border=True)
@@ -275,7 +276,7 @@ mkplc = config_container.selectbox(
     placeholder="Selecione uma opção",
 )
 
-if st.session_state.mkplc is None:
+if STATE.mkplc is None:
     st.title(TITLE)
     st.image(
         LOGOS["Espatula"],
@@ -300,10 +301,10 @@ else:
         on_change=set_folder,
     )
 
-    if st.session_state.keyword:
-        if Path(st.session_state.folder).is_dir():
+    if STATE.keyword:
+        if Path(STATE.folder).is_dir():
             set_cache()
-            if cache := st.session_state.cache:
+            if cache := STATE.cache:
                 container = st.sidebar.container(border=True)
                 container.info(f"Existem **{len(cache)}** resultados de busca em cache")
                 if container.toggle("Visualizar cache", key="show_cache"):
@@ -316,7 +317,7 @@ else:
                     on_change=use_cache,
                 )
             else:
-                st.session_state.use_cache = CACHE[1]
+                STATE.use_cache = CACHE[1]
 
             with st.sidebar:
                 with st.form("config", border=False):
@@ -338,7 +339,7 @@ else:
                             min_value=1,
                             value=CONFIG.get(KEYS["max_search"], 10),
                             key="max_search",
-                            disabled=(st.session_state.use_cache == CACHE[0]),
+                            disabled=(STATE.use_cache == CACHE[0]),
                         )
                         st.number_input(
                             MAX_PAGES,
