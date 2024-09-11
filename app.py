@@ -177,7 +177,9 @@ def request_table(json_path: Path) -> pd.DataFrame:
         json_file=handle_file(str(json_path)),
         api_name="/process_to_table",
     )
-    return pd.DataFrame(result["data"], columns=result["headers"]).astype(COLUNAS)
+    return pd.DataFrame(
+        result["data"], columns=result["headers"], dtype="string"
+    ).astype(COLUNAS)
 
 
 def run_search(scraper):
@@ -246,8 +248,10 @@ def process_data(pages_file: Path):
     df = request_table(pages_file)
     st.divider()
     st.success("Processamento dos dados finalizado!", icon="🎉")
+    df_show = df.loc[:, list(COLUNAS.keys())]
+    df_show["probabilidade"] *= 100
     st.dataframe(
-        df.loc[:, list(COLUNAS.keys())],
+        df_show,
         use_container_width=True,
         column_config={
             "url": st.column_config.LinkColumn(
@@ -297,10 +301,11 @@ def process_data(pages_file: Path):
                 "Homologação Compulsória",
                 width=None,
                 help="Classificação - Machine Learning",
+                format_func=lambda x: "✅" if x else "❌",
             ),
             "probabilidade": st.column_config.ProgressColumn(
                 "Probabilidade",
-                format="%.4f%%",
+                format="%.2f%%",
                 min_value=0,
                 max_value=100,
                 help="Classificação - Machine Learning",
