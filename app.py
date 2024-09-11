@@ -41,23 +41,24 @@ SCRAPERS = {
     "Carrefour": CarrefourScraper,
 }
 
-COLUNAS = [
-    "nome",
-    "fabricante",
-    "modelo",
-    "certificado",
-    "ean_gtin",
-    "subcategoria",
-    "url",
-    "nome_sch",
-    "fabricante_sch",
-    "modelo_sch",
-    "tipo_sch",
-    "nome_score",
-    "modelo_score",
-    "passível?",
-    "probabilidade",
-]
+COLUNAS = {
+    "url": "string",
+    "nome": "string",
+    "fabricante": "category",
+    "modelo": "category",
+    "certificado": "string",
+    "ean_gtin": "string",
+    "subcategoria": "category",
+    "nome_sch": "string",
+    "tipo_sch": "category",
+    "fabricante_sch": "category",
+    "modelo_sch": "category",
+    "nome_score": "int8",
+    "modelo_score": "int8",
+    "passível?": "bool",
+    "probabilidade": "float32",
+}
+
 
 KEYS = {
     "keyword": KEYWORD,
@@ -176,7 +177,7 @@ def request_table(json_path: Path) -> pd.DataFrame:
         json_file=handle_file(str(json_path)),
         api_name="/process_to_table",
     )
-    return pd.DataFrame(result["data"], columns=result["headers"], dtype="string")
+    return pd.DataFrame(result["data"], columns=result["headers"]).astype(COLUNAS)
 
 
 def run_search(scraper):
@@ -234,7 +235,7 @@ def inspect_pages(scraper):
                         left.write("Não foi possível carregar a imagem do produto")
                 with right:
                     right.write("Dados do produto")
-                    right.write(result)
+                    right.json(result, expanded=1)
             progress_bar.progress(int((i * percentage) % 100), text=progress_text)
         time.sleep(1)
         output.empty()
@@ -246,31 +247,35 @@ def process_data(pages_file: Path):
     st.divider()
     st.success("Processamento dos dados finalizado!", icon="🎉")
     st.snow()
-    
+
     # Define column configurations
     column_config = {
+        "url": st.column_config.LinkColumn("URL", width="small", display_text="Link"),
         "nome": st.column_config.TextColumn("Nome", width="medium"),
         "fabricante": st.column_config.TextColumn("Fabricante", width="small"),
         "modelo": st.column_config.TextColumn("Modelo", width="small"),
         "certificado": st.column_config.TextColumn("Certificado", width="small"),
         "ean_gtin": st.column_config.TextColumn("EAN/GTIN", width="small"),
-        "subcategoria": st.column_config.TextColumn("Subcategoria", width="small"),
-        "url": st.column_config.LinkColumn("URL", width="small"),
+        "subcategoria": st.column_config.SelectboxColumn("Categoria", width="small"),
         "nome_sch": st.column_config.TextColumn("Nome SCH", width="medium"),
         "fabricante_sch": st.column_config.TextColumn("Fabricante SCH", width="small"),
         "modelo_sch": st.column_config.TextColumn("Modelo SCH", width="small"),
-        "tipo_sch": st.column_config.TextColumn("Tipo SCH", width="small"),
-        "nome_score": st.column_config.NumberColumn("Nome Score", format="%.2f", width="small"),
-        "modelo_score": st.column_config.NumberColumn("Modelo Score", format="%.2f", width="small"),
+        "tipo_sch": st.column_config.SelectboxColumn("Tipo SCH", width="small"),
+        "nome_score": st.column_config.ProgressColumn("Nome Score", width="small"),
+        "modelo_score": st.column_config.ProgressColumn("Modelo Score", width="small"),
         "passível?": st.column_config.CheckboxColumn("Passível?"),
-        "probabilidade": st.column_config.ProgressColumn("Probabilidade", format="%.1f%%", min_value=0, max_value=100)
+        "probabilidade": st.column_config.ProgressColumn(
+            "Probabilidade", format="%.4f%%", min_value=0, max_value=100
+        ),
     }
-    
+
+    df["probabilidade"] *= 100
+
     st.dataframe(
-        df.loc[:, COLUNAS],
+        df.loc[:, list(COLUNAS.keys())],
         use_container_width=True,
         column_config=column_config,
-        hide_index=True
+        hide_index=True,
     )
 
 
