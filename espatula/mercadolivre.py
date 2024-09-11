@@ -1,8 +1,10 @@
 import re
 from dataclasses import dataclass
 from datetime import datetime
-
-from gazpacho import Soup
+from seleniumbase.common.exceptions import (
+    NoSuchElementException,
+    ElementNotVisibleException,
+)
 
 from .base import TIMEZONE, BaseScraper
 
@@ -43,56 +45,25 @@ class MercadoLivreScraper(BaseScraper):
         return match[0] if match else text
 
     def extract_search_data(self, item):
-        if hasattr(
-            url := item.find("a", attrs={"class": "ui-search-link"}, mode="first"),
-            "attrs",
-        ):
-            url = self.find_single_url(url.attrs.get("href"))
+        if url := item.select_one("a.ui-search-link"):
+            url = self.find_single_url(url.get("href"))
 
-        if hasattr(
-            imagem := item.find(
-                "img",
-                attrs={"class": "ui-search-result"},
-                partial=True,
-                mode="first",
-            ),
-            "attrs",
-        ):
-            imagem = imagem.attrs.get("src")
+        if imagem := item.select_one("img.ui-search-result-image__element"):
+            imagem = imagem.get("src")
 
-        if nome := item.find(
-            "h2",
-            attrs={"class": "ui-search-item"},
-            partial=True,
-            mode="first",
-        ):
-            nome = nome.strip()
+        if nome := item.select_one("h2.ui-search-item__title"):
+            nome = nome.get_text().strip()
 
-        if preço := item.find(
-            "span",
-            attrs={"class": "andes-money-amount__fraction"},
-            partial=True,
-            mode="first",
-        ):
-            preço = preço.strip()
+        if preço := item.select_one("span.andes-money-amount__fraction"):
+            preço = preço.get_text().strip()
 
-        if avaliações := item.find(
-            "span",
-            attrs={"class": "ui-search-reviews__amount"},
-            partial=True,
-            mode="first",
-        ):
-            avaliações = avaliações.strip()
+        if avaliações := item.select_one("span.ui-search-reviews__amount"):
+            avaliações = avaliações.get_text().strip()
 
-        if nota := item.find(
-            "span",
-            attrs={"class": "ui-search-reviews__rating-number"},
-            partial=True,
-            mode="first",
-        ):
-            nota = nota.strip()
+        if nota := item.select_one("span.ui-search-reviews__rating-number"):
+            nota = nota.get_text().strip()
 
-        if not all([nome, preço, imagem]):
+        if not all([url, nome, preço, imagem]):
             return False
 
         return {
@@ -105,12 +76,9 @@ class MercadoLivreScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, driver, keyword):
-        soup = Soup(driver.get_page_source())
+    def discover_product_urls(self, soup, keyword):
         results = {}
-        for item in soup.find(
-            "li", attrs={"class": "ui-search-layout__item"}, partial=True, mode="all"
-        ):
+        for item in soup.select("li.ui-search-layout__item"):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
@@ -118,12 +86,10 @@ class MercadoLivreScraper(BaseScraper):
 
     def parse_specs(self, element) -> dict:
         specs = {}
-        if tables := element.find("table", attrs={"class": "andes-table"}, mode="all"):
-            specs.update(self.parse_tables(tables))
-        if lists := element.find(
-            "div", attrs={"class": "ui-pdp-list ui-pdp-specs__list"}, mode="all"
-        ):
-            specs.update(self.parse_lists(lists))
+        tables = element.select("table.andes-table")
+        lists = element.select("div.ui-pdp-list.ui-pdp-specs__list")
+        specs.update(self.parse_tables(tables))
+        specs.update(self.parse_lists(lists))
         return specs
 
     @staticmethod
@@ -132,126 +98,107 @@ class MercadoLivreScraper(BaseScraper):
         Parses tables from the product detail page to extract specifications and returns them as a dictionary.
         This method can be easily tested in isolation.
         """
-        # Implement table parsing logic
         return {
-            row.find("th").text: row.find("td").text
+            row.select_one("th").get_text().strip(): row.select_one("td")
+            .get_text()
+            .strip()
             for table in tables
-            for row in table.find("tr", mode="all")
+            for row in table.select("tr")
         }
 
     @staticmethod
-    def parse_lists(lists: str) -> dict:
+    def parse_lists(lists: list) -> dict:
         items = {}
-        for li in lists.find("li", mode="all"):
-            if item := li.find("p"):
-                k, v = item.strip().split(":", 1)
-                items[k.strip()] = v.strip()
+        for list_div in lists:
+            for li in list_div.select("li"):
+                if item := li.select_one("p"):
+                    k, v = item.get_text().strip().split(":", 1)
+                    items[k.strip()] = v.strip()
         return items
 
     def extract_item_data(self, driver):
-        soup = Soup(driver.get_page_source())
+        soup = driver.get_beautiful_soup()
 
-        if categoria := soup.find(
-            "a", attrs={"class": "andes-breadcrumb__link"}, mode="all"
-        ):
+        def get_selector(selector):
+            self.highlight_element(driver, selector)
+            return soup.select_one(selector)
+
+        categoria = None
+        if categoria_elements := soup.select('a[class="andes-breadcrumb__link"]'):
             self.highlight_element(driver, "div[id=breadcrumb]")
             categoria = "|".join(
-                i.strip() for i in categoria if hasattr(i, "strip") and i.strip()
+                i.get_text().strip() for i in categoria_elements if i.get_text().strip()
             )
 
-        if imgs := soup.find(
-            "img",
-            attrs={"class": "ui-pdp-image ui-pdp-gallery__figure__image"},
-            mode="all",
+        imgs = None
+        if img_elements := get_selector(
+            'img[class="ui-pdp-image ui-pdp-gallery__figure__image"]'
         ):
-            self.highlight_element(driver, "figure[class=ui-pdp-gallery__figure]")
-            imgs = [getattr(i, "attrs", {}).get("src") for i in imgs]
+            imgs = [i.get("src") for i in img_elements if i.get("src")]
 
         estado, vendas = None, None
-        if info_vendas := soup.find(
-            "span", attrs={"class": "ui-pdp-subtitle"}, mode="first"
-        ):
-            self.highlight_element(driver, "span[class=ui-pdp-subtitle]")
-            if len(info_vendas := info_vendas.strip().split(" | ")) == 2:
+        if info_vendas := get_selector('span[class="ui-pdp-subtitle"]'):
+            if len(info_vendas := info_vendas.get_text().strip().split(" | ")) == 2:
                 estado, vendas = info_vendas
-            # elif len(info_vendas) == 1:
-            #     vendas = info_vendas[0].strip()
-            #     if estado := soup.find(
-            #         "p", attrs={"class": "andes-badge__content"}, mode="first"
-            #     ):
-            #         estado = estado.strip()
 
-        if nome := soup.find("h1", attrs={"class": "ui-pdp-title"}, mode="first"):
-            self.highlight_element(driver, "h1[class=ui-pdp-title]")
-            nome = nome.strip()
+        nome = None
+        if nome_element := get_selector('h1[class="ui-pdp-title"]'):
+            nome = nome_element.get_text().strip()
 
         nota, avaliações = None, None
-        if info_avaliacoes := soup.find(
-            "div", attrs={"class": "ui-pdp-header__info"}, mode="first"
-        ):
-            self.highlight_element(driver, "div[class=ui-pdp-header__info]")
-            if nota := info_avaliacoes.find(
-                "span", attrs={"class": "ui-pdp-review__rating"}, mode="first"
+        if info_avaliacoes := get_selector('div[class="ui-pdp-review__rating"]'):
+            if nota_element := info_avaliacoes.select_one(
+                'span[class="ui-pdp-review__rating"]'
             ):
-                nota = nota.strip()
-            if avaliações := info_avaliacoes.find(
-                "span", attrs={"class": "ui-pdp-review__amount"}, mode="first"
+                nota = nota_element.get_text().strip()
+            if avaliacoes_element := info_avaliacoes.select_one(
+                'span[class="ui-pdp-review__amount"]'
             ):
-                avaliações = "".join(re.findall(r"\d+", avaliações.strip()))
+                avaliações = "".join(
+                    re.findall(r"\d+", avaliacoes_element.get_text().strip())
+                )
 
-        if preço := soup.find("meta", attrs={"itemprop": "price"}, mode="first"):
+        preço = None
+        if preço_element := soup.select_one("meta[itemprop='price']"):
             self.highlight_element(driver, "div[class=ui-pdp-price__second-line]")
-            preço = getattr(preço, "attrs", {}).get("content")
+            preço = preço_element.get("content")
 
-        if estoque := soup.find(
-            "span", attrs={"class": "quantity__available"}, mode="first"
+        estoque = None
+        if estoque_element := get_selector(
+            "span[class=ui-pdp-buybox__quantity__available]"
         ):
-            self.highlight_element(
-                driver, "span[class=ui-pdp-buybox__quantity__available]"
-            )
-            estoque = estoque.strip().split(" ")[0].replace("(", "")
+            estoque = estoque_element.get_text().strip().split(" ")[0].replace("(", "")
 
-        if vendedor := soup.find(
-            "div", attrs={"class": "ui-pdp-seller__header"}, mode="first"
-        ):
-            self.highlight_element(driver, "div[class=ui-pdp-seller__header__title]")
-            vendedor = vendedor.strip()
+        vendedor = None
+        if vendedor_element := get_selector('div[class="ui-pdp-seller__header"]'):
+            vendedor = vendedor_element.get_text().strip()
 
-        if soup.find("button", attrs={"data-testid": "action-collapsable-target"}):
-            self.highlight_element(
-                driver, "button[data-testid=action-collapsable-target]"
-            )
+        if get_selector("button[data-testid='action-collapsable-target']"):
             driver.uc_click("button[data-testid=action-collapsable-target]")
 
-        if soup.find("a", attrs={"data-testid": "action-collapsable-target"}):
+        if soup.select_one("a[data-testid='action-collapsable-target']"):
             self.highlight_element(driver, 'a[title="Ver descrição completa"]')
             driver.uc_click('a[title="Ver descrição completa"]')
 
-        marca, modelo, ean, certificado = None, None, None, None
-        if características := soup.find(
-            "div",
-            attrs={"class": "ui-vpp-highlighted-specs__striped-specs"},
-            mode="first",
+        características, marca, modelo, ean, certificado = None, None, None, None, None
+        if características_element := get_selector(
+            'div[class="ui-vpp-highlighted-specs__striped-specs"]'
         ):
-            self.highlight_element(
-                driver, "div[class=ui-vpp-highlighted-specs__striped-specs]"
-            )
-            características = self.parse_specs(características)
+            características = self.parse_specs(características_element)
             marca = características.get("Marca")
             modelo = características.get("Modelo")
             ean = self.extrair_ean(características)
             certificado = self.extrair_certificado(características)
 
-        if descrição := soup.find(
-            "p", attrs={"class": "ui-pdp-description__content"}, mode="first"
-        ):
-            self.highlight_element(driver, "p[class=ui-pdp-description__content]")
-            descrição = descrição.strip()
+        descrição = None
+        if descrição_element := get_selector("p[class=ui-pdp-description__content]"):
+            descrição = descrição_element.get_text().strip()
 
         url = self.find_single_url(driver.get_current_url())
 
-        if product_id := re.match(PRODUCT_ID, url):
-            product_id = product_id[0]
+        product_id = None
+        if product_id_match := re.match(PRODUCT_ID, url):
+            product_id = product_id_match[0]
 
         return {
             "categoria": categoria,
@@ -276,7 +223,21 @@ class MercadoLivreScraper(BaseScraper):
         }
 
     def input_search_params(self, driver, keyword):
-        if department := CATEGORIES.get(keyword):
-            driver.uc_open_with_reconnect(department, reconnect_time=self.reconnect)
-        self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+        for attempt in range(self.retries):
+            try:
+                if department := CATEGORIES.get(keyword):
+                    driver.uc_open_with_reconnect(
+                        department, reconnect_time=self.reconnect
+                    )
+                self.highlight_element(driver, self.input_field)
+                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                break
+            except (NoSuchElementException, ElementNotVisibleException):
+                if attempt < self.retries - 1:  # if it's not the last attempt
+                    print(f"Attempt {attempt + 1} failed. Retrying...")
+                    driver.sleep(2)  # Wait for 1 second before retrying
+                else:
+                    print(
+                        f"Error: Could not find search input field '{self.input_field}' after {self.retries} attempts"
+                    )
+                    raise  # Re-raise the last exception

@@ -6,6 +6,7 @@ from datetime import datetime
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
+from typing import Generator
 from zoneinfo import ZoneInfo
 
 
@@ -29,7 +30,6 @@ CERTIFICADO = re.compile(
     (                      # Start of main capturing group
         (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
     )
-    $                      # End of the string
 """,
     re.VERBOSE,
 )
@@ -38,10 +38,15 @@ CERTIFICADO = re.compile(
 @dataclass
 class BaseScraper:
     headless: bool = True
-    path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__)}/data"))
+    path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__).parent}/data"))
     reconnect: int = int(os.environ.get("RECONNECT", 10))
     timeout: int = int(os.environ.get("TIMEOUT", 5))
-    ad_block_on: bool = True
+    retries: int = int(os.environ.get("RETRIES", 3))
+    demo: bool = False
+    user_data_dir = (
+        f'{Path(os.environ.get("LOCALAPPDATA", "."))}/Google/Chrome/User Data'
+    )
+    ad_block_on: bool = False
     incognito: bool = False
     do_not_track: bool = True
     turnstile: bool = False
@@ -85,7 +90,7 @@ class BaseScraper:
                 "Execute primeiramente a busca de links pelo método 'search(keyword)'"
             )
             return {}
-        return loads(links_file.read_text())
+        return loads(links_file.read_text(encoding="utf-8"))
 
     def get_pages(self, keyword: str) -> dict:
         pages_file = self.pages_file(keyword)
@@ -97,7 +102,7 @@ class BaseScraper:
                 "Caso já tenha feito a busca de links, execute o método 'inspect_pages(keyword)'"
             )
             return {}
-        return loads(pages_file.read_text())
+        return loads(pages_file.read_text(encoding="utf-8"))
 
     @staticmethod
     def click_turnstile_and_verify(sb):
@@ -110,11 +115,12 @@ class BaseScraper:
     @contextmanager
     def browser(self):
         with SB(
-            headless=self.headless,
+            headless2=self.headless,
             uc=True,  # Always true
             ad_block_on=self.ad_block_on,
             incognito=self.incognito,
             do_not_track=self.do_not_track,
+            user_data_dir=self.user_data_dir,  # TODO: Reimplement to use profiles
         ) as sb:
             sb.driver.maximize_window()
             sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
@@ -185,10 +191,11 @@ class BaseScraper:
     def highlight_element(self, driver, element):
         if self.headless:
             return
-        try:
-            driver.highlight(element, timeout=self.timeout // 2)
-        except (NoSuchElementException, ElementNotVisibleException) as e:
-            print(e)
+        if self.demo:
+            try:
+                driver.highlight(element, timeout=self.timeout // 2)
+            except (NoSuchElementException, ElementNotVisibleException) as e:
+                print(e)
 
     @staticmethod
     def compress_images(pdf_stream):
@@ -238,7 +245,7 @@ class BaseScraper:
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
         json.dump(
             sampled_pages,
-            self.pages_file(keyword).open("w"),
+            self.pages_file(keyword).open("w", encoding="utf-8"),
             ensure_ascii=False,
         )
 
@@ -259,7 +266,7 @@ class BaseScraper:
         screenshot: bool = False,
         sample: int = 65,
         shuffle: bool = False,
-    ) -> Path:
+    ) -> Generator[dict, None, None]:
         links = self.get_links(keyword)
         keys = L((i, k) for i, k in enumerate(links.keys()))
         if shuffle:
@@ -290,15 +297,51 @@ class BaseScraper:
                 self.save_sampled_pages(keyword, sampled_pages)
                 json.dump(
                     links,
-                    self.links_file(keyword).open("w"),
+                    self.links_file(keyword).open("w", encoding="utf-8"),
                     ensure_ascii=False,
                 )
 
     def input_search_params(self, driver: SB, keyword: str):
         self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+        for attempt in range(self.retries):
+            try:
+                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                break  # Success, exit the function
+            except (NoSuchElementException, ElementNotVisibleException):
+                if attempt < self.max_retries - 1:  # if it's not the last attempt
+                    print(f"Attempt {attempt + 1} failed. Retrying...")
+                    driver.sleep(2)  # Wait for 1 second before retrying
+                else:
+                    print(
+                        f"Error: Could not find search input field '{self.input_field}' after {self.retries} attempts"
+                    )
+                    raise  # Re-raise the last exception
 
-    def search(self, keyword: str, max_pages: int = 10, overwrite: bool = False):
+    def go_to_next_page(self, driver):
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                if not driver.is_element_present(self.next_page_button):
+                    return False
+                self.highlight_element(driver, self.next_page_button)
+                driver.uc_click(self.next_page_button, timeout=self.timeout)
+                return True
+            except (NoSuchElementException, ElementNotVisibleException):
+                if attempt < max_retries - 1:
+                    print(
+                        f"Attempt {attempt + 1} failed. Retrying to go to next page..."
+                    )
+                    driver.sleep(1)
+                else:
+                    print(
+                        f"Error: Could not find or click next page button after {max_retries} attempts"
+                    )
+                    return False
+        return False
+
+    def search(
+        self, keyword: str, max_pages: int = 10, overwrite: bool = False
+    ) -> Generator[dict, None, None]:
         links = {} if overwrite else self.get_links(keyword)
         results = {}
         page = 1
@@ -307,8 +350,8 @@ class BaseScraper:
                 self.input_search_params(driver, keyword)
                 driver.set_messenger_theme(location="top_center")
                 while True:
-                    driver.sleep(self.timeout)
-                    products = self.discover_product_urls(driver, keyword)
+                    soup = driver.get_beautiful_soup()
+                    products = self.discover_product_urls(soup, keyword)
                     print(f"Navegando página {page} da busca '{keyword}'...")
                     if not self.headless:
                         driver.post_message(f"🕷️ Links da página {page} coletados! 🕸️")
@@ -316,8 +359,6 @@ class BaseScraper:
                         link_data["página_de_busca"] = page
                         results[url] = link_data
                     yield products
-                    if not driver.is_element_present(self.next_page_button):
-                        break
                     page += 1
                     if page > max_pages:
                         if not self.headless:
@@ -325,13 +366,12 @@ class BaseScraper:
                                 f"Número máximo de páginas atingido - #{max_pages}"
                             )
                         break
-                    self.highlight_element(driver, self.next_page_button)
-                    driver.uc_click(self.next_page_button, timeout=self.timeout)
-
+                    if not self.go_to_next_page(driver):
+                        break
             finally:
                 links.update(results)
                 json.dump(
                     links,
-                    self.links_file(keyword).open("w"),
+                    self.links_file(keyword).open("w", encoding="utf-8"),
                     ensure_ascii=False,
                 )

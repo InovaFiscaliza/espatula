@@ -1,9 +1,11 @@
 import re
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 
-from gazpacho import Soup
-
+from seleniumbase.common.exceptions import (
+    NoSuchElementException,
+    ElementNotVisibleException,
+)
 from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
@@ -30,48 +32,33 @@ class MagaluScraper(BaseScraper):
         return 'button[aria-label="Go to next page"]'
 
     def extract_search_data(self, produto):
-        relative_url = produto.attrs.get("href")
-        if name := produto.find(
-            "h2", attrs={"data-testid": "product-title"}, mode="first"
-        ):
-            name = name.strip()
-        if evals := produto.find("div", attrs={"data-testid": "review"}, mode="first"):
-            evals = evals.strip()
-        if price_lower := produto.find(
-            "p", {"data-testid": "price-value"}, mode="first"
-        ):
-            price_lower = price_lower.strip()
-
-        if price_higher := produto.find(
-            "p", {"data-testid": "price-original"}, mode="first"
-        ):
-            price_higher = price_higher.strip()
-
-        if hasattr(
-            imgs := produto.find("img", {"data-testid": "image"}, mode="first"),
-            "attrs",
-        ):
-            imgs = imgs.attrs.get("src")
+        relative_url = produto.get("href")
+        if name := produto.select_one('h2[data-testid="product-title"]'):
+            name = name.get_text().strip()
+        if evals := produto.select_one('div[data-testid="review"]'):
+            evals = evals.get_text().strip()
+        if price_lower := produto.select_one('p[data-testid="price-value"]'):
+            price_lower = price_lower.get_text().strip()
+        if price_higher := produto.select_one('p[data-testid="price-original"]'):
+            price_higher = price_higher.get_text().strip()
+        if imgs := produto.select_one('img[data-testid="image"]'):
+            imgs = imgs.get("src")
         if not all([name, price_lower, imgs]):
             return None
         return {
             "nome": name,
             "preço": price_lower,
-            "preço_Original": price_higher,
+            "preço_original": price_higher,
             "avaliações": evals,
             "imagem": imgs,
             "url": self.url + relative_url,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, driver, keyword):
-        soup = Soup(driver.get_page_source())
+    def discover_product_urls(self, soup, keyword):
         results = {}
-        for item in soup.find(
-            "a",
-            attrs={"data-testid": "product-card-container"},
-            partial=True,
-            mode="all",
+        for item in soup.select(
+            'a[data-testid="product-card-container"]',
         ):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
@@ -81,86 +68,68 @@ class MagaluScraper(BaseScraper):
     def parse_tables(self, soup) -> dict:
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         variant_data = {}
-        for table in soup.find("table", mode="all"):
-            if rows := table.find("td", mode="all"):
-                if rows[0].strip() == "Informações complementares":
+        for table in soup.select("table"):
+            for row in table.select("tr:has(> td:nth-child(2):last-child)"):
+                left = row.select_one("td:nth-of-type(1)")
+                right = row.select_one("td:nth-of-type(2)")
+                if "Informações complementares" in left.get_text():
                     continue
-                variant_data.update(
-                    {
-                        k.strip(): v.strip()
-                        for k, v in zip(rows[::2], rows[1::2])
-                        if ("R$" not in k.strip() and "R$" not in v.strip())
-                    }
-                )
+                if "R$" in left.get_text() or "R$" in right.get_text():
+                    continue
+                variant_data[left.get_text().strip()] = right.get_text().strip()
+
         return variant_data
 
     def extract_item_data(self, driver):
-        soup = Soup(driver.get_page_source())
+        soup = driver.get_beautiful_soup()
 
-        if categoria := soup.find(
-            "a", attrs={"data-testid": "breadcrumb-item"}, mode="all", partial=False
-        ):
-            self.highlight_element(driver, "div[data-testid=breadcrumb-container]")
-            categoria = " | ".join(
-                i.strip() for i in categoria if hasattr(i, "strip") and i.strip()
-            )
+        def get_selector(selector):
+            self.highlight_element(driver, selector)
+            return soup.select_one(selector)
 
-        if nome := soup.find(
-            "h1", attrs={"data-testid": "heading-product-title"}, mode="first"
-        ):
-            self.highlight_element(driver, "h1[data-testid=heading-product-title]")
-            nome = nome.text.strip()
+        categoria = ""
+        if categoria_div := get_selector("div[data-testid=breadcrumb-container]"):
+            for i in categoria_div.select('a[data-testid="breadcrumb-item"]'):
+                if hasattr(i, "get_text") and i.get_text().strip():
+                    categoria += "|" + i.get_text().strip()
 
-        if imagens := soup.find(
-            "img", {"data-testid": "media-gallery-image"}, mode="all"
-        ):
+        if nome := get_selector('h1[data-testid="heading-product-title"]'):
+            nome = nome.get_text().strip()
+
+        if imagens := soup.select('img[data-testid="media-gallery-image"]'):
             self.highlight_element(driver, "div[data-testid=media-gallery-image]")
-            imagens = [getattr(i, "attrs", {}).get("src") for i in imagens]
+            imagens = [i.get("src") for i in imagens if i.get("src")]
 
         nota, avaliações = None, None
-        if popularidade := soup.find(
-            "div", attrs={"data-testid": "mod-row"}, mode="first"
-        ):
-            self.highlight_element(driver, "div[data-testid=mod-row]")
-            if popularidade := popularidade.find(
-                "span", attrs={"format": "score-count"}, mode="first"
-            ):
-                nota, avaliações = popularidade.text.strip().split(" ")
+        if eval_div := get_selector('div[data-testid="mod-row"]'):
+            if popularidade := eval_div.select_one('span[format="score-count"]'):
+                nota, avaliações = popularidade.get_text().strip().split(" ")
                 avaliações = avaliações.replace("(", "").replace(")", "")
 
-        if preço := soup.find(
-            "div", attrs={"data-testid": "mod-productprice"}, mode="first"
-        ):
-            self.highlight_element(driver, "div[data-testid=mod-productprice]")
-            if preço := preço.find("p", {"data-testid": "price-value"}, mode="first"):
+        preço = None
+        if preço_div := get_selector('div[data-testid="mod-productprice"]'):
+            if preço := preço_div.select_one('p[data-testid="price-value"]'):
                 preço = (
-                    preço.text.strip()
+                    preço.get_text()
+                    .strip()
                     .replace("R$", "")
                     .replace(".", "")
                     .replace(",", ".")
                 )
-            else:
-                preço = None
-
-        if descrição := soup.find(
-            "div", attrs={"data-testid": "rich-content-container"}, mode="first"
-        ):
-            self.highlight_element(driver, "div[data-testid=rich-content-container]")
-            descrição = descrição.text.strip()
+        if descrição := get_selector('div[data-testid="rich-content-container"]'):
+            descrição = descrição.get_text().strip()
 
         marca, modelo, certificado, ean = None, None, None, None
         if características := self.parse_tables(soup):
-            marca, modelo, certificado, ean = (
-                características.get("Marca"),
-                características.get("Modelo"),
-                self.extrair_certificado(características),
-                self.extrair_ean(características),
-            )
+            marca = características.get("Marca")
+            modelo = características.get("Modelo")
+            certificado = self.extrair_certificado(características)
+            ean = self.extrair_ean(características)
 
-        if match := re.search(r"/p/([\w\d]+)/", driver.get_current_url()):
+        product_id = None
+        match = re.search(r"/p/([\w\d]+)/", driver.get_current_url())
+        if match:
             product_id = match.group(1)
-        else:
-            product_id = None
 
         return {
             "nome": nome,
@@ -181,7 +150,19 @@ class MagaluScraper(BaseScraper):
         }
 
     def input_search_params(self, driver, keyword):
-        self.highlight_element(driver, self.input_field)
-        driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
-        if department := CATEGORIES.get(keyword):
-            driver.uc_click(department, timeout=self.reconnect)
+        for attempt in range(self.retries):
+            try:
+                self.highlight_element(driver, self.input_field)
+                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                if department := CATEGORIES.get(keyword):
+                    driver.uc_click(department, timeout=self.reconnect)
+                break
+            except (NoSuchElementException, ElementNotVisibleException):
+                if attempt < self.retries - 1:  # if it's not the last attempt
+                    print(f"Attempt {attempt + 1} failed. Retrying...")
+                    driver.sleep(2)  # Wait for 1 second before retrying
+                else:
+                    print(
+                        f"Error: Could not find search input field '{self.input_field}' after {self.retries} attempts"
+                    )
+                    raise  # Re-raise the last exception

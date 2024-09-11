@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from gazpacho import Soup
+from seleniumbase.common.exceptions import (
+    NoSuchElementException,
+    ElementNotVisibleException,
+)
+
 from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
@@ -30,48 +34,44 @@ class CarrefourScraper(BaseScraper):
         return "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
 
     def input_search_params(self, driver, keyword):
-        if department := CATEGORIES.get(keyword):
-            driver.uc_open_with_reconnect(department, reconnect_time=self.reconnect)
-        else:
-            self.highlight_element(driver, self.input_field)
-            driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+        for attempt in range(self.retries):
+            try:
+                if department := CATEGORIES.get(keyword):
+                    driver.uc_open_with_reconnect(
+                        department, reconnect_time=self.reconnect
+                    )
+                self.highlight_element(driver, self.input_field)
+                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                break
+            except (NoSuchElementException, ElementNotVisibleException):
+                if attempt < self.retries - 1:  # if it's not the last attempt
+                    print(f"Attempt {attempt + 1} failed. Retrying...")
+                    driver.sleep(2)  # Wait for 1 second before retrying
+                else:
+                    print(
+                        f"Error: Could not find search input field '{self.input_field}' after {self.retries} attempts"
+                    )
+                    raise  # Re-raise the last exception
 
     def extract_search_data(self, product_tag):
-        if hasattr(
-            url := product_tag.find(
-                "a", attrs={"class": "product-summary"}, mode="first", partial=True
-            ),
-            "attrs",
-        ):
-            url = url.attrs.get("href")
+        if url := product_tag.select_one('a[class*="product-summary"]'):
+            url = self.url + url.get("href")
 
-        if nome := product_tag.find(
-            "h2", attrs={"class": "productName"}, mode="first", partial=True
-        ):
-            nome = nome.strip()
+        if nome := product_tag.select_one('h2[class*="productName"]'):
+            nome = nome.get_text().strip()
 
-        if hasattr(
-            imagem := product_tag.find(
-                "img",
-                attrs={"class": "product-summary"},
-                mode="first",
-                partial=True,
-            ),
-            "attrs",
-        ):
-            imagem = imagem.attrs.get("src")
+        if imagem := product_tag.select_one('img[class*="product-summary"]'):
+            imagem = imagem.get("src")
 
-        if preço_original := product_tag.find(
-            "span", attrs={"class": "listPrice"}, mode="first", partial=True
-        ):
-            preço_original = preço_original.strip()
+        if preço_original := product_tag.select_one('span[class*="listPrice"]'):
+            preço_original = preço_original.get_text().strip()
 
-        if preço := product_tag.find(
-            "span", attrs={"class": "spotPriceValue"}, mode="first", partial=True
-        ):
-            preço = preço.strip()
+        if preço := product_tag.select_one('span[class*="spotPriceValue"]'):
+            preço = preço.get_text().strip()
 
-        url = self.url + url
+        if not all([url, nome, preço, imagem]):
+            return False
+
         return {
             "nome": nome,
             "preço_original": preço_original,
@@ -81,58 +81,45 @@ class CarrefourScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
-    def discover_product_urls(self, driver, keyword: str):
-        soup = Soup(driver.get_page_source())
+    def discover_product_urls(self, soup, keyword: str):
         results = {}
-        for div in soup.find(
-            "div", attrs={"class": "galleryItem"}, mode="all", partial=True
-        ):
+        for div in soup.select('div[class*="galleryItem"]'):
             if product_data := self.extract_search_data(div):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
         return results
 
     def extract_item_data(self, driver):
-        soup = Soup(driver.get_page_source())
-        if categoria := soup.find(
-            "span", attrs={"class": "breadcrumb"}, mode="all", partial=True
-        ):
-            categoria = "|".join(i.strip() for i in categoria if i.strip() != "")
-        if marca := soup.find(
-            "span", attrs={"class": "productBrandName"}, mode="first", partial=True
-        ):
-            marca = marca.strip()
+        soup = driver.get_beautiful_soup()
 
-        if vendedor := soup.find(
-            "span", attrs={"class": "carrefourSeller"}, mode="first", partial=True
-        ):
-            vendedor = vendedor.strip()
+        def get_selector(selector):
+            self.highlight_element(driver, selector)
+            return soup.select_one(selector)
 
-        if desconto := soup.find(
-            "span", attrs={"class": "PriceSavings"}, mode="first", partial=True
-        ):
-            desconto = desconto.strip()
+        categoria = ""
+        for i in soup.select('span[class*="breadcrumb"]'):
+            if hasattr(i, "get_text") and i.get_text().strip():
+                categoria += f"|{i.get_text().strip()}"
 
-        if cod_produto := soup.find(
-            "span",
-            attrs={"class": "product-identifier__value"},
-            mode="first",
-            partial=True,
-        ):
-            cod_produto = cod_produto.strip()
+        if marca := get_selector('span[class*="productBrandName"]'):
+            marca = marca.get_text().strip()
 
-        if descrição := soup.find(
-            "td",
-            attrs={"class": "ItemSpecifications"},
-            mode="first",
-            partial=True,
-        ):
-            descrição = descrição.attrs.get("data-specification")
+        if vendedor := get_selector('span[class*="carrefourSeller"]'):
+            vendedor = vendedor.get_text().strip()
 
-        if imagens := soup.find(
-            "img", attrs={"class": "thumbImg"}, mode="all", partial=True
-        ):
-            imagens = [i.attrs.get("src") for i in imagens if hasattr(i, "attrs")]
+        if desconto := get_selector('span[class*="PriceSavings"]'):
+            desconto = desconto.get_text().strip()
+
+        if cod_produto := get_selector('span[class*="product-identifier__value"]'):
+            cod_produto = cod_produto.get_text().strip()
+
+        if descrição := get_selector('td[class*="ItemSpecifications"]'):
+            descrição = descrição.get("data-specification")
+
+        imagens = []
+        for img in soup.select('img[class*="thumbImg"]'):
+            if i := img.get("src"):
+                imagens.append(i)
 
         certificado, ean, modelo = None, None, None
         if características := self.parse_tables(soup):
@@ -159,10 +146,9 @@ class CarrefourScraper(BaseScraper):
     def parse_tables(self, soup):
         # Extrai o conteúdo da tabela com dados do produto e transforma em um dict
         table_data = {}
-        if table := soup.find(
-            "div", attrs={"class": "table_main_container"}, mode="first"
-        ):
-            for rows in table.find("tr", mode="all"):
-                if len(col := rows.find("th", mode="all")) == 2:
-                    table_data[col[0].text.strip()] = col[1].text.strip()
+        if table := soup.select_one('div[class*="table_main_container"]'):
+            for row in table.select("tr"):
+                cols = row.select("th")
+                if len(cols) == 2:
+                    table_data[cols[0].get_text().strip()] = cols[1].get_text().strip()
         return table_data

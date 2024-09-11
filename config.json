@@ -1,12 +1,12 @@
 {
     "Palavra-Chave🔎": "smartphone",
-    "Pasta de Trabalho": "D:\\temp",
-    "Utilizar resultados do cache": true,
-    "Tempo de reconexão do navegador (seg)": 10,
-    "Tempo de espera (seg)": 5,
-    "Número máximo de páginas de busca a navegar": 40,
-    "Número máximo de produtos a capturar": 100,
+    "Pasta de Trabalho": "C:\\Users",
+    "Utilizar resultados do cache": false,
+    "Tempo de reconexão do navegador (seg)": 5,
+    "Tempo de espera (seg)": 1,
+    "Número máximo de páginas de busca a navegar": 2,
+    "Número máximo de produtos a capturar": 10,
     "Amostrar páginas aleatoriamente": false,
     "Capturar tela do anúncio": false,
-    "Mostrar o navegador?": false
+    "Mostrar o navegador?": true
 }
