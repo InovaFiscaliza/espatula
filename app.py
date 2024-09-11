@@ -307,8 +307,6 @@ def process_data(pages_file: Path):
             ),
         },
         hide_index=True,
-        on_select="rerun",
-        selection_mode="single-column",
     )
     st.snow()
 
