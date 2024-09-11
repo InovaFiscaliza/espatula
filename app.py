@@ -249,41 +249,69 @@ def process_data(pages_file: Path):
     st.snow()
 
     # Create MultiIndex for columns
-    columns = pd.MultiIndex.from_tuples([
-        ("Dados do Anúncio", "URL"),
-        ("Dados do Anúncio", "Nome"),
-        ("Dados do Anúncio", "Fabricante"),
-        ("Dados do Anúncio", "Modelo"),
-        ("Dados do Anúncio", "Certificado"),
-        ("Dados do Anúncio", "EAN/GTIN"),
-        ("Dados do Anúncio", "Categoria"),
-        ("Dados de Certificação - SCH", "Nome SCH"),
-        ("Dados de Certificação - SCH", "Tipo SCH"),
-        ("Dados de Certificação - SCH", "Fabricante SCH"),
-        ("Dados de Certificação - SCH", "Modelo SCH"),
-        ("Taxa de Sobreposição", "Nome Score"),
-        ("Taxa de Sobreposição", "Modelo Score"),
-        ("Classificação", "Passível?"),
-        ("Classificação", "Probabilidade")
-    ])
+    columns = pd.MultiIndex.from_tuples(
+        [
+            ("Dados do Anúncio", "URL"),
+            ("Dados do Anúncio", "Nome"),
+            ("Dados do Anúncio", "Fabricante"),
+            ("Dados do Anúncio", "Modelo"),
+            ("Dados do Anúncio", "Certificado"),
+            ("Dados do Anúncio", "EAN/GTIN"),
+            ("Dados do Anúncio", "Categoria"),
+            ("Dados de Certificação - SCH", "Nome SCH"),
+            ("Dados de Certificação - SCH", "Tipo SCH"),
+            ("Dados de Certificação - SCH", "Fabricante SCH"),
+            ("Dados de Certificação - SCH", "Modelo SCH"),
+            ("Taxa de Sobreposição", "Nome Score"),
+            ("Taxa de Sobreposição", "Modelo Score"),
+            ("Classificação", "Passível?"),
+            ("Classificação", "Probabilidade"),
+        ]
+    )
 
     df.columns = columns
 
     # Define column configurations
     column_config = {
-        ("Dados do Anúncio", "URL"): st.column_config.LinkColumn("URL", width="small", display_text="Link"),
-        ("Dados do Anúncio", "Nome"): st.column_config.TextColumn("Nome", width="medium"),
-        ("Dados do Anúncio", "Fabricante"): st.column_config.TextColumn("Fabricante", width="small"),
-        ("Dados do Anúncio", "Modelo"): st.column_config.TextColumn("Modelo", width="small"),
-        ("Dados do Anúncio", "Certificado"): st.column_config.TextColumn("Certificado", width="small"),
-        ("Dados do Anúncio", "EAN/GTIN"): st.column_config.TextColumn("EAN/GTIN", width="small"),
-        ("Dados do Anúncio", "Categoria"): st.column_config.SelectboxColumn("Categoria", width="small"),
-        ("Dados de Certificação - SCH", "Nome SCH"): st.column_config.TextColumn("Nome SCH", width="medium"),
-        ("Dados de Certificação - SCH", "Fabricante SCH"): st.column_config.TextColumn("Fabricante SCH", width="small"),
-        ("Dados de Certificação - SCH", "Modelo SCH"): st.column_config.TextColumn("Modelo SCH", width="small"),
-        ("Dados de Certificação - SCH", "Tipo SCH"): st.column_config.SelectboxColumn("Tipo SCH", width="small"),
-        ("Taxa de Sobreposição", "Nome Score"): st.column_config.ProgressColumn("Nome Score", width="small"),
-        ("Taxa de Sobreposição", "Modelo Score"): st.column_config.ProgressColumn("Modelo Score", width="small"),
+        ("Dados do Anúncio", "URL"): st.column_config.LinkColumn(
+            "URL", width="small", display_text="Link"
+        ),
+        ("Dados do Anúncio", "Nome"): st.column_config.TextColumn(
+            "Nome", width="medium"
+        ),
+        ("Dados do Anúncio", "Fabricante"): st.column_config.TextColumn(
+            "Fabricante", width="small"
+        ),
+        ("Dados do Anúncio", "Modelo"): st.column_config.TextColumn(
+            "Modelo", width="small"
+        ),
+        ("Dados do Anúncio", "Certificado"): st.column_config.TextColumn(
+            "Certificado", width="small"
+        ),
+        ("Dados do Anúncio", "EAN/GTIN"): st.column_config.TextColumn(
+            "EAN/GTIN", width="small"
+        ),
+        ("Dados do Anúncio", "Categoria"): st.column_config.SelectboxColumn(
+            "Categoria", width="small"
+        ),
+        ("Dados de Certificação - SCH", "Nome SCH"): st.column_config.TextColumn(
+            "Nome", width="medium"
+        ),
+        ("Dados de Certificação - SCH", "Fabricante SCH"): st.column_config.TextColumn(
+            "Fabricante", width="small"
+        ),
+        ("Dados de Certificação - SCH", "Modelo SCH"): st.column_config.TextColumn(
+            "Modelo", width="small"
+        ),
+        ("Dados de Certificação - SCH", "Tipo SCH"): st.column_config.SelectboxColumn(
+            "Tipo", width="small"
+        ),
+        ("Taxa de Sobreposição", "Nome Score"): st.column_config.ProgressColumn(
+            "Nome", width="small"
+        ),
+        ("Taxa de Sobreposição", "Modelo Score"): st.column_config.ProgressColumn(
+            "Modelo", width="small"
+        ),
         ("Classificação", "Passível?"): st.column_config.CheckboxColumn("Passível?"),
         ("Classificação", "Probabilidade"): st.column_config.ProgressColumn(
             "Probabilidade", format="%.4f%%", min_value=0, max_value=100
