@@ -169,7 +169,7 @@ def show_links():
             st.write(st.session_state.cache)
 
 
-def request_table(json_path):
+def request_table(json_path: Path) -> pd.DataFrame:
     client = Client("ronaldokun/ecomproc")
     result = client.predict(
         json_file=handle_file(str(json_path)),
@@ -240,6 +240,14 @@ def inspect_pages(scraper):
         progress_bar.empty()
 
 
+def process_data(pages_file: Path):
+    df = request_table(pages_file)
+    st.divider()
+    st.success("Processamento dos dados finalizado!", icon="🎉")
+    st.snow()
+    st.dataframe(df.loc[:, COLUNAS], use_container_width=True)
+
+
 def run():
     save_config()
     st.session_state.show_cache = False
@@ -254,11 +262,7 @@ def run():
 
     inspect_pages(scraper)
 
-    df = request_table(scraper.pages_file(st.session_state.keyword))
-    st.divider()
-    st.success("Processamento dos dados finalizado!", icon="🎉")
-    st.snow()
-    st.dataframe(df.loc[:, COLUNAS], use_container_width=True)
+    process_data(scraper.pages_file(st.session_state.keyword))
 
 
 config_container = st.sidebar.container(border=True)
