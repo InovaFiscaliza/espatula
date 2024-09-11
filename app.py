@@ -248,31 +248,52 @@ def process_data(pages_file: Path):
     st.success("Processamento dos dados finalizado!", icon="🎉")
     st.snow()
 
+    # Create MultiIndex for columns
+    columns = pd.MultiIndex.from_tuples([
+        ("Dados do Anúncio", "URL"),
+        ("Dados do Anúncio", "Nome"),
+        ("Dados do Anúncio", "Fabricante"),
+        ("Dados do Anúncio", "Modelo"),
+        ("Dados do Anúncio", "Certificado"),
+        ("Dados do Anúncio", "EAN/GTIN"),
+        ("Dados do Anúncio", "Categoria"),
+        ("Dados de Certificação - SCH", "Nome SCH"),
+        ("Dados de Certificação - SCH", "Tipo SCH"),
+        ("Dados de Certificação - SCH", "Fabricante SCH"),
+        ("Dados de Certificação - SCH", "Modelo SCH"),
+        ("Taxa de Sobreposição", "Nome Score"),
+        ("Taxa de Sobreposição", "Modelo Score"),
+        ("Classificação", "Passível?"),
+        ("Classificação", "Probabilidade")
+    ])
+
+    df.columns = columns
+
     # Define column configurations
     column_config = {
-        "url": st.column_config.LinkColumn("URL", width="small", display_text="Link"),
-        "nome": st.column_config.TextColumn("Nome", width="medium"),
-        "fabricante": st.column_config.TextColumn("Fabricante", width="small"),
-        "modelo": st.column_config.TextColumn("Modelo", width="small"),
-        "certificado": st.column_config.TextColumn("Certificado", width="small"),
-        "ean_gtin": st.column_config.TextColumn("EAN/GTIN", width="small"),
-        "subcategoria": st.column_config.SelectboxColumn("Categoria", width="small"),
-        "nome_sch": st.column_config.TextColumn("Nome SCH", width="medium"),
-        "fabricante_sch": st.column_config.TextColumn("Fabricante SCH", width="small"),
-        "modelo_sch": st.column_config.TextColumn("Modelo SCH", width="small"),
-        "tipo_sch": st.column_config.SelectboxColumn("Tipo SCH", width="small"),
-        "nome_score": st.column_config.ProgressColumn("Nome Score", width="small"),
-        "modelo_score": st.column_config.ProgressColumn("Modelo Score", width="small"),
-        "passível?": st.column_config.CheckboxColumn("Passível?"),
-        "probabilidade": st.column_config.ProgressColumn(
+        ("Dados do Anúncio", "URL"): st.column_config.LinkColumn("URL", width="small", display_text="Link"),
+        ("Dados do Anúncio", "Nome"): st.column_config.TextColumn("Nome", width="medium"),
+        ("Dados do Anúncio", "Fabricante"): st.column_config.TextColumn("Fabricante", width="small"),
+        ("Dados do Anúncio", "Modelo"): st.column_config.TextColumn("Modelo", width="small"),
+        ("Dados do Anúncio", "Certificado"): st.column_config.TextColumn("Certificado", width="small"),
+        ("Dados do Anúncio", "EAN/GTIN"): st.column_config.TextColumn("EAN/GTIN", width="small"),
+        ("Dados do Anúncio", "Categoria"): st.column_config.SelectboxColumn("Categoria", width="small"),
+        ("Dados de Certificação - SCH", "Nome SCH"): st.column_config.TextColumn("Nome SCH", width="medium"),
+        ("Dados de Certificação - SCH", "Fabricante SCH"): st.column_config.TextColumn("Fabricante SCH", width="small"),
+        ("Dados de Certificação - SCH", "Modelo SCH"): st.column_config.TextColumn("Modelo SCH", width="small"),
+        ("Dados de Certificação - SCH", "Tipo SCH"): st.column_config.SelectboxColumn("Tipo SCH", width="small"),
+        ("Taxa de Sobreposição", "Nome Score"): st.column_config.ProgressColumn("Nome Score", width="small"),
+        ("Taxa de Sobreposição", "Modelo Score"): st.column_config.ProgressColumn("Modelo Score", width="small"),
+        ("Classificação", "Passível?"): st.column_config.CheckboxColumn("Passível?"),
+        ("Classificação", "Probabilidade"): st.column_config.ProgressColumn(
             "Probabilidade", format="%.4f%%", min_value=0, max_value=100
         ),
     }
 
-    df["probabilidade"] *= 100
+    df[("Classificação", "Probabilidade")] *= 100
 
     st.dataframe(
-        df.loc[:, list(COLUNAS.keys())],
+        df,
         use_container_width=True,
         column_config=column_config,
         hide_index=True,
