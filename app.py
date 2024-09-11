@@ -49,14 +49,14 @@ COLUNAS = [
     "ean_gtin",
     "subcategoria",
     "url",
-    "passível?",
-    "probabilidade",
     "nome_sch",
     "fabricante_sch",
     "modelo_sch",
+    "tipo_sch",
     "nome_score",
     "modelo_score",
-    "tipo_sch",
+    "passível?",
+    "probabilidade",
 ]
 
 KEYS = {
