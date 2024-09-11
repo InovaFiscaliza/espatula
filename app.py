@@ -178,36 +178,31 @@ def request_table(json_path):
     return pd.DataFrame(result["data"], columns=result["headers"], dtype="string")
 
 
-def run():
-    save_config()
-    st.session_state.show_cache = False
-    scraper = SCRAPERS[st.session_state.mkplc](
-        headless=not st.session_state.show_browser,
-        path=st.session_state.folder,
-        reconnect=st.session_state.reconnect,
-        timeout=st.session_state.timeout,
-    )
-    keyword = st.session_state.keyword
-
+def run_search(scraper):
     with st.container():
-        if st.session_state.use_cache == CACHE[1]:
-            progress_text = "Realizando a busca de produtos...🕸️"
-            progress_bar = st.progress(0, text=progress_text)
-            output = st.empty()
-            percentage = 100 / st.session_state.max_search
-            for i, result in enumerate(
-                scraper.search(keyword=keyword, max_pages=st.session_state.max_search),
-                start=1,
-            ):
-                with output.empty():
-                    st.write(result)
-                progress_bar.progress(
-                    int((i * percentage) % 100),
-                    text=progress_text,
-                )
-            time.sleep(1)
-            output.empty()
-            progress_bar.empty()
+        progress_text = "Realizando a busca de produtos...🕸️"
+        progress_bar = st.progress(0, text=progress_text)
+        output = st.empty()
+        percentage = 100 / st.session_state.max_search
+        for i, result in enumerate(
+            scraper.search(
+                keyword=st.session_state.keyword,
+                max_pages=st.session_state.max_search,
+            ),
+            start=1,
+        ):
+            with output.empty():
+                st.write(result)
+            progress_bar.progress(
+                int((i * percentage) % 100),
+                text=progress_text,
+            )
+        time.sleep(1)
+        output.empty()
+        progress_bar.empty()
+
+
+def inspect_pages(scraper):
     with st.container():
         progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
         progress_bar = st.progress(0, text=progress_text)
@@ -215,7 +210,7 @@ def run():
         percentage = 100 / st.session_state.max_pages
         for i, result in enumerate(
             scraper.inspect_pages(
-                keyword=keyword,
+                keyword=st.session_state.keyword,
                 screenshot=st.session_state.screenshot,
                 sample=st.session_state.max_pages,
                 shuffle=st.session_state.shuffle,
@@ -243,10 +238,26 @@ def run():
         time.sleep(1)
         output.empty()
         progress_bar.empty()
-        df = request_table(scraper.pages_file(st.session_state.keyword))
-        st.divider()
-        st.success("Processamento dos dados finalizado!", icon="🎉")
-        st.snow()
+
+
+def run():
+    save_config()
+    st.session_state.show_cache = False
+    scraper = SCRAPERS[st.session_state.mkplc](
+        headless=not st.session_state.show_browser,
+        path=st.session_state.folder,
+        reconnect=st.session_state.reconnect,
+        timeout=st.session_state.timeout,
+    )
+    if st.session_state.use_cache == CACHE[1]:
+        run_search(scraper)
+
+    inspect_pages(scraper)
+
+    df = request_table(scraper.pages_file(st.session_state.keyword))
+    st.divider()
+    st.success("Processamento dos dados finalizado!", icon="🎉")
+    st.snow()
     st.dataframe(df.loc[:, COLUNAS], use_container_width=True)
 
 
