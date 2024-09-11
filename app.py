@@ -291,12 +291,12 @@ def process_data(pages_file: Path):
             "nome_score": st.column_config.ProgressColumn(
                 "Taxa de Sobreposição - Nome",
                 width=None,
-                help="Comparativo textual - Distância de Levenshtein",
+                help="Comparativo textual - Anúncio versus SCH",
             ),
             "modelo_score": st.column_config.ProgressColumn(
-                "Taxa de Sobroposição - Modelo",
+                "Taxa de Sobreposição - Modelo",
                 width=None,
-                help="Comparativo textual - Distância de Levenshtein",
+                help="Comparativo textual - Anúncio versus SCH",
             ),
             "passível?": st.column_config.CheckboxColumn(
                 "Homologação Compulsória",
