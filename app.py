@@ -247,87 +247,28 @@ def process_data(pages_file: Path):
     st.divider()
     st.success("Processamento dos dados finalizado!", icon="🎉")
     st.snow()
-
-    # Create MultiIndex for columns
-    columns = pd.MultiIndex.from_tuples(
-        [
-            ("Dados do Anúncio", "url"),
-            ("Dados do Anúncio", "nome"),
-            ("Dados do Anúncio", "fabricante"),
-            ("Dados do Anúncio", "modelo"),
-            ("Dados do Anúncio", "certificado"),
-            ("Dados do Anúncio", "ean_gtin"),
-            ("Dados do Anúncio", "subcategoria"),
-            ("Dados de Certificação - SCH", "nome_sch"),
-            ("Dados de Certificação - SCH", "tipo_sch"),
-            ("Dados de Certificação - SCH", "fabricante_sch"),
-            ("Dados de Certificação - SCH", "modelo_sch"),
-            ("Taxa de Sobreposição", "nome_score"),
-            ("Taxa de Sobreposição", "modelo_score"),
-            ("Classificação", "passível?"),
-            ("Classificação", "probabilidade"),
-        ]
-    )
-
-    # Define column configurations
-    column_config = {
-        ("Dados do Anúncio", "url"): st.column_config.LinkColumn(
-            "URL", width="small", display_text="Link"
-        ),
-        ("Dados do Anúncio", "nome"): st.column_config.TextColumn(
-            "Nome", width="medium"
-        ),
-        ("Dados do Anúncio", "fabricante"): st.column_config.TextColumn(
-            "Fabricante", width="small"
-        ),
-        ("Dados do Anúncio", "modelo"): st.column_config.TextColumn(
-            "Modelo", width="small"
-        ),
-        ("Dados do Anúncio", "certificado"): st.column_config.TextColumn(
-            "Certificado", width="small"
-        ),
-        ("Dados do Anúncio", "ean_gtin"): st.column_config.TextColumn(
-            "EAN/GTIN", width="small"
-        ),
-        ("Dados do Anúncio", "subcategoria"): st.column_config.SelectboxColumn(
-            "Categoria", width="small"
-        ),
-        ("Dados de Certificação - SCH", "nome_sch"): st.column_config.TextColumn(
-            "Nome", width="medium"
-        ),
-        ("Dados de Certificação - SCH", "fabricante_sch"): st.column_config.TextColumn(
-            "Fabricante", width="small"
-        ),
-        ("Dados de Certificação - SCH", "modelo_sch"): st.column_config.TextColumn(
-            "Modelo", width="small"
-        ),
-        ("Dados de Certificação - SCH", "tipo_sch"): st.column_config.SelectboxColumn(
-            "Tipo", width="small"
-        ),
-        ("Taxa de Sobreposição", "nome_score"): st.column_config.ProgressColumn(
-            "Nome", width="small"
-        ),
-        ("Taxa de Sobreposição", "modelo_score"): st.column_config.ProgressColumn(
-            "Modelo", width="small"
-        ),
-        ("Classificação", "passível?"): st.column_config.CheckboxColumn(
-            "Homologação Compulsória", width="small"
-        ),
-        ("Classificação", "probabilidade"): st.column_config.ProgressColumn(
-            "Probabilidade", format="%.4f%%", min_value=0, max_value=100
-        ),
-    }
-
-    df_show = df.loc[:, list(COLUNAS.keys())]
-
-    df_show.columns = columns
-
-    df_show[("Classificação", "probabilidade")] *= 100
-
     st.dataframe(
-        df_show,
+        df.loc[:, list(COLUNAS.keys())],
         use_container_width=True,
-        # column_config=column_config,
+        column_config={
+            "url": st.column_config.LinkColumn("URL", width="small", display_text="Link"),
+            "nome": st.column_config.TextColumn("Nome", width="medium"),
+            "fabricante": st.column_config.TextColumn("Fabricante", width="small"),
+            "modelo": st.column_config.TextColumn("Modelo", width="small"),
+            "certificado": st.column_config.TextColumn("Certificado", width="small"),
+            "ean_gtin": st.column_config.TextColumn("EAN/GTIN", width="small"),
+            "subcategoria": st.column_config.SelectboxColumn("Categoria", width="small"),
+            "nome_sch": st.column_config.TextColumn("Nome SCH", width="medium"),
+            "fabricante_sch": st.column_config.TextColumn("Fabricante SCH", width="small"),
+            "modelo_sch": st.column_config.TextColumn("Modelo SCH", width="small"),
+            "tipo_sch": st.column_config.SelectboxColumn("Tipo SCH", width="small"),
+            "nome_score": st.column_config.ProgressColumn("Nome Score", width="small"),
+            "modelo_score": st.column_config.ProgressColumn("Modelo Score", width="small"),
+            "passível?": st.column_config.CheckboxColumn("Homologação Compulsória", width="small"),
+            "probabilidade": st.column_config.ProgressColumn(
+                "Probabilidade", format="%.4f%%", min_value=0, max_value=100
+            ),
+        },
         hide_index=True,
     )
 
