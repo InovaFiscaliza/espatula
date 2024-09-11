@@ -34,6 +34,11 @@ CERTIFICADO = re.compile(
     re.VERBOSE,
 )
 
+if local_app_data := os.environ.get("LOCALAPPDATA"):
+    CHROME_DATA_DIR = f"{Path(local_app_data)}/Google/Chrome/User Data"
+else:
+    CHROME_DATA_DIR = None
+
 
 @dataclass
 class BaseScraper:
@@ -43,10 +48,8 @@ class BaseScraper:
     timeout: int = int(os.environ.get("TIMEOUT", 5))
     retries: int = int(os.environ.get("RETRIES", 3))
     demo: bool = False
-    user_data_dir = (
-        f'{Path(os.environ.get("LOCALAPPDATA", "."))}/Google/Chrome/User Data'
-    )
-    ad_block_on: bool = False
+    user_data_dir = CHROME_DATA_DIR
+    ad_block_on: bool = True
     incognito: bool = False
     do_not_track: bool = True
     turnstile: bool = False
