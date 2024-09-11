@@ -250,6 +250,7 @@ def process_data(pages_file: Path):
     st.success("Processamento dos dados finalizado!", icon="🎉")
     df_show = df.loc[:, list(COLUNAS.keys())]
     df_show["probabilidade"] *= 100
+    df_show["passível?"] = df_show["passível?"].map({True: "✅", False: "❌"})
     st.dataframe(
         df_show,
         use_container_width=True,
@@ -301,7 +302,6 @@ def process_data(pages_file: Path):
                 "Homologação Compulsória",
                 width=None,
                 help="Classificação - Machine Learning",
-                format_func=lambda x: "✅" if x else "❌",
             ),
             "probabilidade": st.column_config.ProgressColumn(
                 "Probabilidade",
