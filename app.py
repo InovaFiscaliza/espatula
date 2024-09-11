@@ -102,7 +102,7 @@ if (key := "folder") not in STATE:
         folder = rf"{Path.home()}"
     STATE[key] = folder
 if "cache" not in STATE:
-    STATE.cache = {}
+    STATE.cached_links = {}
 
 if (key := "use_cache") not in STATE:
     STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
@@ -154,7 +154,7 @@ def set_folder():
 def set_cache():
     # Callback function to save the keyword selection to Session State
     scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-    STATE.cache = scraper.get_links(STATE.keyword)
+    STATE.cached_links = scraper.get_links(STATE.keyword)
 
 
 @st.fragment
@@ -166,8 +166,8 @@ def use_cache():
 @st.fragment
 def show_links():
     with st.container(height=720):
-        if STATE.cache:
-            st.write(STATE.cache)
+        if STATE.cached_links:
+            st.json(list(STATE.cached_links.values()), expanded=True)
 
 
 def request_table(json_path: Path) -> pd.DataFrame:
@@ -304,10 +304,12 @@ else:
     if STATE.keyword:
         if Path(STATE.folder).is_dir():
             set_cache()
-            if cache := STATE.cache:
+            if cached_links := STATE.cached_links:
                 container = st.sidebar.container(border=True)
-                container.info(f"Existem **{len(cache)}** resultados de busca em cache")
-                if container.toggle("Visualizar cache", key="show_cache"):
+                container.info(
+                    f"Existem **{len(cached_links)}** resultados de busca (links) em cache"
+                )
+                if container.toggle("Visualizar links em cache", key="show_cache"):
                     show_links()
                 container.radio(
                     "Pesquisa de links",
