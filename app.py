@@ -1,15 +1,16 @@
 import time
+import json
 
 import streamlit as st
 import pandas as pd
-from fastcore.xtras import Path, loads
+from fastcore.xtras import Path
 from gradio_client import Client, handle_file
 
 
 from config import (
     CACHE,
     FOLDER,
-    HIDE_BROWSER,
+    SHOW_BROWSER,
     KEYWORD,
     LOGOS,
     MARKETPLACE,
@@ -58,9 +59,26 @@ COLUNAS = [
     "tipo_sch",
 ]
 
+KEYS = {
+    "keyword": KEYWORD,
+    "folder": FOLDER,
+    "use_cache": CACHE[0],
+    "show_browser": SHOW_BROWSER,
+    "marketplace": MARKETPLACE,
+    "max_pages": MAX_PAGES,
+    "max_search": MAX_SEARCH,
+    "reconnect": RECONNECT,
+    "screenshot": SCREENSHOT,
+    "shuffle": SHUFFLE,
+    "timeout": TIMEOUT,
+    "title": TITLE,
+    "logos": LOGOS,
+}
+
 config_file = Path(__file__).parent / "config.json"
+
 if config_file.exists():
-    CONFIG = loads(config_file.read_text())
+    CONFIG = config_file.read_json()
 else:
     CONFIG = {}
 
@@ -75,18 +93,18 @@ st.set_page_config(
 if "mkplc" not in st.session_state:
     st.session_state.mkplc = None
 
-if "keyword" not in st.session_state:
-    st.session_state.keyword = CONFIG.get(KEYWORD, "")
+if (key := "keyword") not in st.session_state:
+    st.session_state[key] = CONFIG.get(KEYS[key], "")
 
-if "folder" not in st.session_state:
-    if not (folder := CONFIG.get(FOLDER, "")):
+if (key := "folder") not in st.session_state:
+    if not (folder := CONFIG.get(KEYS[key], "")):
         folder = rf"{Path.home()}"
-    st.session_state.folder = folder
+    st.session_state[key] = folder
 if "cache" not in st.session_state:
     st.session_state.cache = {}
 
-if "use_cache" not in st.session_state:
-    st.session_state.use_cache = CACHE[0] if CONFIG.get(CACHE[0]) else CACHE[1]
+if (key := "use_cache") not in st.session_state:
+    st.session_state[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
 
 if "show_cache" not in st.session_state:
     st.session_state.show_cache = False
@@ -95,6 +113,17 @@ if "show_cache" not in st.session_state:
 for key in st.session_state:
     if key != "use_cache":
         st.session_state["_" + key] = st.session_state[key]
+    if key in KEYS:
+        CONFIG[KEYS[key]] = st.session_state[key]
+
+
+def save_config():
+    # Callback function to save the configuration to a JSON file
+    json.dump(
+        CONFIG,
+        config_file.open("w", encoding="utf-8"),
+        ensure_ascii=False,
+    )
 
 
 @st.fragment
@@ -150,6 +179,7 @@ def request_table(json_path):
 
 
 def run():
+    save_config()
     st.session_state.show_cache = False
     scraper = SCRAPERS[st.session_state.mkplc](
         headless=not st.session_state.show_browser,
@@ -280,39 +310,41 @@ else:
                             RECONNECT,
                             min_value=2,
                             key="reconnect",
-                            value=CONFIG.get(RECONNECT, 5),
+                            value=CONFIG.get(KEYS["reconnect"], 5),
                         )
                         st.number_input(
                             TIMEOUT,
                             min_value=1,
                             key="timeout",
-                            value=CONFIG.get(TIMEOUT, 2),
+                            value=CONFIG.get(KEYS["timeout"], 2),
                         )
                         st.number_input(
                             MAX_SEARCH,
                             min_value=1,
-                            value=CONFIG.get(MAX_SEARCH, 10),
+                            value=CONFIG.get(KEYS["max_search"], 10),
                             key="max_search",
                             disabled=(st.session_state.use_cache == CACHE[0]),
                         )
                         st.number_input(
                             MAX_PAGES,
                             min_value=1,
-                            value=CONFIG.get(MAX_PAGES, 50),
+                            value=CONFIG.get(KEYS["max_pages"], 50),
                             key="max_pages",
                         )
                         st.checkbox(
-                            SHUFFLE, key="shuffle", value=CONFIG.get(SHUFFLE, False)
+                            SHUFFLE,
+                            key="shuffle",
+                            value=CONFIG.get(KEYS["shuffle"], False),
                         )
                         st.checkbox(
                             SCREENSHOT,
                             key="screenshot",
-                            value=CONFIG.get(SCREENSHOT, False),
+                            value=CONFIG.get(KEYS["screenshot"], False),
                         )
                         st.toggle(
-                            HIDE_BROWSER,
+                            SHOW_BROWSER,
                             key="show_browser",
-                            value=CONFIG.get(HIDE_BROWSER, False),
+                            value=CONFIG.get(KEYS["show_browser"], False),
                         )
                     st.form_submit_button(START, on_click=run, use_container_width=True)
 
