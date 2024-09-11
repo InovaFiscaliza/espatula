@@ -246,31 +246,71 @@ def process_data(pages_file: Path):
     df = request_table(pages_file)
     st.divider()
     st.success("Processamento dos dados finalizado!", icon="🎉")
-    st.snow()
     st.dataframe(
         df.loc[:, list(COLUNAS.keys())],
         use_container_width=True,
         column_config={
-            "url": st.column_config.LinkColumn("URL", width="small", display_text="Link"),
-            "nome": st.column_config.TextColumn("Nome", width="medium"),
-            "fabricante": st.column_config.TextColumn("Fabricante", width="small"),
-            "modelo": st.column_config.TextColumn("Modelo", width="small"),
-            "certificado": st.column_config.TextColumn("Certificado", width="small"),
-            "ean_gtin": st.column_config.TextColumn("EAN/GTIN", width="small"),
-            "subcategoria": st.column_config.SelectboxColumn("Categoria", width="small"),
-            "nome_sch": st.column_config.TextColumn("Nome SCH", width="medium"),
-            "fabricante_sch": st.column_config.TextColumn("Fabricante SCH", width="small"),
-            "modelo_sch": st.column_config.TextColumn("Modelo SCH", width="small"),
-            "tipo_sch": st.column_config.SelectboxColumn("Tipo SCH", width="small"),
-            "nome_score": st.column_config.ProgressColumn("Nome Score", width="small"),
-            "modelo_score": st.column_config.ProgressColumn("Modelo Score", width="small"),
-            "passível?": st.column_config.CheckboxColumn("Homologação Compulsória", width="small"),
+            "url": st.column_config.LinkColumn(
+                "URL", width=None, display_text="Link", help="Dados do Anúncio"
+            ),
+            "nome": st.column_config.TextColumn(
+                "Nome", width=None, help="Dados do Anúncio"
+            ),
+            "fabricante": st.column_config.TextColumn(
+                "Fabricante", width=None, help="Dados do Anúncio"
+            ),
+            "modelo": st.column_config.TextColumn(
+                "Modelo", width=None, help="Dados do Anúncio"
+            ),
+            "certificado": st.column_config.TextColumn(
+                "Certificado", width=None, help="Dados do Anúncio"
+            ),
+            "ean_gtin": st.column_config.TextColumn(
+                "EAN/GTIN", width=None, help="Dados do Anúncio"
+            ),
+            "subcategoria": st.column_config.SelectboxColumn(
+                "Categoria", width=None, help="Dados do Anúncio"
+            ),
+            "nome_sch": st.column_config.TextColumn(
+                "Nome SCH", width=None, help="Dados de Certificação - SCH"
+            ),
+            "fabricante_sch": st.column_config.TextColumn(
+                "Fabricante SCH", width=None, help="Dados de Certificação - SCH"
+            ),
+            "modelo_sch": st.column_config.TextColumn(
+                "Modelo SCH", width=None, help="Dados de Certificação - SCH"
+            ),
+            "tipo_sch": st.column_config.SelectboxColumn(
+                "Tipo SCH", width=None, help="Dados de Certificação - SCH"
+            ),
+            "nome_score": st.column_config.ProgressColumn(
+                "Taxa de Sobreposição - Nome",
+                width=None,
+                help="Comparativo textual - Distância de Levenshtein",
+            ),
+            "modelo_score": st.column_config.ProgressColumn(
+                "Taxa de Sobroposição - Modelo",
+                width=None,
+                help="Comparativo textual - Distância de Levenshtein",
+            ),
+            "passível?": st.column_config.CheckboxColumn(
+                "Homologação Compulsória",
+                width=None,
+                help="Classificação - Machine Learning",
+            ),
             "probabilidade": st.column_config.ProgressColumn(
-                "Probabilidade", format="%.4f%%", min_value=0, max_value=100
+                "Probabilidade",
+                format="%.4f%%",
+                min_value=0,
+                max_value=100,
+                help="Classificação - Machine Learning",
             ),
         },
         hide_index=True,
+        on_select="rerun",
+        selection_mode="single-column",
     )
+    st.snow()
 
 
 def run():
