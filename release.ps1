@@ -27,12 +27,11 @@ Write-Host "Created app folder with the required contents"
 
 $filesToZip = @(
     "app",
-    "config.json",
     "Regulatron.bat"
 
 )
 
-Compress-Archive -Path $filesToZip -DestinationPath "..\Regulatron.zip" -Force
+Compress-Archive -Path $filesToZip -DestinationPath "D:\OneDrive - ANATEL\Regulatron\Regulatron.zip" -Force
 
 Write-Host "Created release Regulatron.zip file with required contents"
 
