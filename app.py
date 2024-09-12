@@ -55,7 +55,7 @@ COLUNAS = {
     "modelo_sch": "category",
     "nome_score": "int8",
     "modelo_score": "int8",
-    "passível?": "bool",
+    "passível?": "category",
     "probabilidade": "float32",
 }
 
@@ -102,8 +102,11 @@ if (key := "folder") not in STATE:
     if not (folder := CONFIG.get(KEYS[key], "")):
         folder = rf"{Path.home()}"
     STATE[key] = folder
-if "cache" not in STATE:
+if "cached_links" not in STATE:
     STATE.cached_links = {}
+
+if "cached_pages" not in STATE:
+    STATE.cached_pages = {}
 
 if (key := "use_cache") not in STATE:
     STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
@@ -152,10 +155,19 @@ def set_folder():
 
 
 @st.fragment
-def set_cache():
+def set_cached_links():
     # Callback function to save the keyword selection to Session State
     scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
     STATE.cached_links = scraper.get_links(STATE.keyword)
+
+
+@st.fragment
+def set_cached_pages():
+    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
+    if scraper.pages_file(STATE.keyword).is_file():
+        STATE.cached_pages = scraper.pages_file(STATE.keyword)
+    else:
+        STATE.cached_pages = None
 
 
 @st.fragment
@@ -250,7 +262,7 @@ def process_data(pages_file: Path):
     st.success("Processamento dos dados finalizado!", icon="🎉")
     df_show = df.loc[:, list(COLUNAS.keys())]
     df_show["probabilidade"] *= 100
-    df_show["passível?"] = df_show["passível?"].map({True: "✅", False: "❌"})
+    df_show["passível?"] = df_show["passível?"].map({"Sim": "✅", "Não": "❌"})
     st.dataframe(
         df_show,
         use_container_width=True,
@@ -298,7 +310,7 @@ def process_data(pages_file: Path):
                 width=None,
                 help="Comparativo textual - Anúncio versus SCH",
             ),
-            "passível?": st.column_config.CheckboxColumn(
+            "passível?": st.column_config.SelectboxColumn(
                 "Homologação Compulsória",
                 width=None,
                 help="Classificação - Machine Learning",
@@ -370,16 +382,14 @@ else:
 
     if STATE.keyword:
         if Path(STATE.folder).is_dir():
-            set_cache()
+            set_cached_links()
             if cached_links := STATE.cached_links:
-                container = st.sidebar.container(border=True)
-                container.info(
-                    f"Existem **{len(cached_links)}** resultados de busca (links) em cache"
-                )
+                container = st.sidebar.expander("LINKS", expanded=True)
+                container.info(f"Existem **{len(cached_links)}** links salvos em cache")
                 if container.toggle("Visualizar links em cache", key="show_cache"):
                     show_links()
                 container.radio(
-                    "Pesquisa de links",
+                    "Navegação de Páginas",
                     options=CACHE,
                     index=0 if CONFIG[CACHE[0]] else 1,
                     key="_use_cache",
@@ -387,6 +397,18 @@ else:
                 )
             else:
                 STATE.use_cache = CACHE[1]
+            set_cached_pages()
+            if cached_pages := STATE.cached_pages:
+                container = st.sidebar.container(border=True)
+                container.info(
+                    f"Existem **{len(cached_pages.read_json())}** páginas de dados em cache"
+                )
+                container.button(
+                    "Processar páginas em cache",
+                    key="process_cache",
+                    on_click=process_data,
+                    args=(cached_pages,),
+                )
 
             with st.sidebar:
                 with st.form("config", border=False):
