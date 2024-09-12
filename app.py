@@ -401,7 +401,7 @@ else:
             if cached_pages := STATE.cached_pages:
                 container = st.sidebar.container(border=True)
                 container.info(
-                    f"Existem **{len(cached_pages.read_json())}** páginas de dados em cache"
+                    f"Existem **{len(cached_pages.read_json())}** página(s) completa(s) em cache"
                 )
                 container.button(
                     "Processar páginas em cache",
