@@ -21,7 +21,6 @@ from seleniumbase.common.exceptions import (
 
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-TODAY = datetime.today().astimezone(TIMEZONE).strftime("%Y%m%d")
 CERTIFICADO = re.compile(
     r"""
     (?ix)                  # Case-insensitive and verbose mode
@@ -48,7 +47,7 @@ class BaseScraper:
     timeout: int = int(os.environ.get("TIMEOUT", 5))
     retries: int = int(os.environ.get("RETRIES", 3))
     demo: bool = False
-    user_data_dir = CHROME_DATA_DIR
+    # user_data_dir = CHROME_DATA_DIR
     ad_block_on: bool = True
     incognito: bool = False
     do_not_track: bool = True
@@ -82,7 +81,7 @@ class BaseScraper:
         )
 
     def pages_file(self, keyword: str) -> Path:
-        stem = self.links_file(keyword).stem.replace("_links", f"_pages_{TODAY}")
+        stem = self.links_file(keyword).stem.replace("_links", f"_pages")
         return self.links_file(keyword).with_stem(stem)
 
     def get_links(self, keyword: str) -> dict:
@@ -123,7 +122,7 @@ class BaseScraper:
             ad_block_on=self.ad_block_on,
             incognito=self.incognito,
             do_not_track=self.do_not_track,
-            user_data_dir=self.user_data_dir,  # TODO: Reimplement to use profiles
+            # user_data_dir=self.user_data_dir,  # TODO: Reimplement to use profiles
         ) as sb:
             sb.driver.maximize_window()
             sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
@@ -240,10 +239,9 @@ class BaseScraper:
         result_page["screenshot"] = filename
 
     def generate_filename(self, result_page: dict, i: int):
-        base_filename = f"{self.name}_{TODAY}"
         if product_id := result_page.get("product_id"):
             return f"{base_filename}_{product_id}.pdf"
-        return f"{base_filename}_{i}.pdf"
+        return f"{self.name}_{i}.pdf"
 
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
         json.dump(
