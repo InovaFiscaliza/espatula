@@ -5,7 +5,6 @@ import streamlit as st
 import pandas as pd
 from fastcore.xtras import Path
 from gradio_client import Client, handle_file
-import streamlit as st
 
 from config import (
     CACHE,
@@ -46,7 +45,7 @@ COLUNAS = {
     "nome": "string",
     "fabricante": "category",
     "modelo": "category",
-    "certificado": "string",
+    "certificado": "int32",
     "ean_gtin": "string",
     "subcategoria": "category",
     "nome_sch": "string",
@@ -105,14 +104,18 @@ if (key := "folder") not in STATE:
 if "cached_links" not in STATE:
     STATE.cached_links = {}
 
+if "show_cached_links" not in STATE:
+    STATE.show_cached_links = False
+
 if "cached_pages" not in STATE:
-    STATE.cached_pages = {}
+    STATE.cached_pages = None
+
+if "show_cached_pages" not in STATE:
+    STATE.show_cached_pages = False
 
 if (key := "use_cache") not in STATE:
     STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
 
-if "show_cache" not in STATE:
-    STATE.show_cache = False
 
 # Retrieve previous Session State to initialize the widgets
 for key in STATE:
@@ -163,11 +166,12 @@ def set_cached_links():
 
 @st.fragment
 def set_cached_pages():
-    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-    if scraper.pages_file(STATE.keyword).is_file():
-        STATE.cached_pages = scraper.pages_file(STATE.keyword)
-    else:
-        STATE.cached_pages = None
+    if STATE.cached_pages is None:
+        scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
+        if (
+            excel_file := scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
+        ).is_file():
+            STATE.cached_pages = pd.read_excel(excel_file).astype(COLUNAS)
 
 
 @st.fragment
@@ -181,6 +185,12 @@ def show_links():
     with st.container(height=720):
         if STATE.cached_links:
             st.json(list(STATE.cached_links.values()), expanded=True)
+
+
+@st.fragment
+def show_pages(df=None):
+    if STATE.cached_pages is not None:
+        format_df(STATE.cached_pages)
 
 
 def request_table(json_path: Path) -> pd.DataFrame:
@@ -256,14 +266,14 @@ def inspect_pages(scraper):
         progress_bar.empty()
 
 
-def process_data(pages_file: Path):
-    df = request_table(pages_file)
-    st.divider()
-    st.success("Processamento dos dados finalizado!", icon="🎉")
+def format_df(df):
     df_show = df.loc[:, list(COLUNAS.keys())]
     df_show["probabilidade"] *= 100
-    df_show["passível?"] = df_show["passível?"].map({"Sim": "✅", "Não": "❌"})
-    st.dataframe(
+
+    df_show = df.loc[:, list(COLUNAS.keys())]
+    df_show["probabilidade"] *= 100
+
+    return st.data_editor(
         df_show,
         use_container_width=True,
         column_config={
@@ -279,26 +289,38 @@ def process_data(pages_file: Path):
             "modelo": st.column_config.TextColumn(
                 "Modelo", width=None, help="Dados do Anúncio"
             ),
-            "certificado": st.column_config.TextColumn(
+            "certificado": st.column_config.NumberColumn(
                 "Certificado", width=None, help="Dados do Anúncio"
             ),
-            "ean_gtin": st.column_config.TextColumn(
+            "ean_gtin": st.column_config.NumberColumn(
                 "EAN/GTIN", width=None, help="Dados do Anúncio"
             ),
             "subcategoria": st.column_config.SelectboxColumn(
                 "Categoria", width=None, help="Dados do Anúncio"
             ),
             "nome_sch": st.column_config.TextColumn(
-                "Nome SCH", width=None, help="Dados de Certificação - SCH"
+                "Nome SCH",
+                width=None,
+                help="Dados de Certificação - SCH",
+                disabled=True,
             ),
             "fabricante_sch": st.column_config.TextColumn(
-                "Fabricante SCH", width=None, help="Dados de Certificação - SCH"
+                "Fabricante SCH",
+                width=None,
+                help="Dados de Certificação - SCH",
+                disabled=True,
             ),
             "modelo_sch": st.column_config.TextColumn(
-                "Modelo SCH", width=None, help="Dados de Certificação - SCH"
+                "Modelo SCH",
+                width=None,
+                help="Dados de Certificação - SCH",
+                disabled=True,
             ),
             "tipo_sch": st.column_config.SelectboxColumn(
-                "Tipo SCH", width=None, help="Dados de Certificação - SCH"
+                "Tipo SCH",
+                width=None,
+                help="Dados de Certificação - SCH",
+                disabled=True,
             ),
             "nome_score": st.column_config.ProgressColumn(
                 "Taxa de Sobreposição - Nome",
@@ -310,10 +332,11 @@ def process_data(pages_file: Path):
                 width=None,
                 help="Comparativo textual - Anúncio versus SCH",
             ),
-            "passível?": st.column_config.SelectboxColumn(
+            "passível?": st.column_config.CheckboxColumn(
                 "Homologação Compulsória",
                 width=None,
                 help="Classificação - Machine Learning",
+                disabled=True,
             ),
             "probabilidade": st.column_config.ProgressColumn(
                 "Probabilidade",
@@ -324,13 +347,35 @@ def process_data(pages_file: Path):
             ),
         },
         hide_index=True,
+        disabled=False,
+        on_change=None,
     )
+
+
+def save_pages():
+    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
+    try:
+        if (df := STATE.cached_pages) is not None:
+            output_table = scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
+            df.to_excel(output_table, index=False)
+    except Exception as e:
+        st.error(f"Erro ao salvar os dados processados: {e}")
+
+
+def process_data(pages_file: Path):
+    df = request_table(pages_file)
+    st.divider()
     st.snow()
+    STATE.cached_pages = df
+    save_pages()
+    st.success("Processamento dos dados finalizado!", icon="🎉")
+    show_pages()
 
 
 def run():
     save_config()
-    STATE.show_cache = False
+    STATE.show_cached_links = False
+    STATE.show_cached_pages = False
     scraper = SCRAPERS[STATE.mkplc](
         headless=not STATE.show_browser,
         path=STATE.folder,
@@ -386,7 +431,9 @@ else:
             if cached_links := STATE.cached_links:
                 container = st.sidebar.expander("LINKS", expanded=True)
                 container.info(f"Existem **{len(cached_links)}** links salvos em cache")
-                if container.toggle("Visualizar links em cache", key="show_cache"):
+                if container.toggle(
+                    "Visualizar links em cache", key="show_cached_links"
+                ):
                     show_links()
                 container.radio(
                     "Navegação de Páginas",
@@ -398,17 +445,16 @@ else:
             else:
                 STATE.use_cache = CACHE[1]
             set_cached_pages()
-            if cached_pages := STATE.cached_pages:
+            if (cached_pages := STATE.cached_pages) is not None:
                 container = st.sidebar.container(border=True)
+                #
                 container.info(
-                    f"Existem **{len(cached_pages.read_json())}** página(s) completa(s) em cache"
+                    f"Existem **{len(cached_pages)}** páginas completas salvas em cache"
                 )
-                container.button(
-                    "Processar páginas em cache",
-                    key="process_cache",
-                    on_click=process_data,
-                    args=(cached_pages,),
-                )
+                if container.toggle(
+                    "Visualizar páginas em cache", key="show_cached_pages"
+                ):
+                    show_pages()
 
             with st.sidebar:
                 with st.form("config", border=False):
@@ -441,17 +487,17 @@ else:
                         st.checkbox(
                             SHUFFLE,
                             key="shuffle",
-                            value=CONFIG.get(KEYS["shuffle"], False),
+                            value=CONFIG.get(KEYS["shuffle"], True),
                         )
                         st.checkbox(
                             SCREENSHOT,
                             key="screenshot",
-                            value=CONFIG.get(KEYS["screenshot"], False),
+                            value=CONFIG.get(KEYS["screenshot"], True),
                         )
                         st.toggle(
                             SHOW_BROWSER,
                             key="show_browser",
-                            value=CONFIG.get(KEYS["show_browser"], False),
+                            value=CONFIG.get(KEYS["show_browser"], True),
                         )
                     st.form_submit_button(START, on_click=run, use_container_width=True)
 
