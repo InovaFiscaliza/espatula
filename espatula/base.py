@@ -2,7 +2,6 @@ import os
 import base64
 import json
 import re
-from datetime import datetime
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
@@ -81,7 +80,7 @@ class BaseScraper:
         )
 
     def pages_file(self, keyword: str) -> Path:
-        stem = self.links_file(keyword).stem.replace("_links", f"_pages")
+        stem = self.links_file(keyword).stem.replace("_links", "_pages")
         return self.links_file(keyword).with_stem(stem)
 
     def get_links(self, keyword: str) -> dict:
@@ -240,7 +239,7 @@ class BaseScraper:
 
     def generate_filename(self, result_page: dict, i: int):
         if product_id := result_page.get("product_id"):
-            return f"{base_filename}_{product_id}.pdf"
+            return f"{self.name}_{product_id}.pdf"
         return f"{self.name}_{i}.pdf"
 
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
