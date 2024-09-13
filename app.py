@@ -45,7 +45,7 @@ COLUNAS = {
     "nome": "string",
     "fabricante": "category",
     "modelo": "category",
-    "certificado": "int32",
+    "certificado": "string",
     "ean_gtin": "string",
     "subcategoria": "category",
     "nome_sch": "string",
@@ -166,12 +166,11 @@ def set_cached_links():
 
 @st.fragment
 def set_cached_pages():
-    if STATE.cached_pages is None:
-        scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-        if (
-            excel_file := scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
-        ).is_file():
-            STATE.cached_pages = pd.read_excel(excel_file).astype(COLUNAS)
+    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
+    if (excel_file := scraper.pages_file(STATE.keyword).with_suffix(".xlsx")).is_file():
+        STATE.cached_pages = pd.read_excel(excel_file).astype(COLUNAS)
+    else:
+        STATE.cached_pages = None
 
 
 @st.fragment
@@ -289,10 +288,10 @@ def format_df(df):
             "modelo": st.column_config.TextColumn(
                 "Modelo", width=None, help="Dados do Anúncio"
             ),
-            "certificado": st.column_config.NumberColumn(
+            "certificado": st.column_config.TextColumn(
                 "Certificado", width=None, help="Dados do Anúncio"
             ),
-            "ean_gtin": st.column_config.NumberColumn(
+            "ean_gtin": st.column_config.TextColumn(
                 "EAN/GTIN", width=None, help="Dados do Anúncio"
             ),
             "subcategoria": st.column_config.SelectboxColumn(
