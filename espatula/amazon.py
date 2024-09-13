@@ -25,7 +25,7 @@ class AmazonScraper(BaseScraper):
 
     @property
     def input_field(self) -> str:
-        return 'input[id="twotabsearchtextbox"]'
+        return 'input[id*="search"]'
 
     @property
     def next_page_button(self) -> str:
