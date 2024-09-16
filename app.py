@@ -104,14 +104,14 @@ if (key := "folder") not in STATE:
 if "cached_links" not in STATE:
     STATE.cached_links = {}
 
-if "show_cached_links" not in STATE:
-    STATE.show_cached_links = False
+if "show_cache" not in STATE:
+    STATE.show_cache = False
 
 if "cached_pages" not in STATE:
     STATE.cached_pages = None
 
-if "show_cached_pages" not in STATE:
-    STATE.show_cached_pages = False
+if "processed_pages" not in STATE:
+    STATE.processed_pages = None
 
 if (key := "use_cache") not in STATE:
     STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
@@ -167,10 +167,18 @@ def set_cached_links():
 @st.fragment
 def set_cached_pages():
     scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
+    STATE.cached_pages = scraper.get_pages(STATE.keyword)
+
+
+@st.fragment
+def set_processed_pages():
+    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
     if (excel_file := scraper.pages_file(STATE.keyword).with_suffix(".xlsx")).is_file():
-        STATE.cached_pages = pd.read_excel(excel_file).astype(COLUNAS)
+        STATE.processed_pages = pd.read_excel(excel_file, dtype="string").astype(
+            COLUNAS
+        )
     else:
-        STATE.cached_pages = None
+        STATE.processed_pages = None
 
 
 @st.fragment
@@ -181,15 +189,20 @@ def use_cache():
 
 @st.fragment
 def show_links():
-    with st.container(height=720):
-        if STATE.cached_links:
-            st.json(list(STATE.cached_links.values()), expanded=True)
+    if STATE.cached_links:
+        st.json(list(STATE.cached_links.values()), expanded=True)
 
 
 @st.fragment
-def show_pages(df=None):
+def show_pages():
     if STATE.cached_pages is not None:
-        format_df(STATE.cached_pages)
+        st.json(list(STATE.cached_pages.values()), expanded=True)
+
+
+@st.fragment
+def show_processed_pages():
+    if STATE.processed_pages is not None:
+        format_df(STATE.processed_pages)
 
 
 def request_table(json_path: Path) -> pd.DataFrame:
@@ -373,8 +386,7 @@ def process_data(pages_file: Path):
 
 def run():
     save_config()
-    STATE.show_cached_links = False
-    STATE.show_cached_pages = False
+    STATE.show_cache = False
     scraper = SCRAPERS[STATE.mkplc](
         headless=not STATE.show_browser,
         path=STATE.folder,
@@ -446,13 +458,37 @@ else:
     if STATE.keyword:
         if Path(STATE.folder).is_dir():
             set_cached_links()
+            set_cached_pages()
+            set_processed_pages()
+
+            container = st.sidebar.expander("DADOS", expanded=True)
+            cache_info = ""
             if cached_links := STATE.cached_links:
-                container = st.sidebar.expander("LINKS", expanded=True)
-                container.info(f"Existem **{len(cached_links)}** links salvos em cache")
-                if container.toggle(
-                    "Visualizar links em cache", key="show_cached_links"
-                ):
+                cache_info += f" * **{len(cached_links)}** resultados de busca"
+            else:
+                STATE.use_cache = CACHE[1]
+            if cached_pages := STATE.cached_pages:
+                cache_info += f"\n* **{len(cached_pages)}** páginas completas"
+            if (processed_pages := STATE.processed_pages) is not None:
+                cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
+            if not cached_links and not cached_pages:
+                container.warning("Não há dados salvos em cache")
+            else:
+                container.info(cache_info)
+                STATE.show_cache = True
+                left, middle, right = st.tabs(
+                    ["Resultados de Busca", "Páginas Completas", "Dados Processados"]
+                )
+                with left:
+                    left.subheader("Resultados de Busca")
                     show_links()
+                with middle:
+                    middle.subheader("Páginas Completas")
+                    show_pages()
+                with right:
+                    right.subheader("Dados Processados")
+                    show_processed_pages()
+            if cached_links:
                 container.radio(
                     "Navegação de Páginas",
                     options=CACHE,
@@ -460,19 +496,6 @@ else:
                     key="_use_cache",
                     on_change=use_cache,
                 )
-            else:
-                STATE.use_cache = CACHE[1]
-            set_cached_pages()
-            if (cached_pages := STATE.cached_pages) is not None:
-                container = st.sidebar.container(border=True)
-                #
-                container.info(
-                    f"Existem **{len(cached_pages)}** páginas completas salvas em cache"
-                )
-                if container.toggle(
-                    "Visualizar páginas em cache", key="show_cached_pages"
-                ):
-                    show_pages()
 
             with st.sidebar:
                 with st.form("config", border=False):
