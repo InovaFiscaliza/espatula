@@ -322,7 +322,7 @@ class BaseScraper:
                 driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
                 break  # Success, exit the function
             except (NoSuchElementException, ElementNotVisibleException):
-                if attempt < self.max_retries - 1:  # if it's not the last attempt
+                if attempt < self.retries - 1:  # if it's not the last attempt
                     print(f"Attempt {attempt + 1} failed. Retrying...")
                     driver.sleep(2)  # Wait for 1 second before retrying
                 else:
