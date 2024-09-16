@@ -401,11 +401,30 @@ mkplc = config_container.selectbox(
 
 if STATE.mkplc is None:
     st.title(TITLE)
-    st.image(
+    columns = st.columns(2)
+
+    columns[0].image(
         LOGOS["Espatula"],
         width=480,
-        caption="Raspagem de Dados de Produtos de Telecomunicações",
+        caption="Espátula raspando dados de E-commerce",
     )
+    with columns[1]:
+        st.info("""
+        Essa aplicação efetua a raspagem de dados _(webscraping)_ de
+        produtos para telecomunicações publicados em alguns dos principais _marketplaces_ do país. 
+        """)
+        st.markdown(
+            """
+            **Características**:
+            * 👨🏻‍💻 Pesquisa por palavra-chave.
+            * 👾 Implementação de mecanismos anti-bot sofisticados.
+            * 🤖 Automação da busca de links e navegação de páginas.
+            * 🗄️ Mesclagem dos dados de certificação na base da Anatel com fuzzy search.
+            * 📊 Classificação binária baseada em treinamento nos dados anotados pelos fiscais.
+            * 📈 Exportação de dados processados para Excel.
+            * 🖼️ Captura de tela completa de anúncios em pdf otimizado.
+            """
+        )
     st.sidebar.success(
         "Por favor, selecione uma plataforma para iniciar a pesquisa.",
         icon="👆🏾",
