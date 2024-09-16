@@ -1,6 +1,7 @@
 import os
 import base64
 import json
+import platform
 import re
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from zoneinfo import ZoneInfo
 import requests
 from fastcore.foundation import L
 from fastcore.xtras import Path, loads
+
 from seleniumbase import SB
 from seleniumbase.common.exceptions import (
     ElementNotVisibleException,
@@ -32,8 +34,15 @@ CERTIFICADO = re.compile(
     re.VERBOSE,
 )
 
-if local_app_data := os.environ.get("LOCALAPPDATA"):
-    CHROME_DATA_DIR = f"{Path(local_app_data)}/Google/Chrome/User Data"
+if platform.system() == "Windows":
+    if local_app_data := os.environ.get("LOCALAPPDATA"):
+        CHROME_DATA_DIR = f"{Path(local_app_data)}/Google/Chrome/User Data"
+    else:
+        CHROME_DATA_DIR = None
+elif platform.system() == "Darwin":  # macOS
+    CHROME_DATA_DIR = f"{Path.home()}/Library/Application Support/Google/Chrome"
+elif platform.system() == "Linux":
+    CHROME_DATA_DIR = f"{Path.home()}/.config/google-chrome"
 else:
     CHROME_DATA_DIR = None
 
@@ -45,8 +54,8 @@ class BaseScraper:
     reconnect: int = int(os.environ.get("RECONNECT", 10))
     timeout: int = int(os.environ.get("TIMEOUT", 5))
     retries: int = int(os.environ.get("RETRIES", 3))
+    load_user_profile: bool = True
     demo: bool = False
-    # user_data_dir = CHROME_DATA_DIR
     ad_block_on: bool = True
     incognito: bool = False
     do_not_track: bool = True
@@ -115,13 +124,18 @@ class BaseScraper:
 
     @contextmanager
     def browser(self):
+        if self.load_user_profile:
+            os.environ["ESPATULA_PROFILE_DIR"] = self.name.title()
+            user_data_dir = CHROME_DATA_DIR
+        else:
+            user_data_dir = None
         with SB(
             headless2=self.headless,
             uc=True,  # Always true
             ad_block_on=self.ad_block_on,
             incognito=self.incognito,
             do_not_track=self.do_not_track,
-            # user_data_dir=self.user_data_dir,  # TODO: Reimplement to use profiles
+            user_data_dir=user_data_dir,
         ) as sb:
             sb.driver.maximize_window()
             sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
