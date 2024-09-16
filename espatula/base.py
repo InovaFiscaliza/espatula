@@ -332,8 +332,7 @@ class BaseScraper:
                     raise  # Re-raise the last exception
 
     def go_to_next_page(self, driver):
-        max_retries = 3
-        for attempt in range(max_retries):
+        for attempt in range(self.retries):
             try:
                 if not driver.is_element_present(self.next_page_button):
                     return False
@@ -341,14 +340,14 @@ class BaseScraper:
                 driver.uc_click(self.next_page_button, timeout=self.timeout)
                 return True
             except (NoSuchElementException, ElementNotVisibleException):
-                if attempt < max_retries - 1:
+                if attempt < self.retries - 1:
                     print(
                         f"Attempt {attempt + 1} failed. Retrying to go to next page..."
                     )
                     driver.sleep(1)
                 else:
                     print(
-                        f"Error: Could not find or click next page button after {max_retries} attempts"
+                        f"Error: Could not find or click next page button after {self.retries} attempts"
                     )
                     return False
         return False
