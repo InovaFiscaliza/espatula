@@ -1,6 +1,5 @@
 from datetime import datetime
 from dataclasses import dataclass
-from bs4 import BeautifulSoup
 
 from .base import TIMEZONE, BaseScraper
 
