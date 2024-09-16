@@ -199,7 +199,7 @@ def show_links():
 @st.fragment
 def show_pages():
     if STATE.cached_pages is not None:
-        st.json(list(STATE.cached_pages.values()), expanded=True)
+        st.json(list(STATE.cached_pages.values()), expanded=1)
 
 
 @st.fragment
@@ -478,13 +478,12 @@ else:
                 container.warning("Não há dados salvos para os parâmetros inseridos")
             else:
                 container.info(cache_info)
-                if container.toggle("Mostrar Dados Salvos em Cache", key="show_cache"):
-                    STATE.show_cache = True
+                if container.toggle("Mostrar Dados Salvos", key="show_cache"):
                     left, middle, right = st.tabs(
                         [
-                            "Resultados de Busca",
-                            "Páginas Completas",
-                            "Dados Processados",
+                            "Resultado(s) de Busca",
+                            "Página(s) Completa(s)",
+                            "Dado(s) Processado(s)",
                         ]
                     )
                     with left:
