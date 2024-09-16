@@ -7,6 +7,7 @@ from fastcore.xtras import Path
 from gradio_client import Client, handle_file
 
 from config import (
+    BASE,
     CACHE,
     FOLDER,
     SHOW_BROWSER,
@@ -15,12 +16,13 @@ from config import (
     MARKETPLACE,
     MAX_PAGES,
     MAX_SEARCH,
+    START,
     RECONNECT,
     SCREENSHOT,
     SHUFFLE,
-    START,
     TIMEOUT,
     TITLE,
+    USER_PROFILE,
 )
 from espatula import (
     AmazonScraper,
@@ -73,6 +75,7 @@ KEYS = {
     "timeout": TIMEOUT,
     "title": TITLE,
     "logos": LOGOS,
+    "load_user_profile": USER_PROFILE,
 }
 
 config_file = Path(__file__).parent / "config.json"
@@ -392,6 +395,7 @@ def run():
         path=STATE.folder,
         reconnect=STATE.reconnect,
         timeout=STATE.timeout,
+        load_user_profile=STATE.load_user_profile,
     )
     if STATE.use_cache == CACHE[1]:
         run_search(scraper)
@@ -401,7 +405,7 @@ def run():
     process_data(scraper.pages_file(STATE.keyword))
 
 
-config_container = st.sidebar.container(border=True)
+config_container = st.sidebar.expander(label=BASE, expanded=True)
 
 mkplc = config_container.selectbox(
     MARKETPLACE,
@@ -460,7 +464,6 @@ else:
             set_cached_links()
             set_cached_pages()
             set_processed_pages()
-
             container = st.sidebar.expander("DADOS", expanded=True)
             cache_info = ""
             if cached_links := STATE.cached_links:
@@ -472,25 +475,30 @@ else:
             if (processed_pages := STATE.processed_pages) is not None:
                 cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
             if not cached_links and not cached_pages:
-                container.warning("Não há dados salvos em cache")
+                container.warning("Não há dados salvos para os parâmetros inseridos")
             else:
                 container.info(cache_info)
-                STATE.show_cache = True
-                left, middle, right = st.tabs(
-                    ["Resultados de Busca", "Páginas Completas", "Dados Processados"]
-                )
-                with left:
-                    left.subheader("Resultados de Busca")
-                    show_links()
-                with middle:
-                    middle.subheader("Páginas Completas")
-                    show_pages()
-                with right:
-                    right.subheader("Dados Processados")
-                    show_processed_pages()
+                if container.toggle("Mostrar Dados Salvos em Cache", key="show_cache"):
+                    STATE.show_cache = True
+                    left, middle, right = st.tabs(
+                        [
+                            "Resultados de Busca",
+                            "Páginas Completas",
+                            "Dados Processados",
+                        ]
+                    )
+                    with left:
+                        left.subheader("Resultado(s) de Busca")
+                        show_links()
+                    with middle:
+                        middle.subheader("Página(s) Completa(s)")
+                        show_pages()
+                    with right:
+                        right.subheader("Dado(s) Processado(s)")
+                        show_processed_pages()
             if cached_links:
                 container.radio(
-                    "Navegação de Páginas",
+                    "Links para Navegação de Páginas",
                     options=CACHE,
                     index=0 if CONFIG[CACHE[0]] else 1,
                     key="_use_cache",
@@ -499,19 +507,7 @@ else:
 
             with st.sidebar:
                 with st.form("config", border=False):
-                    with st.expander("CONFIGURAÇÕES", expanded=False):
-                        st.number_input(
-                            RECONNECT,
-                            min_value=2,
-                            key="reconnect",
-                            value=CONFIG.get(KEYS["reconnect"], 5),
-                        )
-                        st.number_input(
-                            TIMEOUT,
-                            min_value=1,
-                            key="timeout",
-                            value=CONFIG.get(KEYS["timeout"], 2),
-                        )
+                    with st.expander("PARÂMETROS - PESQUISA", expanded=False):
                         st.number_input(
                             MAX_SEARCH,
                             min_value=1,
@@ -535,11 +531,31 @@ else:
                             key="screenshot",
                             value=CONFIG.get(KEYS["screenshot"], True),
                         )
+
+                    with st.expander("PARÂMETROS - BROWSER", expanded=False):
+                        st.number_input(
+                            RECONNECT,
+                            min_value=2,
+                            key="reconnect",
+                            value=CONFIG.get(KEYS["reconnect"], 5),
+                        )
+                        st.number_input(
+                            TIMEOUT,
+                            min_value=1,
+                            key="timeout",
+                            value=CONFIG.get(KEYS["timeout"], 2),
+                        )
+                        st.toggle(
+                            USER_PROFILE,
+                            key="load_user_profile",
+                            value=CONFIG.get(KEYS["load_user_profile"], True),
+                        )
                         st.toggle(
                             SHOW_BROWSER,
                             key="show_browser",
                             value=CONFIG.get(KEYS["show_browser"], True),
                         )
+
                     st.form_submit_button(START, on_click=run, use_container_width=True)
 
         else:
