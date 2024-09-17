@@ -13,28 +13,27 @@ $filesToCopy = @(
     "D:\Applications\Scoop\apps\uv\current\uv.exe"
 )
 
-$destinationFolder = "app"
+$destinationFolder = "D:\OneDrive - ANATEL\AppRegulatron"
 
 # Create the destination folder if it doesn't exist
 New-Item -ItemType Directory -Force -Path $destinationFolder
 
 # Copy each item to the destination folder
 foreach ($item in $filesToCopy) {
-    Copy-Item -Path $item -Destination $destinationFolder -Recurse -Force
+    Copy-Item -Path $item -Destination $destinationFolder -Recurse -Force -PassThru | Where-Object {$_.LastWriteTime -gt (Get-Item (Join-Path -Path $destinationFolder -ChildPath $_.Name)).LastWriteTime}
 }
-
 Write-Host "Created app folder with the required contents"
 
-$filesToZip = @(
-    "app",
-    "Regulatron.bat"
+# $filesToZip = @(
+#     "app",
+#     "Regulatron.bat"
 
-)
+# )
 
-Compress-Archive -Path $filesToZip -DestinationPath "D:\OneDrive - ANATEL\Regulatron\Regulatron.zip" -Force
+# Compress-Archive -Path $filesToZip -DestinationPath "D:\OneDrive - ANATEL\AppRegulatron.zip" -Force
 
-Write-Host "Created release Regulatron.zip file with required contents"
+# Write-Host "Created release Regulatron.zip file with required contents"
 
 
-Remove-Item -Path "app" -Recurse -Force -ErrorAction SilentlyContinue
+# Remove-Item -Path "app" -Recurse -Force -ErrorAction SilentlyContinue
 

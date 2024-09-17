@@ -1,3 +1,4 @@
+import os
 import time
 import json
 
@@ -9,6 +10,7 @@ from gradio_client import Client, handle_file
 from config import (
     BASE,
     CACHE,
+    CLOUD,
     FOLDER,
     SHOW_BROWSER,
     KEYWORD,
@@ -64,6 +66,7 @@ COLUNAS = {
 KEYS = {
     "keyword": KEYWORD,
     "folder": FOLDER,
+    "cloud": CLOUD,
     "use_cache": CACHE[0],
     "show_browser": SHOW_BROWSER,
     "marketplace": MARKETPLACE,
@@ -104,6 +107,15 @@ if (key := "folder") not in STATE:
     if not (folder := CONFIG.get(KEYS[key], "")):
         folder = rf"{Path.home()}"
     STATE[key] = folder
+
+if (key := "cloud") not in STATE:
+    if not (cloud := CONFIG.get(KEYS[key], "")):
+        cloud = os.environ.get(
+            "OneDriveCommercial", f"{Path.home()/'OneDrive - ANATEL'}"
+        )
+    STATE[key] = cloud
+
+
 if "cached_links" not in STATE:
     STATE.cached_links = {}
 
@@ -158,6 +170,13 @@ def set_folder():
     # Callback function to save the keyword selection to Session State
     if Path(STATE._folder).is_dir():
         STATE.folder = STATE._folder
+
+
+@st.fragment
+def set_cloud():
+    # Callback function to save the keyword selection to Session State
+    if Path(STATE._cloud).is_dir():
+        STATE.cloud = STATE._cloud
 
 
 @st.fragment
@@ -440,7 +459,7 @@ mkplc = config_container.selectbox(
 
 if STATE.mkplc is None:
     st.title(TITLE)
-    columns = st.columns(2)
+    columns = st.columns(2, vertical_alignment="center")
 
     columns[0].image(
         LOGOS["Espatula"],
@@ -457,11 +476,11 @@ if STATE.mkplc is None:
             **Características**:
             * 👨🏻‍💻 Pesquisa por palavra-chave.
             * 👾 Implementação de mecanismos anti-bot sofisticados.
-            * 🤖 Automação da busca de links e navegação de páginas.
+            * 🤖 Automação da busca e navegação para de produtos e navegação  páginas.
+            * 🖼️ Captura de página completa anúncios em pdf otimizado.
             * 🗄️ Mesclagem dos dados de certificação na base da Anatel com fuzzy search.
             * 📊 Classificação binária baseada em treinamento nos dados anotados pelos fiscais.
             * 📈 Exportação de dados processados para Excel.
-            * 🖼️ Captura de tela completa de anúncios em pdf otimizado.
             """
         )
     st.sidebar.success(
@@ -481,6 +500,12 @@ else:
         key="_folder",
         on_change=set_folder,
     )
+
+    # config_container.text_input(
+    #     CLOUD,
+    #     key="_cloud",
+    #     on_change=set_cloud,
+    # )
 
     if STATE.keyword:
         if Path(STATE.folder).is_dir():
