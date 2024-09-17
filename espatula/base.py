@@ -200,7 +200,7 @@ class BaseScraper:
             try:
                 driver.highlight(element, timeout=self.timeout // 2)
             except (NoSuchElementException, ElementNotVisibleException) as e:
-                print(e)
+                pass
 
     @staticmethod
     def compress_images(pdf_stream):
@@ -257,7 +257,6 @@ class BaseScraper:
         driver.uc_open_with_reconnect(url, reconnect_time=self.reconnect)
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
-                print(f"Falha ao navegar {url}")
                 if not self.headless:
                     driver.post_message("Anúncio sem categoria - 🚮")
                 return {}
@@ -313,7 +312,7 @@ class BaseScraper:
                 break  # Success, exit the function
             except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < self.retries - 1:  # if it's not the last attempt
-                    print(f"Attempt {attempt + 1} failed. Retrying...")
+                    driver.post_message(f"Attempt {attempt + 1} failed. Retrying...")
                     driver.sleep(2)  # Wait for 1 second before retrying
                 else:
                     print(
@@ -331,7 +330,7 @@ class BaseScraper:
                 return True
             except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < self.retries - 1:
-                    print(
+                    driver.post_message(
                         f"Attempt {attempt + 1} failed. Retrying to go to next page..."
                     )
                     driver.sleep(1)
@@ -355,7 +354,6 @@ class BaseScraper:
                 while True:
                     soup = driver.get_beautiful_soup()
                     products = self.discover_product_urls(soup, keyword)
-                    print(f"Navegando página {page} da busca '{keyword}'...")
                     if not self.headless:
                         driver.post_message(f"🕷️ Links da página {page} coletados! 🕸️")
                     for url, link_data in products.items():
