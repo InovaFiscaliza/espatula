@@ -13,15 +13,45 @@ $filesToCopy = @(
     "D:\Applications\Scoop\apps\uv\current\uv.exe"
 )
 
-$destinationFolder = "D:\OneDrive - ANATEL\AppRegulatron"
+# Copy each item to the destination folder
+function Copy-FilesToDestination {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string[]]$filesToCopy,
+        [Parameter(Mandatory=$true)]
+        [string]$destinationFolder
+    )
+
+    foreach ($item in $filesToCopy) {
+        $destinationPath = Join-Path -Path $destinationFolder -ChildPath (Split-Path -Path $item -Leaf)
+        if (Test-Path -Path $destinationPath) {
+            $sourceItem = Get-Item -Path $item
+            $destinationItem = Get-Item -Path $destinationPath
+            if ($sourceItem.LastWriteTime -gt $destinationItem.LastWriteTime) {
+                Copy-Item -Path $item -Destination $destinationFolder -Recurse -Force
+            }
+        } else {
+            Copy-Item -Path $item -Destination $destinationFolder -Recurse -Force
+        }
+    }
+}
+
+$destinationFolder = "D:\OneDrive - ANATEL\AppRegulatron\app"
 
 # Create the destination folder if it doesn't exist
 New-Item -ItemType Directory -Force -Path $destinationFolder
 
-# Copy each item to the destination folder
-foreach ($item in $filesToCopy) {
-    Copy-Item -Path $item -Destination $destinationFolder -Recurse -Force -PassThru | Where-Object {$_.LastWriteTime -gt (Get-Item (Join-Path -Path $destinationFolder -ChildPath $_.Name)).LastWriteTime}
-}
+Copy-FilesToDestination -filesToCopy $filesToCopy -destinationFolder $destinationFolder
+
+$filesToCopy = @(
+   "Regulatron.bat"
+)
+
+$destinationFolder = "D:\OneDrive - ANATEL\AppRegulatron"
+
+Copy-FilesToDestination -filesToCopy $filesToCopy -destinationFolder $destinationFolder
+
+
 Write-Host "Created app folder with the required contents"
 
 # $filesToZip = @(
