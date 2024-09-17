@@ -282,11 +282,33 @@ def inspect_pages(scraper):
 
 
 def format_df(df):
-    df_show = df.loc[:, list(COLUNAS.keys())]
-    df_show["probabilidade"] *= 100
+    # Create MultiIndex for columns
+    columns = pd.MultiIndex.from_tuples(
+        [
+            ("Anúncio", "URL"),
+            ("Anúncio", "Título"),
+            ("Anúncio", "Fabricante"),
+            ("Anúncio", "Modelo"),
+            ("Anúncio", "Certificado"),
+            ("Anúncio", "EAN/GTIN"),
+            ("Anúncio", "Categoria"),
+            ("SCH", "Nome"),
+            ("SCH", "Tipo"),
+            ("SCH", "Fabricante"),
+            ("SCH", "Modelo"),
+            ("Sobreposição de Strings - Anúncio x SCH", "Título - Nome Comercial (%)"),
+            ("Sobreposição de Strings - Anúncio x SCH", "Modelo - Nome Comercial (%)"),
+            ("Classificador Binário", "Homologação Compulsória"),
+            ("Classificador Binário", "Probabilidade"),
+        ],
+        names=["Origem dos Dados", "Coluna"],
+    )
 
     df_show = df.loc[:, list(COLUNAS.keys())]
     df_show["probabilidade"] *= 100
+    df_show.sort_values(by="passível?", ascending=False, inplace=True)
+    df_show.sort_values(by="modelo_score", ascending=False, inplace=True)
+    # df_show.columns = columns
 
     return st.data_editor(
         df_show,
@@ -296,7 +318,7 @@ def format_df(df):
                 "URL", width=None, display_text="Link", help="Dados do Anúncio"
             ),
             "nome": st.column_config.TextColumn(
-                "Nome", width=None, help="Dados do Anúncio"
+                "Título", width=None, help="Dados do Anúncio"
             ),
             "fabricante": st.column_config.TextColumn(
                 "Fabricante", width=None, help="Dados do Anúncio"
@@ -314,43 +336,43 @@ def format_df(df):
                 "Categoria", width=None, help="Dados do Anúncio"
             ),
             "nome_sch": st.column_config.TextColumn(
-                "Nome SCH",
+                "SCH - Nome Comercial",
                 width=None,
                 help="Dados de Certificação - SCH",
                 disabled=True,
             ),
             "fabricante_sch": st.column_config.TextColumn(
-                "Fabricante SCH",
+                "SCH - Fabricante",
                 width=None,
                 help="Dados de Certificação - SCH",
                 disabled=True,
             ),
             "modelo_sch": st.column_config.TextColumn(
-                "Modelo SCH",
+                "SCH - Modelo",
                 width=None,
                 help="Dados de Certificação - SCH",
                 disabled=True,
             ),
             "tipo_sch": st.column_config.SelectboxColumn(
-                "Tipo SCH",
+                "SCH - Tipo de Produto",
                 width=None,
                 help="Dados de Certificação - SCH",
                 disabled=True,
             ),
-            "nome_score": st.column_config.ProgressColumn(
-                "Taxa de Sobreposição - Nome",
-                width=None,
-                help="Comparativo textual - Anúncio versus SCH",
-            ),
             "modelo_score": st.column_config.ProgressColumn(
-                "Taxa de Sobreposição - Modelo",
+                "Modelo x SCH - Modelo (%)",
                 width=None,
-                help="Comparativo textual - Anúncio versus SCH",
+                help="Sobreposição de strings - Anúncio versus SCH",
+            ),
+            "nome_score": st.column_config.ProgressColumn(
+                "Título x SCH - Nome Comercial (%)",
+                width=None,
+                help="Sobreposição de strings - Anúncio versus SCH",
             ),
             "passível?": st.column_config.CheckboxColumn(
-                "Homologação Compulsória",
+                "Homologação Compulsória (True/False)",
                 width=None,
-                help="Classificação - Machine Learning",
+                help="Classificação - Binária",
                 disabled=True,
             ),
             "probabilidade": st.column_config.ProgressColumn(
@@ -358,7 +380,7 @@ def format_df(df):
                 format="%.2f%%",
                 min_value=0,
                 max_value=100,
-                help="Classificação - Machine Learning",
+                help="Classificação - Binária",
             ),
         },
         hide_index=True,
@@ -381,7 +403,7 @@ def process_data(pages_file: Path):
     df = request_table(pages_file)
     st.divider()
     st.snow()
-    STATE.cached_pages = df
+    STATE.processed_pages = df
     save_pages()
     st.success("Processamento dos dados finalizado!", icon="🎉")
     show_pages()
@@ -479,21 +501,22 @@ else:
             else:
                 container.info(cache_info)
                 if container.toggle("Mostrar Dados Salvos", key="show_cache"):
-                    left, middle, right = st.tabs(
+                    left_tab, right_tab = st.tabs(
                         [
-                            "Resultado(s) de Busca",
-                            "Página(s) Completa(s)",
-                            "Dado(s) Processado(s)",
+                            "Navegação de Páginas",
+                            "Dado Processado",
                         ]
                     )
-                    with left:
-                        left.subheader("Resultado(s) de Busca")
-                        show_links()
-                    with middle:
-                        middle.subheader("Página(s) Completa(s)")
-                        show_pages()
-                    with right:
-                        right.subheader("Dado(s) Processado(s)")
+                    with left_tab:
+                        left, right = st.columns([1, 1], vertical_alignment="top")
+                        with left:
+                            left.subheader("Resultado de Busca")
+                            show_links()
+                        with right:
+                            right.subheader("Página Completa")
+                            show_pages()
+                    with right_tab:
+                        right_tab.subheader("Tabela de Dados Processados")
                         show_processed_pages()
             if cached_links:
                 container.radio(
