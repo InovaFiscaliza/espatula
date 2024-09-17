@@ -201,24 +201,24 @@ class AmazonScraper(BaseScraper):
             asin = características.pop("ASIN", None)
 
         return {
-            "nome": nome,
-            "categoria": categoria,
-            "imagens": imagens,
-            "preço": preço,
-            "nota": nota,
             "avaliações": avaliações,
-            "marca": marca,
-            "vendedor": vendedor,
-            "link_vendedor": link_vendedor,
-            "descrição": descrição,
-            "características": características,
+            "categoria": categoria,
             "certificado": certificado,
+            "características": características,
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
+            "descrição": descrição,
             "ean_gtin": ean,
+            "imagens": imagens,
+            "link_vendedor": link_vendedor,
+            "marca": marca,
             "modelo": modelo,
-            "vendas": vendas,
+            "nome": nome,
+            "nota": nota,
+            "preço": preço,
             "product_id": asin,
             "url": driver.get_current_url(),
-            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
+            "vendas": vendas,
+            "vendedor": vendedor,
         }
 
     def discover_product_urls(self, soup, keyword):

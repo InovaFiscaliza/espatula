@@ -135,7 +135,8 @@ class CasasBahiaScraper(BaseScraper):
             características.update(self.parse_tables(soup, "Características"))
             driver.uc_click('button[aria-label="Fechar"]', timeout=self.timeout)
         except Exception as e:
-            driver.post_message(e)
+            if not self.headless:
+                driver.post_message(e)
         try:
             tag = 'p:-soup-contains("Especificações Técnicas")'
             get_selector(tag)
@@ -144,7 +145,8 @@ class CasasBahiaScraper(BaseScraper):
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
 
         except Exception as e:
-            driver.post_message(e)
+            if not self.headless:
+                driver.post_message(e)
 
         if características:
             modelo, certificado, ean = (

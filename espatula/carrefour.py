@@ -129,18 +129,18 @@ class CarrefourScraper(BaseScraper):
 
         return {
             "categoria": categoria,
+            "certificado": certificado,
+            "características": características,
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
+            "desconto": desconto,
+            "descrição": descrição,
+            "ean_gtin": ean,
+            "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
-            "vendedor": vendedor,
-            "desconto": desconto,
             "product_id": cod_produto,
             "url": driver.get_current_url(),
-            "certificado": certificado,
-            "ean_gtin": ean,
-            "descrição": descrição,
-            "características": características,
-            "imagens": imagens,
-            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
+            "vendedor": vendedor,
         }
 
     def parse_tables(self, soup):

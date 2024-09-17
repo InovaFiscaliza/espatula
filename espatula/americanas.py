@@ -115,21 +115,21 @@ class AmericanasScraper(BaseScraper):
             product_id = características.get("Código")
 
         return {
-            "nome": nome,
-            "categoria": categoria,
-            "preço": preço,
-            "nota": nota,
             "avaliações": avaliações,
-            "imagens": imagens,
+            "categoria": categoria,
+            "certificado": certificado,
+            "caracterí­sticas": características,
+            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
             "descrição": descrição,
+            "ean_gtin": ean,
+            "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
-            "certificado": certificado,
-            "ean_gtin": ean,
-            "características": características,
+            "nome": nome,
+            "nota": nota,
+            "preço": preço,
             "product_id": product_id,
             "url": driver.get_current_url(),
-            "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
     def parse_tables(self, soup) -> dict:
