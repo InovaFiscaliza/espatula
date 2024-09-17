@@ -95,22 +95,12 @@ class BaseScraper:
     def get_links(self, keyword: str) -> dict:
         links_file = self.links_file(keyword)
         if not links_file.is_file():
-            print(f"Não foram encontrados links de busca para {self.name} - {keyword}")
-            print(
-                "Execute primeiramente a busca de links pelo método 'search(keyword)'"
-            )
             return {}
         return loads(links_file.read_text(encoding="utf-8"))
 
     def get_pages(self, keyword: str) -> dict:
         pages_file = self.pages_file(keyword)
         if not pages_file.is_file():
-            print(
-                f"Não foram arquivos de dados das páginas para {self.name} - {keyword}"
-            )
-            print(
-                "Caso já tenha feito a busca de links, execute o método 'inspect_pages(keyword)'"
-            )
             return {}
         return loads(pages_file.read_text(encoding="utf-8"))
 
@@ -258,7 +248,7 @@ class BaseScraper:
 
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
         json.dump(
-            sampled_pages,
+            self.get_pages(keyword) | sampled_pages,
             self.pages_file(keyword).open("w", encoding="utf-8"),
             ensure_ascii=False,
         )
