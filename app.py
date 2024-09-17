@@ -54,8 +54,8 @@ COLUNAS = {
     "tipo_sch": "category",
     "fabricante_sch": "category",
     "modelo_sch": "category",
-    "nome_score": "int8",
     "modelo_score": "int8",
+    "nome_score": "int8",
     "passível?": "category",
     "probabilidade": "float32",
 }
@@ -205,7 +205,8 @@ def show_pages():
 @st.fragment
 def show_processed_pages():
     if STATE.processed_pages is not None:
-        format_df(STATE.processed_pages)
+        with st.container(border=False):
+            format_df(STATE.processed_pages)
 
 
 def request_table(json_path: Path) -> pd.DataFrame:
@@ -283,26 +284,26 @@ def inspect_pages(scraper):
 
 def format_df(df):
     # Create MultiIndex for columns
-    columns = pd.MultiIndex.from_tuples(
-        [
-            ("Anúncio", "URL"),
-            ("Anúncio", "Título"),
-            ("Anúncio", "Fabricante"),
-            ("Anúncio", "Modelo"),
-            ("Anúncio", "Certificado"),
-            ("Anúncio", "EAN/GTIN"),
-            ("Anúncio", "Categoria"),
-            ("SCH", "Nome"),
-            ("SCH", "Tipo"),
-            ("SCH", "Fabricante"),
-            ("SCH", "Modelo"),
-            ("Sobreposição de Strings - Anúncio x SCH", "Título - Nome Comercial (%)"),
-            ("Sobreposição de Strings - Anúncio x SCH", "Modelo - Nome Comercial (%)"),
-            ("Classificador Binário", "Homologação Compulsória"),
-            ("Classificador Binário", "Probabilidade"),
-        ],
-        names=["Origem dos Dados", "Coluna"],
-    )
+    # columns = pd.MultiIndex.from_tuples(
+    #     [
+    #         ("Anúncio", "URL"),
+    #         ("Anúncio", "Título"),
+    #         ("Anúncio", "Fabricante"),
+    #         ("Anúncio", "Modelo"),
+    #         ("Anúncio", "Certificado"),
+    #         ("Anúncio", "EAN/GTIN"),
+    #         ("Anúncio", "Categoria"),
+    #         ("SCH", "Nome"),
+    #         ("SCH", "Tipo"),
+    #         ("SCH", "Fabricante"),
+    #         ("SCH", "Modelo"),
+    #         ("Sobreposição de Strings - Anúncio x SCH", "Título - Nome Comercial (%)"),
+    #         ("Sobreposição de Strings - Anúncio x SCH", "Modelo - Nome Comercial (%)"),
+    #         ("Classificador Binário", "Homologação Compulsória"),
+    #         ("Classificador Binário", "Probabilidade"),
+    #     ],
+    #     names=["Origem dos Dados", "Coluna"],
+    # )
 
     df_show = df.loc[:, list(COLUNAS.keys())]
     df_show["probabilidade"] *= 100
@@ -312,6 +313,7 @@ def format_df(df):
 
     return st.data_editor(
         df_show,
+        height=720 if len(df_show) >= 20 else None,
         use_container_width=True,
         column_config={
             "url": st.column_config.LinkColumn(
@@ -389,10 +391,10 @@ def format_df(df):
     )
 
 
-def save_pages():
+def save_table():
     scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
     try:
-        if (df := STATE.cached_pages) is not None:
+        if (df := STATE.processed_pages) is not None:
             output_table = scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
             df.to_excel(output_table, index=False)
     except Exception as e:
@@ -401,12 +403,11 @@ def save_pages():
 
 def process_data(pages_file: Path):
     df = request_table(pages_file)
-    st.divider()
     st.snow()
     STATE.processed_pages = df
-    save_pages()
+    save_table()
     st.success("Processamento dos dados finalizado!", icon="🎉")
-    show_pages()
+    show_processed_pages()
 
 
 def run():
