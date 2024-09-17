@@ -169,3 +169,4 @@ latest_logs/
 modelos/
 .aider*
 .streamlit/secrets.toml
+config.json
