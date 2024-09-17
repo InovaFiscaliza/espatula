@@ -554,7 +554,7 @@ else:
                             value=CONFIG.get(KEYS["screenshot"], True),
                         )
 
-                    with st.expander("PARÂMETROS - BROWSER", expanded=False):
+                    with st.expander("CONFIGURAÇÕES - BROWSER", expanded=False):
                         st.number_input(
                             RECONNECT,
                             min_value=2,
