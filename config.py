@@ -27,6 +27,7 @@ TITLE = "🤖 Regulatron"
 BASE = "INÍCIO"
 CACHE = ("Utilizar Resultados de Busca", "Efetuar Nova Pesquisa")
 FOLDER = "Pasta de Trabalho"
+CLOUD = "Pasta de Trabalho (nuvem - OneDrive)"
 RECONNECT = "Tempo de espera para conectar ao navegador (seg)"
 TIMEOUT = "Tempo de espera para carregamento da página (seg)"
 SEARCH_PARAMETERS = "Parâmetros - Busca de Links"

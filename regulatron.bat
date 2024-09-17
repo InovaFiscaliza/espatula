@@ -13,5 +13,5 @@ cd %REGULATRON%
 call "%REGULATRON%\uv.exe" sync --locked --no-progress
 start "" "%REGULATRON%\uv.exe" run run.py --locked
 timeout /t 5 /nobreak > nul
-start "" "http://localhost:8501"
+start "" "http://localhost:8501" > nul 2>&1
 
