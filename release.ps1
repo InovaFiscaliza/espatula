@@ -13,6 +13,12 @@ $filesToCopy = @(
     "D:\Applications\Scoop\apps\uv\current\uv.exe"
 )
 
+
+# Remove __pycache__ folder from espatula
+Remove-Item -Path ".\espatula\__pycache__" -Recurse -Force
+
+
+
 # Copy each item to the destination folder
 function Copy-FilesToDestination {
     param (
