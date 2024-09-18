@@ -101,6 +101,15 @@ class CarrefourScraper(BaseScraper):
             if hasattr(i, "get_text") and i.get_text().strip():
                 categoria += f"|{i.get_text().strip()}"
 
+        if preço := get_selector('span[class*="currencyContainer"]'):
+            preço = preço.get_text().strip()
+
+        if nome := get_selector('h1[class*="productNameContainer"]'):
+            nome = nome.get_text().strip()
+
+        if not all([categoria, nome, preço]):
+            return {}
+
         if marca := get_selector('span[class*="productBrandName"]'):
             marca = marca.get_text().strip()
 
@@ -138,6 +147,8 @@ class CarrefourScraper(BaseScraper):
             "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
+            "nome": nome,
+            "preço": preço,
             "product_id": cod_produto,
             "url": driver.get_current_url(),
             "vendedor": vendedor,

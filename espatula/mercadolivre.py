@@ -130,6 +130,18 @@ class MercadoLivreScraper(BaseScraper):
                 i.get_text().strip() for i in categoria_elements if i.get_text().strip()
             )
 
+        nome = None
+        if nome_element := get_selector('h1[class="ui-pdp-title"]'):
+            nome = nome_element.get_text().strip()
+
+        preço = None
+        if preço_element := soup.select_one("meta[itemprop='price']"):
+            self.highlight_element(driver, "div[class=ui-pdp-price__second-line]")
+            preço = preço_element.get("content")
+
+        if not all([nome, preço, categoria]):
+            return {}
+
         imgs = None
         if img_elements := get_selector(
             'img[class="ui-pdp-image ui-pdp-gallery__figure__image"]'
@@ -140,10 +152,6 @@ class MercadoLivreScraper(BaseScraper):
         if info_vendas := get_selector('span[class="ui-pdp-subtitle"]'):
             if len(info_vendas := info_vendas.get_text().strip().split(" | ")) == 2:
                 estado, vendas = info_vendas
-
-        nome = None
-        if nome_element := get_selector('h1[class="ui-pdp-title"]'):
-            nome = nome_element.get_text().strip()
 
         nota, avaliações = None, None
         if info_avaliacoes := get_selector('div[class="ui-pdp-review__rating"]'):
@@ -157,11 +165,6 @@ class MercadoLivreScraper(BaseScraper):
                 avaliações = "".join(
                     re.findall(r"\d+", avaliacoes_element.get_text().strip())
                 )
-
-        preço = None
-        if preço_element := soup.select_one("meta[itemprop='price']"):
-            self.highlight_element(driver, "div[class=ui-pdp-price__second-line]")
-            preço = preço_element.get("content")
 
         estoque = None
         if estoque_element := get_selector(

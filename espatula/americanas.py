@@ -80,6 +80,19 @@ class AmericanasScraper(BaseScraper):
         if nome := get_selector('h1[class*="product-title"]'):
             nome = nome.get_text().strip()
 
+        if preço := get_selector('div[class*="PriceText"]'):
+            preço = (
+                preço.get_text()
+                .strip()
+                .replace("R$", "")
+                .replace(".", "")
+                .replace(",", ".")
+                .strip()
+            )
+
+        if not all([nome, categoria, preço]):
+            return {}
+
         imagens = []
         if gallery := get_selector('div[class*="Gallery"]'):
             for img in gallery.select("img"):
@@ -91,16 +104,6 @@ class AmericanasScraper(BaseScraper):
 
         if nota := get_selector('div[class*="Rating"]'):
             nota = nota.get_text().strip()
-
-        if preço := get_selector('div[class*="PriceText"]'):
-            preço = (
-                preço.get_text()
-                .strip()
-                .replace("R$", "")
-                .replace(".", "")
-                .replace(",", ".")
-                .strip()
-            )
 
         if descrição := get_selector('div[data-testid="rich-content-container"]'):
             descrição = descrição.get_text().strip()

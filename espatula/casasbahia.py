@@ -86,6 +86,19 @@ class CasasBahiaScraper(BaseScraper):
         if nome := get_selector('h1[class*="heading"]'):
             nome = nome.text.strip()
 
+        if preço := get_selector("p#product-price"):
+            if preço := preço.select_one("span[aria-hidden*='true']"):
+                preço = (
+                    preço.get_text()
+                    .strip()
+                    .replace("R$", "")
+                    .replace(".", "")
+                    .replace(",", ".")
+                )
+
+        if not all([categoria, nome, preço]):
+            return {}
+
         product_id, marca = None, None
         if origem := get_selector("div.dsvia-flex.css-uoygdh"):
             if product_id := origem.select_one("p"):
@@ -108,16 +121,6 @@ class CasasBahiaScraper(BaseScraper):
                 "p[data-testid*='product-rating-count']"
             ):
                 avaliações = avaliações.text.strip()
-
-        if preço := get_selector("p#product-price"):
-            if preço := preço.select_one("span[aria-hidden*='true']"):
-                preço = (
-                    preço.get_text()
-                    .strip()
-                    .replace("R$", "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                )
 
         if vendedor := get_selector("p[data-testid*='sold-by']"):
             if vendedor := vendedor.select_one("a"):

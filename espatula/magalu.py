@@ -96,16 +96,6 @@ class MagaluScraper(BaseScraper):
         if nome := get_selector('h1[data-testid="heading-product-title"]'):
             nome = nome.get_text().strip()
 
-        if imagens := soup.select('img[data-testid="media-gallery-image"]'):
-            self.highlight_element(driver, "div[data-testid=media-gallery-image]")
-            imagens = [i.get("src") for i in imagens if i.get("src")]
-
-        nota, avaliações = None, None
-        if eval_div := get_selector('div[data-testid="mod-row"]'):
-            if popularidade := eval_div.select_one('span[format="score-count"]'):
-                nota, avaliações = popularidade.get_text().strip().split(" ")
-                avaliações = avaliações.replace("(", "").replace(")", "")
-
         preço = None
         if preço_div := get_selector('div[data-testid="mod-productprice"]'):
             if preço := preço_div.select_one('p[data-testid="price-value"]'):
@@ -116,6 +106,20 @@ class MagaluScraper(BaseScraper):
                     .replace(".", "")
                     .replace(",", ".")
                 )
+
+        if not all([categoria, nome, preço]):
+            return {}
+
+        if imagens := soup.select('img[data-testid="media-gallery-image"]'):
+            self.highlight_element(driver, "div[data-testid=media-gallery-image]")
+            imagens = [i.get("src") for i in imagens if i.get("src")]
+
+        nota, avaliações = None, None
+        if eval_div := get_selector('div[data-testid="mod-row"]'):
+            if popularidade := eval_div.select_one('span[format="score-count"]'):
+                nota, avaliações = popularidade.get_text().strip().split(" ")
+                avaliações = avaliações.replace("(", "").replace(")", "")
+
         if descrição := get_selector('div[data-testid="rich-content-container"]'):
             descrição = descrição.get_text().strip()
 

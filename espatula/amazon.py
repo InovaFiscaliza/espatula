@@ -123,6 +123,13 @@ class AmazonScraper(BaseScraper):
         elif nome and "iphone" in nome.lower():
             categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
 
+        if preço := soup.select_one('span[class="aok-offscreen"]'):
+            self.highlight_element(driver, 'span[class="aok-offscreen"]')
+            preço = re.sub(r"R\$|\.", "", preço.get_text().strip()).replace(",", ".")
+
+        if not all([nome, preço, categoria]):
+            return {}
+
         if vendas := soup.select_one("span#social-proofing-faceout-title-tk_bought"):
             self.highlight_element(
                 driver, 'span[id="social-proofing-faceout-title-tk_bought"]'
@@ -137,10 +144,6 @@ class AmazonScraper(BaseScraper):
                 for d in json.loads(imagens[0])
                 if isinstance(d, dict)
             ]
-
-        if preço := soup.select_one('span[class="aok-offscreen"]'):
-            self.highlight_element(driver, 'span[class="aok-offscreen"]')
-            preço = re.sub(r"R\$|\.", "", preço.get_text().strip()).replace(",", ".")
 
         if nota := soup.select_one('i[class="cm-cr-review-stars-spacing-big"]'):
             self.highlight_element(driver, 'i[class="cm-cr-review-stars-spacing-big"]')
