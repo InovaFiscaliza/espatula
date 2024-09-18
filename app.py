@@ -47,18 +47,18 @@ SCRAPERS = {
 COLUNAS = {
     "url": "string",
     "nome": "string",
-    "fabricante": "category",
-    "modelo": "category",
+    "fabricante": "string",
+    "modelo": "string",
     "certificado": "string",
     "ean_gtin": "string",
-    "subcategoria": "category",
+    "subcategoria": "string",
     "nome_sch": "string",
     "tipo_sch": "category",
     "fabricante_sch": "category",
     "modelo_sch": "category",
     "modelo_score": "int8",
     "nome_score": "int8",
-    "passível?": "category",
+    "passível?": "bool",
     "probabilidade": "float32",
 }
 
@@ -192,15 +192,51 @@ def set_cached_pages():
     STATE.cached_pages = scraper.get_pages(STATE.keyword)
 
 
+def request_table(json_path: Path) -> pd.DataFrame:
+    client = Client("ronaldokun/ecomproc")
+    result = client.predict(
+        json_file=handle_file(str(json_path)),
+        api_name="/process_to_table",
+    )
+    return pd.DataFrame(
+        result["data"], columns=result["headers"], dtype="string"
+    ).astype(COLUNAS)
+
+
+def save_table():
+    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
+    try:
+        if (df := STATE.processed_pages) is not None:
+            output_table = scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
+            df.to_excel(output_table, index=False)
+    except Exception as e:
+        st.error(f"Erro ao salvar os dados processados: {e}")
+
+
+def process_data(pages_file: Path):
+    df = request_table(pages_file)
+    STATE.processed_pages = df
+    save_table()
+
+
 @st.fragment
 def set_processed_pages():
     scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-    if (excel_file := scraper.pages_file(STATE.keyword).with_suffix(".xlsx")).is_file():
+    json_file = scraper.pages_file(STATE.keyword)
+    excel_file = json_file.with_suffix(".xlsx")
+    if json_file.is_file():
+        if not excel_file.is_file():
+            process_data(json_file)
+        else:
+            df = pd.read_excel(excel_file, dtype="string")
+            if set(scraper.get_links(STATE.keyword).keys()).difference(df["url"]):
+                process_data(json_file)
+            else:
+                STATE.processed_pages = df.astype(COLUNAS)
+    elif excel_file.is_file():
         STATE.processed_pages = pd.read_excel(excel_file, dtype="string").astype(
             COLUNAS
         )
-    else:
-        STATE.processed_pages = None
 
 
 @st.fragment
@@ -226,17 +262,6 @@ def show_processed_pages():
     if STATE.processed_pages is not None:
         with st.container(border=False):
             format_df(STATE.processed_pages)
-
-
-def request_table(json_path: Path) -> pd.DataFrame:
-    client = Client("ronaldokun/ecomproc")
-    result = client.predict(
-        json_file=handle_file(str(json_path)),
-        api_name="/process_to_table",
-    )
-    return pd.DataFrame(
-        result["data"], columns=result["headers"], dtype="string"
-    ).astype(COLUNAS)
 
 
 def run_search(scraper):
@@ -409,25 +434,6 @@ def format_df(df):
     )
 
 
-def save_table():
-    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-    try:
-        if (df := STATE.processed_pages) is not None:
-            output_table = scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
-            df.to_excel(output_table, index=False)
-    except Exception as e:
-        st.error(f"Erro ao salvar os dados processados: {e}")
-
-
-def process_data(pages_file: Path):
-    df = request_table(pages_file)
-    st.snow()
-    STATE.processed_pages = df
-    save_table()
-    st.success("Processamento dos dados finalizado!", icon="🎉")
-    show_processed_pages()
-
-
 def run():
     save_config()
     STATE.show_cache = False
@@ -442,8 +448,11 @@ def run():
         run_search(scraper)
 
     inspect_pages(scraper)
-
     process_data(scraper.pages_file(STATE.keyword))
+    st.snow()
+    save_table()
+    st.success("Processamento dos dados finalizado!", icon="🎉")
+    show_processed_pages()
 
 
 config_container = st.sidebar.expander(label=BASE, expanded=True)
@@ -516,12 +525,17 @@ else:
             if cached_links := STATE.cached_links:
                 cache_info += f" * **{len(cached_links)}** resultados de busca"
             else:
+                cache_info += " * :red[0] resultados de busca"
                 STATE.use_cache = CACHE[1]
             if cached_pages := STATE.cached_pages:
                 cache_info += f"\n* **{len(cached_pages)}** páginas completas"
+            else:
+                cache_info += "\n * :red[0] páginas completas"
             if (processed_pages := STATE.processed_pages) is not None:
                 cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
-            if not cached_links and not cached_pages:
+            else:
+                cache_info += "\n * :red[0] páginas processadas"
+            if not any([cached_links, cached_pages, processed_pages]):
                 container.warning("Não há dados salvos para os parâmetros inseridos")
             else:
                 container.info(cache_info)
