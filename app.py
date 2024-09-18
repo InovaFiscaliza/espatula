@@ -74,9 +74,8 @@ if (key := "folder") not in STATE:
 
 if (key := "cloud") not in STATE:
     if not (cloud := CONFIG.get(KEYS[key], "")):
-        cloud = os.environ.get(
-            "OneDriveCommercial", f"{Path.home()/'OneDrive - ANATEL'}"
-        )
+        if onedrive := os.environ.get("OneDriveCommercial", ""):
+            cloud = rf'{Path(onedrive) / "DataHub - POST/Regulatron"}'
     STATE[key] = cloud
 
 
@@ -172,7 +171,6 @@ def request_table(json_path: Path) -> pd.DataFrame:
 
 def save_table():
     scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-
     try:
         if (df := STATE.processed_pages) is not None:
             output_table = scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
