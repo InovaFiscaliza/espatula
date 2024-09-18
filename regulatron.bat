@@ -13,6 +13,8 @@ cd %REGULATRON%
 call "%REGULATRON%\uv.exe" sync --frozen
 if %ERRORLEVEL% EQU 0 (
     start "" "%REGULATRON%\uv.exe" run run.py --no-sync
+    timeout /t 5 /nobreak > nul
+    start "" "http://localhost:8501" > nul 2>&1
 
 )
 
