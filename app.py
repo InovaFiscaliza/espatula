@@ -282,8 +282,7 @@ def inspect_pages(scraper):
                 left, right = st.columns([1, 1], vertical_alignment="top")
                 with left:
                     try:
-                        imagem = result.get("imagens", [])
-                        if len(imagem) > 1:
+                        if len(imagem := result.get("imagens", [])) >= 1:
                             imagem = imagem[0]
                         else:
                             imagem = result.get("imagem")
