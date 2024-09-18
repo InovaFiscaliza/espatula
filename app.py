@@ -214,8 +214,7 @@ def save_table():
 
 
 def process_data(pages_file: Path):
-    df = request_table(pages_file)
-    STATE.processed_pages = df
+    STATE.processed_pages = request_table(pages_file)
     save_table()
 
 
@@ -224,19 +223,19 @@ def set_processed_pages():
     scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
     json_file = scraper.pages_file(STATE.keyword)
     excel_file = json_file.with_suffix(".xlsx")
-    if json_file.is_file():
-        if not excel_file.is_file():
-            process_data(json_file)
-        else:
-            df = pd.read_excel(excel_file, dtype="string")
-            if set(scraper.get_links(STATE.keyword).keys()).difference(df["url"]):
-                process_data(json_file)
-            else:
-                STATE.processed_pages = df.astype(COLUNAS)
-    elif excel_file.is_file():
+
+    if excel_file.is_file():
         STATE.processed_pages = pd.read_excel(excel_file, dtype="string").astype(
             COLUNAS
         )
+    elif json_file.is_file():
+        process_data(json_file)
+
+    if STATE.cached_pages is not None:
+        if set(list(STATE.cached_pages.keys())).difference(
+            STATE.processed_pages["url"].to_list()
+        ):
+            process_data(json_file)
 
 
 @st.fragment
@@ -535,7 +534,7 @@ else:
                 cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
             else:
                 cache_info += "\n * :red[0] páginas processadas"
-            if not any([cached_links, cached_pages, processed_pages]):
+            if not any([cached_links, cached_pages, processed_pages is None]):
                 container.warning("Não há dados salvos para os parâmetros inseridos")
             else:
                 container.info(cache_info)
