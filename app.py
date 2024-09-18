@@ -10,7 +10,7 @@ from gradio_client import Client, handle_file
 from config import (
     BASE,
     CACHE,
-    CLOUD,
+    COLUNAS,
     FOLDER,
     SHOW_BROWSER,
     KEYWORD,
@@ -18,6 +18,7 @@ from config import (
     MARKETPLACE,
     MAX_PAGES,
     MAX_SEARCH,
+    KEYS,
     START,
     RECONNECT,
     SCREENSHOT,
@@ -42,43 +43,6 @@ SCRAPERS = {
     "Americanas": AmericanasScraper,
     "Casas Bahia": CasasBahiaScraper,
     "Carrefour": CarrefourScraper,
-}
-
-COLUNAS = {
-    "url": "string",
-    "nome": "string",
-    "fabricante": "string",
-    "modelo": "string",
-    "certificado": "string",
-    "ean_gtin": "string",
-    "subcategoria": "string",
-    "nome_sch": "string",
-    "tipo_sch": "category",
-    "fabricante_sch": "category",
-    "modelo_sch": "category",
-    "modelo_score": "int8",
-    "nome_score": "int8",
-    "passível?": "bool",
-    "probabilidade": "float32",
-}
-
-
-KEYS = {
-    "keyword": KEYWORD,
-    "folder": FOLDER,
-    "cloud": CLOUD,
-    "use_cache": CACHE[0],
-    "show_browser": SHOW_BROWSER,
-    "marketplace": MARKETPLACE,
-    "max_pages": MAX_PAGES,
-    "max_search": MAX_SEARCH,
-    "reconnect": RECONNECT,
-    "screenshot": SCREENSHOT,
-    "shuffle": SHUFFLE,
-    "timeout": TIMEOUT,
-    "title": TITLE,
-    "logos": LOGOS,
-    "load_user_profile": USER_PROFILE,
 }
 
 config_file = Path(__file__).parent / "config.json"
@@ -445,11 +409,9 @@ def run():
     )
     if STATE.use_cache == CACHE[1]:
         run_search(scraper)
-
     inspect_pages(scraper)
     process_data(scraper.pages_file(STATE.keyword))
     st.snow()
-    save_table()
     st.success("Processamento dos dados finalizado!", icon="🎉")
     show_processed_pages()
 

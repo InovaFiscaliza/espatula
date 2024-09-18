@@ -1,14 +1,23 @@
 # Configurable default values
 
-# GUI Names
-MARKETPLACES = {
-    "Amazon": "Amazon",
-    "Mercado Livre": "Mercado Livre",
-    "Magalu": "Magalu",
-    "Americanas": "Americanas",
-    "Casas Bahia": "Casas Bahia",
-    "Carrefour": "Carrefour",
+COLUNAS = {
+    "url": "string",
+    "nome": "string",
+    "fabricante": "string",
+    "modelo": "string",
+    "certificado": "string",
+    "ean_gtin": "string",
+    "subcategoria": "string",
+    "nome_sch": "string",
+    "tipo_sch": "category",
+    "fabricante_sch": "category",
+    "modelo_sch": "category",
+    "modelo_score": "int8",
+    "nome_score": "int8",
+    "passível?": "bool",
+    "probabilidade": "float32",
 }
+
 # GUI Images
 LOGOS = {
     "Espatula": "images/espatula.png",
@@ -38,3 +47,21 @@ SCREENSHOT = "Capturar tela do anúncio"
 USER_PROFILE = "Criar/carregar perfil de usuário no Chrome"
 SHOW_BROWSER = "Mostrar o navegador?"
 START = "Iniciar🚀"
+
+KEYS = {
+    "keyword": KEYWORD,
+    "folder": FOLDER,
+    "cloud": CLOUD,
+    "use_cache": CACHE[0],
+    "show_browser": SHOW_BROWSER,
+    "marketplace": MARKETPLACE,
+    "max_pages": MAX_PAGES,
+    "max_search": MAX_SEARCH,
+    "reconnect": RECONNECT,
+    "screenshot": SCREENSHOT,
+    "shuffle": SHUFFLE,
+    "timeout": TIMEOUT,
+    "title": TITLE,
+    "logos": LOGOS,
+    "load_user_profile": USER_PROFILE,
+}
