@@ -68,14 +68,15 @@ if (key := "keyword") not in STATE:
     STATE[key] = CONFIG.get(KEYS[key], "")
 
 if (key := "folder") not in STATE:
-    if not (folder := CONFIG.get(KEYS[key], "")):
-        folder = rf"{Path.home()}"
-    STATE[key] = folder
+    if not (folder := Path(__file__).parent / "data").is_dir():
+        folder.mkdir(parents=True, exist_ok=True)
+    STATE[key] = rf"{folder}"
 
 if (key := "cloud") not in STATE:
     if not (cloud := CONFIG.get(KEYS[key], "")):
         if onedrive := os.environ.get("OneDriveCommercial", ""):
-            cloud = rf'{Path(onedrive) / "DataHub - POST/Regulatron"}'
+            if (onedrive := Path(onedrive) / "DataHub - POST/Regulatron").is_dir():
+                cloud = rf"{onedrive}"
     STATE[key] = cloud
 
 
@@ -197,7 +198,7 @@ def set_processed_pages():
     elif json_file.is_file():
         process_data(json_file)
 
-    if STATE.cached_pages is not None:
+    if STATE.cached_pages is not None and STATE.processed_pages is not None:
         if set(list(STATE.cached_pages.keys())).difference(
             STATE.processed_pages["url"].to_list()
         ):
