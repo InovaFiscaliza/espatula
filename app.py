@@ -162,13 +162,17 @@ def request_table(json_path: Path) -> pd.DataFrame:
         json_file=handle_file(str(json_path)),
         api_name="/process_to_table",
     )
-    return pd.DataFrame(
-        result["data"], columns=result["headers"], dtype="string"
-    ).astype(COLUNAS)
+    df = pd.DataFrame(result["data"], columns=result["headers"], dtype="string").astype(
+        COLUNAS
+    )
+    df["marketplace"] = STATE.mkplc
+
+    return df
 
 
 def save_table():
     scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
+
     try:
         if (df := STATE.processed_pages) is not None:
             output_table = scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
@@ -189,9 +193,9 @@ def set_processed_pages():
     excel_file = json_file.with_suffix(".xlsx")
 
     if excel_file.is_file():
-        STATE.processed_pages = pd.read_excel(excel_file, dtype="string").astype(
-            COLUNAS
-        )
+        df = pd.read_excel(excel_file, dtype="string").astype(COLUNAS)
+        df["marketplace"] = STATE.mkplc
+        STATE.processed_pages = df
     elif json_file.is_file():
         process_data(json_file)
 
