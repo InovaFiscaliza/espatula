@@ -36,7 +36,7 @@ function Copy-FilesToDestination {
     }
 }
 
-$destinationFolder = "D:\OneDrive - ANATEL\AppRegulatron\app"
+$destinationFolder = "D:\OneDrive - ANATEL\Regulatron\app"
 
 # Create the destination folder if it doesn't exist
 New-Item -ItemType Directory -Force -Path $destinationFolder
@@ -47,7 +47,7 @@ $filesToCopy = @(
    "Regulatron.bat"
 )
 
-$destinationFolder = "D:\OneDrive - ANATEL\AppRegulatron"
+$destinationFolder = "D:\OneDrive - ANATEL\Regulatron"
 
 Copy-FilesToDestination -filesToCopy $filesToCopy -destinationFolder $destinationFolder
 
