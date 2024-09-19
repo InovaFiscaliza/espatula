@@ -622,13 +622,13 @@ else:
                                 RECONNECT,
                                 min_value=2,
                                 key="reconnect",
-                                value=CONFIG.get(KEYS["reconnect"], 5),
+                                value=CONFIG.get(KEYS["reconnect"], 4),
                             )
                             st.number_input(
                                 TIMEOUT,
                                 min_value=1,
                                 key="timeout",
-                                value=CONFIG.get(KEYS["timeout"], 2),
+                                value=CONFIG.get(KEYS["timeout"], 1),
                             )
                             st.toggle(
                                 USER_PROFILE,
