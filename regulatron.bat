@@ -10,7 +10,7 @@ if not exist "%REGULATRON%" (
 powershell -Command "robocopy .\app $Env:APPDATA\Anatel\Regulatron /E /XO /NFL /NDL /NJH /NJS /NC /NS /NP" > nul 2>&1
 powershell -Command "[Environment]::SetEnvironmentVariable('PYTHONUTF8','1', 'User')" > nul 2>&1
 cd %REGULATRON%
-call "%REGULATRON%\uv.exe" sync --frozen
+call "%REGULATRON%\uv.exe" sync --python 3.12 --frozen
 if %ERRORLEVEL% EQU 0 (
     start "" "%REGULATRON%\uv.exe" run run.py --frozen
     timeout /t 5 /nobreak > nul
