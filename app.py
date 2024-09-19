@@ -78,6 +78,8 @@ if (key := "cloud") not in STATE:
         if onedrive := os.environ.get("OneDriveCommercial", ""):
             if (onedrive := (Path(onedrive) / "DataHub - POST/Regulatron").resolve()).is_dir():
                 cloud = rf"{onedrive}"
+            elif (onedrive := (Path.home() / "ANATEL/InovaFiscaliza - DataHub - POST/Regulatron").resolve()).is_dir():
+                cloud = rf"{onedrive}"
     STATE[key] = cloud
 
 
