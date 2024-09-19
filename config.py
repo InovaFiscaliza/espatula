@@ -2,19 +2,20 @@
 
 COLUNAS = {
     "url": "string",
+    "imagem": "string",
     "nome": "string",
     "fabricante": "string",
     "modelo": "string",
     "certificado": "string",
     "ean_gtin": "string",
     "subcategoria": "string",
-    "nome_sch": "string",
+    "nome_sch": "category",
     "tipo_sch": "category",
     "fabricante_sch": "category",
     "modelo_sch": "category",
     "modelo_score": "int8",
     "nome_score": "int8",
-    "passível?": "bool",
+    "passível?": "category",
     "probabilidade": "float32",
 }
 
@@ -35,8 +36,8 @@ KEYWORD = "Palavra-Chave🔎"
 TITLE = "🤖 Regulatron"
 BASE = "INÍCIO"
 CACHE = ("Utilizar Resultados de Busca", "Efetuar Nova Pesquisa")
-FOLDER = "Pasta de Trabalho"
-CLOUD = "Pasta de Trabalho (nuvem - OneDrive)"
+FOLDER = "Pasta local de Trabalho"
+CLOUD = "Pasta do Onedrive (nuvem - DataHub - POST/Regulatron)"
 RECONNECT = "Tempo de espera para conectar ao navegador (seg)"
 TIMEOUT = "Tempo de espera para carregamento da página (seg)"
 SEARCH_PARAMETERS = "Parâmetros - Busca de Links"
