@@ -49,16 +49,16 @@ else:
 
 @dataclass
 class BaseScraper:
-    headless: bool = True
+    headless: bool = False
     path: Path = Path(os.environ.get("FOLDER", f"{Path(__file__).parent}/data"))
     reconnect: int = int(os.environ.get("RECONNECT", 10))
     timeout: int = int(os.environ.get("TIMEOUT", 5))
     retries: int = int(os.environ.get("RETRIES", 3))
-    load_user_profile: bool = True
+    load_user_profile: bool = False
     demo: bool = False
-    ad_block_on: bool = True
+    ad_block_on: bool = False
     incognito: bool = False
-    do_not_track: bool = True
+    do_not_track: bool = False
     turnstile: bool = False
 
     @property
@@ -120,10 +120,10 @@ class BaseScraper:
         else:
             user_data_dir = None
         with SB(
-            headless2=self.headless,
             uc=True,  # Always true
-            ad_block_on=self.ad_block_on,
             incognito=self.incognito,
+            headless2=self.headless,
+            ad_block_on=self.ad_block_on,
             do_not_track=self.do_not_track,
             user_data_dir=user_data_dir,
         ) as sb:
