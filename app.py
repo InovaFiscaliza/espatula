@@ -13,7 +13,6 @@ from config import (
     COLUNAS,
     CLOUD,
     FOLDER,
-    SHOW_BROWSER,
     KEYWORD,
     LOGOS,
     MARKETPLACE,
@@ -26,7 +25,6 @@ from config import (
     SHUFFLE,
     TIMEOUT,
     TITLE,
-    USER_PROFILE,
 )
 from espatula import (
     AmazonScraper,
@@ -447,11 +445,9 @@ def run():
     save_config()
     STATE.show_cache = False
     scraper = SCRAPERS[STATE.mkplc](
-        headless=not STATE.show_browser,
         path=STATE.folder,
         reconnect=STATE.reconnect,
         timeout=STATE.timeout,
-        load_user_profile=STATE.load_user_profile,
     )
     if STATE.use_cache == CACHE[1]:
         run_search(scraper)
@@ -630,17 +626,7 @@ else:
                                 key="timeout",
                                 value=CONFIG.get(KEYS["timeout"], 1),
                             )
-                            st.toggle(
-                                USER_PROFILE,
-                                key="load_user_profile",
-                                value=CONFIG.get(KEYS["load_user_profile"], True),
-                            )
-                            st.toggle(
-                                SHOW_BROWSER,
-                                key="show_browser",
-                                value=CONFIG.get(KEYS["show_browser"], True),
-                            )
-
+                                                        
                         st.form_submit_button(START, on_click=run, use_container_width=True)
             
         else:
