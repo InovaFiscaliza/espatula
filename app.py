@@ -11,6 +11,7 @@ from config import (
     BASE,
     CACHE,
     COLUNAS,
+    CLOUD,
     FOLDER,
     SHOW_BROWSER,
     KEYWORD,
@@ -68,14 +69,14 @@ if (key := "keyword") not in STATE:
     STATE[key] = CONFIG.get(KEYS[key], "")
 
 if (key := "folder") not in STATE:
-    if not (folder := Path(__file__).parent / "data").is_dir():
+    if not (folder := (Path(__file__).parent / "data").resolve()).is_dir():
         folder.mkdir(parents=True, exist_ok=True)
     STATE[key] = rf"{folder}"
 
 if (key := "cloud") not in STATE:
-    if not (cloud := CONFIG.get(KEYS[key], "")):
+    if not (cloud := CONFIG.get(KEYS[key])):
         if onedrive := os.environ.get("OneDriveCommercial", ""):
-            if (onedrive := Path(onedrive) / "DataHub - POST/Regulatron").is_dir():
+            if (onedrive := (Path(onedrive) / "DataHub - POST/Regulatron").resolve()).is_dir():
                 cloud = rf"{onedrive}"
     STATE[key] = cloud
 
@@ -84,7 +85,7 @@ if "cached_links" not in STATE:
     STATE.cached_links = {}
 
 if "show_cache" not in STATE:
-    STATE.show_cache = False
+    STATE.show_cache = True
 
 if "cached_pages" not in STATE:
     STATE.cached_pages = None
@@ -139,7 +140,7 @@ def set_folder():
 @st.fragment
 def set_cloud():
     # Callback function to save the keyword selection to Session State
-    if Path(STATE._cloud).is_dir():
+    if STATE._cloud is not None and Path(STATE._cloud).is_dir():
         STATE.cloud = STATE._cloud
 
 
@@ -175,13 +176,18 @@ def save_table():
     try:
         if (df := STATE.processed_pages) is not None:
             output_table = scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
+            df["marketplace"] = STATE.mkplc
             df.to_excel(output_table, index=False)
     except Exception as e:
         st.error(f"Erro ao salvar os dados processados: {e}")
 
 
 def process_data(pages_file: Path):
-    STATE.processed_pages = request_table(pages_file)
+    df = request_table(pages_file)
+    df["probabilidade"] *= 100
+    df.sort_values(by=["passível?", "probabilidade"], ascending=False, inplace=True, ignore_index=True)
+    df.sort_values(by=["modelo_score", "nome_score"], ascending=False, inplace=True, ignore_index=True)
+    STATE.processed_pages = df
     save_table()
 
 
@@ -193,7 +199,8 @@ def set_processed_pages():
 
     if excel_file.is_file():
         df = pd.read_excel(excel_file, dtype="string").astype(COLUNAS)
-        df["marketplace"] = STATE.mkplc
+        df.sort_values(by=["passível?", "probabilidade"], ascending=False, inplace=True, ignore_index=True)
+        df.sort_values(by=["modelo_score", "nome_score"], ascending=False, inplace=True, ignore_index=True)
         STATE.processed_pages = df
     elif json_file.is_file():
         process_data(json_file)
@@ -229,6 +236,11 @@ def show_processed_pages():
         with st.container(border=False):
             format_df(STATE.processed_pages)
 
+def update_processed_pages(output_df_key):
+    edited = STATE[output_df_key]['edited_rows']
+    for index, row in edited.items():
+        for column, value in row.items():
+            STATE.processed_pages.loc[index, column] = str(value)
 
 def run_search(scraper):
     with st.container():
@@ -290,75 +302,50 @@ def inspect_pages(scraper):
         output.empty()
         progress_bar.empty()
 
-
-def format_df(df):
-    # Create MultiIndex for columns
-    # columns = pd.MultiIndex.from_tuples(
-    #     [
-    #         ("Anúncio", "URL"),
-    #         ("Anúncio", "Título"),
-    #         ("Anúncio", "Fabricante"),
-    #         ("Anúncio", "Modelo"),
-    #         ("Anúncio", "Certificado"),
-    #         ("Anúncio", "EAN/GTIN"),
-    #         ("Anúncio", "Categoria"),
-    #         ("SCH", "Nome"),
-    #         ("SCH", "Tipo"),
-    #         ("SCH", "Fabricante"),
-    #         ("SCH", "Modelo"),
-    #         ("Sobreposição de Strings - Anúncio x SCH", "Título - Nome Comercial (%)"),
-    #         ("Sobreposição de Strings - Anúncio x SCH", "Modelo - Nome Comercial (%)"),
-    #         ("Classificador Binário", "Homologação Compulsória"),
-    #         ("Classificador Binário", "Probabilidade"),
-    #     ],
-    #     names=["Origem dos Dados", "Coluna"],
-    # )
-
-    df_show = df.loc[:, list(COLUNAS.keys())]
-    df_show["probabilidade"] *= 100
-    df_show.sort_values(by="passível?", ascending=False, inplace=True)
-    df_show.sort_values(by="modelo_score", ascending=False, inplace=True)
-    # df_show.columns = columns
-
-    return st.data_editor(
-        df_show,
-        height=720 if len(df_show) >= 20 else None,
+def display_df(df, column_order, output_df_key):     
+    st.data_editor(
+        df,
+        height=720 if len(df) >= 20 else None,
         use_container_width=True,
+        column_order=column_order,
         column_config={
             "url": st.column_config.LinkColumn(
-                "URL", width=None, display_text="Link", help="Dados do Anúncio"
+                "URL", width=None, display_text="Link", help="Dados do Anúncio", disabled=True
+            ),
+            "imagem": st.column_config.ImageColumn(
+                "Imagem", width="small", help="Dados do Anúncio"
             ),
             "nome": st.column_config.TextColumn(
-                "Título", width=None, help="Dados do Anúncio"
+                "Título", width=None, help="Dados do Anúncio", disabled=True
             ),
             "fabricante": st.column_config.TextColumn(
-                "Fabricante", width=None, help="Dados do Anúncio"
+                "Fabricante", width=None, help="Dados do Anúncio", disabled=True
             ),
             "modelo": st.column_config.TextColumn(
-                "Modelo", width=None, help="Dados do Anúncio"
+                "Modelo", width=None, help="Dados do Anúncio", disabled=True
             ),
             "certificado": st.column_config.TextColumn(
-                "Certificado", width=None, help="Dados do Anúncio"
+                "Certificado", width=None, help="Dados do Anúncio", disabled=True
             ),
             "ean_gtin": st.column_config.TextColumn(
-                "EAN/GTIN", width=None, help="Dados do Anúncio"
+                "EAN/GTIN", width=None, help="Dados do Anúncio", disabled=True
             ),
-            "subcategoria": st.column_config.SelectboxColumn(
-                "Categoria", width=None, help="Dados do Anúncio"
+            "subcategoria": st.column_config.TextColumn(
+                "Categoria", width=None, help="Dados do Anúncio", disabled=True
             ),
-            "nome_sch": st.column_config.TextColumn(
+            "nome_sch": st.column_config.SelectboxColumn(
                 "SCH - Nome Comercial",
                 width=None,
                 help="Dados de Certificação - SCH",
                 disabled=True,
             ),
-            "fabricante_sch": st.column_config.TextColumn(
+            "fabricante_sch": st.column_config.SelectboxColumn(
                 "SCH - Fabricante",
                 width=None,
                 help="Dados de Certificação - SCH",
                 disabled=True,
             ),
-            "modelo_sch": st.column_config.TextColumn(
+            "modelo_sch": st.column_config.SelectboxColumn(
                 "SCH - Modelo",
                 width=None,
                 help="Dados de Certificação - SCH",
@@ -381,25 +368,79 @@ def format_df(df):
                 help="Sobreposição de strings - Anúncio versus SCH",
             ),
             "passível?": st.column_config.CheckboxColumn(
-                "Homologação Compulsória (True/False)",
+                "Classe (True/False)",
                 width=None,
-                help="Classificação - Binária",
-                disabled=True,
+                help="Classificador - Homologação Compulsória",
+                disabled=False,
             ),
             "probabilidade": st.column_config.ProgressColumn(
-                "Probabilidade",
+                "Classe (Probabilidade)",
                 format="%.2f%%",
                 min_value=0,
                 max_value=100,
-                help="Classificação - Binária",
+                help="Classificador - Homologação Compulsória",
             ),
         },
         hide_index=True,
         disabled=False,
-        on_change=None,
+        on_change=update_processed_pages,
+        key=output_df_key,
+        args=(output_df_key,)
+
     )
 
+def format_df(df):
+    df = STATE.processed_pages
+    with st.expander("Dados Positivos - Homologação Compulsória pela Anatel", icon="🔥"):
+        display_df(df.loc[df["passível?"] == "True"], COLUNAS.keys(), output_df_key="df_positive")
+    with st.expander("Dados Negativos - Não Relevante (_Serão descartados_)" , icon="🗑️"):
+        display_df(df.loc[df["passível?"] == "False"], COLUNAS.keys(), output_df_key="df_negative")
+        
+    st.info("É possível alterar a classificação, caso incorreta!", icon="✍🏽")
+    columns = st.columns(4, vertical_alignment="top")
+    
+    with columns[0]:
+        with st.popover("Dados do Anúncio"):
+            st.markdown("""
+                        * Os registros que compõem a primeira tabela serão salvos em um arquivo Excel e posteriormente sincronizados com o [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron).
+                        * Todos os dados brutos do anúncio serão salvos, as colunas acima são apenas um recorte.
+                        """)
+            
+    with columns[1]:
+        with st.popover("🗃️Dados de Certificação - SCH"):
+            st.markdown("""
+                        * Caso o anúncio contenha um nº de homologação, este é verificado e, caso válido, as colunas __Fabricante__, __Modelo__, __Tipo__ e __Nome Comercial__ são preenchidas com os dados do certificado.
+                        * Os dados de Certificação - SCH são extraídos do portal de dados abertos: [link](https://dados.gov.br/dados/conjuntos-dados/produtos-de-telecomunicacoes-homologados-pela-anatel)
+                        """)
+    with columns[2]:
+        with st.popover("🖇️Comparação de Strings - Anúncio x SCH"):
+            st.markdown("""
+                        * Para os registros com dados do certificado inseridos, as seguintes colunas correspondentes são comparadas:
+                            * Título do anúncio x SCH - Nome Comercial
+                            * Modelo do anúncio x SCH - Modelo
+                        * A comparação é feita calculando-se a sobreposição textual (_fuzzy string matching - Distância de Levenshtein_).
+                        * A taxa de sobreposição é mostrada nas colunas __Título x SCH - Nome Comercial (%)__ e __Modelo x SCH - Modelo (%)__.
+                        * Uma taxa de sobreposição de `100%` indica que um dado está contido no outro.
+                        * Este é um indicativo de correspondência entre os dados do anúncio e o certificado apontado.
+                        * Apesar de não garantir a validade da homologação, uma taxa de 100% é mais um artifício a favor da classificação.
+                        
+                        """)
+    with columns[3]:
+        with st.popover("📌Classificador Binário"):
+            st.link_button("Mais informações",
+                           url="https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/Regulatron--Experimento-de-classifica%C3%A7%C3%A3o-3.aspx",
+                           use_container_width=True)
 
+            st.markdown("""
+                    * Classe :green[True] ✅ - O produto foi classificado como **Positivo**, i.e. **possui homologação compulsória**.
+                        * 👉🏽Para alterar de :green[True] para :red[False], basta desmarcar o checkbox na coluna `Classe` da primeira tabela. A `Classe` será alterada para :red[False] e o registro migrado para a segunda tabela.
+                    * Classe :red[False] 🔲 - O produto  foi classificado como **Negativo**, i.e. **NÃO possui homologação compulsória**.
+                        * 👉🏽Para alterar de :red[False] para :green[True], basta marcar o checkbox na coluna `Classe` da segunda tabela. A `Classe` será alterada para :green[True] e o registro migrado para a primeira tabela.
+
+                    """)
+
+
+            
 def run():
     save_config()
     STATE.show_cache = False
@@ -459,131 +500,146 @@ if STATE.mkplc is None:
         "Por favor, selecione uma plataforma para iniciar a pesquisa.",
         icon="👆🏾",
     )
-else:
-    config_container.text_input(
-        KEYWORD,
-        placeholder="Qual a palavra-chave a pesquisar?",
-        key="_keyword",
-        on_change=set_keyword,
-    )
+else:    
 
-    config_container.text_input(
-        FOLDER,
-        key="_folder",
-        on_change=set_folder,
-    )
+    set_folder()
+    set_cloud()
 
-    # config_container.text_input(
-    #     CLOUD,
-    #     key="_cloud",
-    #     on_change=set_cloud,
-    # )
+    if STATE.folder is None or not Path(STATE.folder).is_dir():
+        st.error("Insira um caminho válido para a pasta de trabalho local!", icon="🚨")
+        st.text_input(
+            FOLDER,
+            key="_folder",
+            on_change=set_folder,
+        )
 
-    if STATE.keyword:
-        if Path(STATE.folder).is_dir():
-            set_cached_links()
-            set_cached_pages()
-            set_processed_pages()
-            container = st.sidebar.expander("DADOS", expanded=True)
-            cache_info = ""
-            if cached_links := STATE.cached_links:
-                cache_info += f" * **{len(cached_links)}** resultados de busca"
-            else:
-                cache_info += " * :red[0] resultados de busca"
-                STATE.use_cache = CACHE[1]
-            if cached_pages := STATE.cached_pages:
-                cache_info += f"\n* **{len(cached_pages)}** páginas completas"
-            else:
-                cache_info += "\n * :red[0] páginas completas"
-            if (processed_pages := STATE.processed_pages) is not None:
-                cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
-            else:
-                cache_info += "\n * :red[0] páginas processadas"
-            if not any([cached_links, cached_pages, processed_pages is None]):
-                container.warning("Não há dados salvos para os parâmetros inseridos")
-            else:
-                container.info(cache_info)
-                if container.toggle("Mostrar Dados Salvos", key="show_cache"):
-                    left_tab, right_tab = st.tabs(
-                        [
-                            "Navegação de Páginas",
-                            "Dado Processado",
-                        ]
-                    )
-                    with left_tab:
-                        left, right = st.columns([1, 1], vertical_alignment="top")
-                        with left:
-                            left.subheader("Resultado de Busca")
-                            show_links()
-                        with right:
-                            right.subheader("Página Completa")
-                            show_pages()
-                    with right_tab:
-                        right_tab.subheader("Tabela de Dados Processados")
-                        show_processed_pages()
-            if cached_links:
-                container.radio(
-                    "Links para Navegação de Páginas",
-                    options=CACHE,
-                    index=0 if CONFIG[CACHE[0]] else 1,
-                    key="_use_cache",
-                    on_change=use_cache,
-                )
+    elif STATE.cloud is None or not Path(STATE.cloud).is_dir():
+        st.error("Insira o caminho para a pasta sincronizada do OneDrive: DataHub - POST/Regulatron !", icon="🚨")
+        st.markdown("""
+                    * Para sincronizar, abra o link [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron)
+                    * Clique em __Add shortcut to OneDrive | Adicionar atalho para OneDrive__
+                    """)
+        st.image("images/onedrive.png", width=720)
+        st.markdown("""
+                    * Copie o caminho da pasta sincronizada e cole no campo abaixo
+        """)
+        
+        st.text_input(
+            CLOUD,
+            key="_cloud",
+            on_change=set_cloud,
+        )
 
-            with st.sidebar:
-                with st.form("config", border=False):
-                    with st.expander("PARÂMETROS - PESQUISA", expanded=False):
-                        st.number_input(
-                            MAX_SEARCH,
-                            min_value=1,
-                            value=CONFIG.get(KEYS["max_search"], 10),
-                            key="max_search",
-                            disabled=(STATE.use_cache == CACHE[0]),
-                        )
-                        st.number_input(
-                            MAX_PAGES,
-                            min_value=1,
-                            value=CONFIG.get(KEYS["max_pages"], 50),
-                            key="max_pages",
-                        )
-                        st.checkbox(
-                            SHUFFLE,
-                            key="shuffle",
-                            value=CONFIG.get(KEYS["shuffle"], True),
-                        )
-                        st.checkbox(
-                            SCREENSHOT,
-                            key="screenshot",
-                            value=CONFIG.get(KEYS["screenshot"], True),
-                        )
-
-                    with st.expander("CONFIGURAÇÕES - BROWSER", expanded=False):
-                        st.number_input(
-                            RECONNECT,
-                            min_value=2,
-                            key="reconnect",
-                            value=CONFIG.get(KEYS["reconnect"], 5),
-                        )
-                        st.number_input(
-                            TIMEOUT,
-                            min_value=1,
-                            key="timeout",
-                            value=CONFIG.get(KEYS["timeout"], 2),
-                        )
-                        st.toggle(
-                            USER_PROFILE,
-                            key="load_user_profile",
-                            value=CONFIG.get(KEYS["load_user_profile"], True),
-                        )
-                        st.toggle(
-                            SHOW_BROWSER,
-                            key="show_browser",
-                            value=CONFIG.get(KEYS["show_browser"], True),
-                        )
-
-                    st.form_submit_button(START, on_click=run, use_container_width=True)
-
-        else:
-            st.sidebar.error("Insira um caminho válido!", icon="🚨")
     else:
-        st.sidebar.warning("Insira uma palavra-chave não vazia!", icon="⚠️")
+
+        config_container.text_input(
+            KEYWORD,
+            placeholder="Qual a palavra-chave a pesquisar?",
+            key="_keyword",
+            on_change=set_keyword,
+        )
+
+        if STATE.keyword:
+                set_cached_links()
+                set_cached_pages()
+                set_processed_pages()
+                container = st.sidebar.expander("DADOS", expanded=True)
+                cache_info = ""
+                if cached_links := STATE.cached_links:
+                    cache_info += f" * **{len(cached_links)}** resultados de busca"
+                else:
+                    cache_info += " * :red[0] resultados de busca"
+                    STATE.use_cache = CACHE[1]
+                if cached_pages := STATE.cached_pages:
+                    cache_info += f"\n* **{len(cached_pages)}** páginas completas"
+                else:
+                    cache_info += "\n * :red[0] páginas completas"
+                if (processed_pages := STATE.processed_pages) is not None:
+                    cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
+                else:
+                    cache_info += "\n * :red[0] páginas processadas"
+                if not any([cached_links, cached_pages, processed_pages is not None]):
+                    container.warning("Não há dados salvos para os parâmetros inseridos")
+                else:
+                    container.info(cache_info)
+                    if container.toggle("Mostrar Dados Salvos", key="show_cache"):
+                        left_tab, right_tab = st.tabs(
+                            [
+                                "Dado Processado",
+                                "Dado Bruto",
+                            ]
+                        )
+                        with right_tab:
+                            left, right = st.columns([1, 1], vertical_alignment="top")
+                            with left:
+                                left.subheader("Resultado de Busca")
+                                show_links()
+                            with right:
+                                right.subheader("Página Completa")
+                                show_pages()
+                        with left_tab:
+                            show_processed_pages()
+                if cached_links:
+                    container.radio(
+                        "Links para Navegação de Páginas",
+                        options=CACHE,
+                        index=0 if CONFIG[CACHE[0]] else 1,
+                        key="_use_cache",
+                        on_change=use_cache,
+                    )
+
+                with st.sidebar:
+                    with st.form("config", border=False):
+                        with st.expander("PARÂMETROS - PESQUISA", expanded=False):
+                            st.number_input(
+                                MAX_SEARCH,
+                                min_value=1,
+                                value=CONFIG.get(KEYS["max_search"], 10),
+                                key="max_search",
+                                disabled=(STATE.use_cache == CACHE[0]),
+                            )
+                            st.number_input(
+                                MAX_PAGES,
+                                min_value=1,
+                                value=CONFIG.get(KEYS["max_pages"], 50),
+                                key="max_pages",
+                            )
+                            st.checkbox(
+                                SHUFFLE,
+                                key="shuffle",
+                                value=CONFIG.get(KEYS["shuffle"], True),
+                            )
+                            st.checkbox(
+                                SCREENSHOT,
+                                key="screenshot",
+                                value=CONFIG.get(KEYS["screenshot"], True),
+                            )
+
+                        with st.expander("CONFIGURAÇÕES - BROWSER", expanded=False):
+                            st.number_input(
+                                RECONNECT,
+                                min_value=2,
+                                key="reconnect",
+                                value=CONFIG.get(KEYS["reconnect"], 5),
+                            )
+                            st.number_input(
+                                TIMEOUT,
+                                min_value=1,
+                                key="timeout",
+                                value=CONFIG.get(KEYS["timeout"], 2),
+                            )
+                            st.toggle(
+                                USER_PROFILE,
+                                key="load_user_profile",
+                                value=CONFIG.get(KEYS["load_user_profile"], True),
+                            )
+                            st.toggle(
+                                SHOW_BROWSER,
+                                key="show_browser",
+                                value=CONFIG.get(KEYS["show_browser"], True),
+                            )
+
+                        st.form_submit_button(START, on_click=run, use_container_width=True)
+            
+        else:
+            st.sidebar.warning("Insira uma palavra-chave não vazia!", icon="⚠️")
