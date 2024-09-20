@@ -104,11 +104,10 @@ class BaseScraper:
             return {}
         return loads(pages_file.read_text(encoding="utf-8"))
 
-    @staticmethod
-    def click_turnstile_and_verify(sb):
+    def click_turnstile_and_verify(self, driver):
         try:
-            sb.switch_to_frame("iframe")
-            sb.uc_click("span.mark")
+            driver.switch_to_frame("iframe")
+            self.uc_click(driver, "span.mark", self.reconnect)
         except Exception as e:
             print(e)
 
@@ -128,8 +127,6 @@ class BaseScraper:
             user_data_dir=user_data_dir,
         ) as sb:
             sb.driver.maximize_window()
-            if self.turnstile:
-                self.click_turnstile_and_verify(sb)
             yield sb
 
     @staticmethod
