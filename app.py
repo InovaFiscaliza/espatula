@@ -213,31 +213,31 @@ def set_processed_pages():
     json_file = scraper.pages_file(STATE.keyword)
     excel_file = json_file.with_suffix(".xlsx")
 
+    STATE.processed_pages = None
+    need_processing = True
+
     if excel_file.is_file():
         try:
             df = pd.read_excel(excel_file, dtype="string").astype(COLUNAS)
             df.sort_values(
-                by=["passível?", "probabilidade"],
-                ascending=False,
-                inplace=True,
-                ignore_index=True,
-            )
-            df.sort_values(
-                by=["modelo_score", "nome_score"],
-                ascending=False,
+                by=["passível?", "probabilidade", "modelo_score", "nome_score"],
+                ascending=[False, False, False, False],
                 inplace=True,
                 ignore_index=True,
             )
             STATE.processed_pages = df
+            need_processing = False
         except Exception:
-            process_data(json_file)
-    elif json_file.is_file():
-        process_data(json_file)
+            pass
 
-    if STATE.cached_pages is not None and STATE.processed_pages is not None:
-        if set(list(STATE.cached_pages.keys())).difference(
-            STATE.processed_pages["url"].to_list()
-        ):
+    if need_processing and json_file.is_file():
+        process_data(json_file)
+        need_processing = False
+
+    if not need_processing and STATE.cached_pages is not None:
+        processed_urls = set(STATE.processed_pages["url"].to_list())
+        cached_urls = set(STATE.cached_pages.keys())
+        if cached_urls.difference(processed_urls):
             process_data(json_file)
 
 
