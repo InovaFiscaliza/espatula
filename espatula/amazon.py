@@ -235,19 +235,9 @@ class AmazonScraper(BaseScraper):
         return results
 
     def input_search_params(self, driver, keyword):
+        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         for attempt in range(self.retries):
             try:
-                # section = 'select[id="searchDropdownBox"]'
-                # section = '//*[@id="searchDropdownBox"]'
-                # self.highlight_element(driver, section)
-                # category = driver.find_element(
-                #     section, timeout=self.timeout, by="xpath"
-                # )
-                # category.uc_click()
-                # electronics = driver.find_element(
-                #     'option[value="search-alias=electronics"]', timeout=self.timeout
-                # )
-                # electronics.uc_click()
                 self.highlight_element(driver, self.input_field)
                 driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
                 break  # Success, exit the loop
