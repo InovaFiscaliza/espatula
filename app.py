@@ -111,7 +111,7 @@ def request_table(json_path: Path) -> pd.DataFrame:
         return df
     except AppError as e:
         st.error(
-            f"Erro ao processar os dados: {e}. Tente novamente, se persistir, reporte o erro no Github."
+            f"Erro ao processar os dados: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
         )
         return None
 
@@ -131,7 +131,7 @@ def process_data(pages_file: Path):
     STATE.processed_pages = None
     if len(pages_file.read_json()) == 0:
         return
-    if df := request_table(pages_file) is not None:
+    if (df := request_table(pages_file)) is not None:
         df["probabilidade"] *= 100
         df.sort_values(
             by=["passível?", "probabilidade"],
@@ -176,7 +176,11 @@ def set_processed_pages():
         process_data(json_file)
         need_processing = False
 
-    if not need_processing and STATE.cached_pages is not None:
+    if (
+        not need_processing
+        and STATE.cached_pages is not None
+        and STATE.processed_pages is not None
+    ):
         processed_urls = set(STATE.processed_pages["url"].to_list())
         cached_urls = set(STATE.cached_pages.keys())
         if cached_urls.difference(processed_urls):
@@ -240,7 +244,7 @@ def run_search(scraper):
             progress_bar.empty()
     except Exception as e:
         st.error(
-            f"Erro ao realizar a busca: {e}. Tente novamente, se persistir, reporte o erro no Github."
+            f"Erro ao realizar a busca: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
         )
 
 
@@ -282,7 +286,7 @@ def inspect_pages(scraper):
             progress_bar.empty()
     except Exception as e:
         st.error(
-            f"Erro ao realizar a navegação de páginas: {e}. Tente novamente, se persistir, reporte o erro no Github."
+            f"Erro ao realizar a navegação de páginas: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
         )
 
 

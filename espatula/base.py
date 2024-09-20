@@ -59,7 +59,7 @@ class BaseScraper:
     guest_mode: bool = True
     incognito: bool = False
     do_not_track: bool = True
-    turnstile: bool = False
+    handle_captcha: bool = False
 
     @property
     def name(self):
@@ -104,12 +104,8 @@ class BaseScraper:
             return {}
         return loads(pages_file.read_text(encoding="utf-8"))
 
-    def click_turnstile_and_verify(self, driver):
-        try:
-            driver.switch_to_frame("iframe")
-            self.uc_click(driver, "span.mark", self.reconnect)
-        except Exception as e:
-            print(e)
+    def click_captcha(self, driver):
+        driver.uc_gui_click_captcha(retry=True)
 
     @contextmanager
     def browser(self):
@@ -205,8 +201,8 @@ class BaseScraper:
     def uc_click(self, driver, selector, timeout=None):
         self.highlight_element(driver, selector)
         if timeout is None:
-            timeout = self.timeout
-        driver.uc_click(selector, timeout=timeout)
+            timeout = self.reconnect
+        driver.uc_click(selector, timeout=timeout, reconnect_time=timeout)
 
     def _save_screenshot(self, driver: SB, filename: str):
         folder = self.folder / "screenshots"
