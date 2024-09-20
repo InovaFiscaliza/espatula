@@ -1,6 +1,4 @@
-import os
 import time
-import json
 
 import streamlit as st
 import pandas as pd
@@ -55,53 +53,15 @@ st.set_page_config(
     page_title="Regulatron",
     page_icon="🤖",
     layout="wide",
+    menu_items={
+        "Report a bug": "https://github.com/InovaFiscaliza/Regulatron/issues",
+        "About": "*Fiscalização de Produtos Telecomunicações - Anatel*",
+    },
 )
 
 STATE = st.session_state
 
-# Initialize STATE.mkplc to None
-if "mkplc" not in STATE:
-    STATE.mkplc = None
-
-if (key := "keyword") not in STATE:
-    STATE[key] = CONFIG.get(KEYS[key], "")
-
-if (key := "folder") not in STATE:
-    if not (folder := (Path(__file__).parent / "data").resolve()).is_dir():
-        folder.mkdir(parents=True, exist_ok=True)
-    STATE[key] = rf"{folder}"
-
-if (key := "cloud") not in STATE:
-    if not (cloud := CONFIG.get(KEYS[key])):
-        if onedrive := os.environ.get("OneDriveCommercial", ""):
-            if (
-                onedrive := (Path(onedrive) / "DataHub - POST/Regulatron").resolve()
-            ).is_dir():
-                cloud = rf"{onedrive}"
-            elif (
-                onedrive := (
-                    Path.home() / "ANATEL/InovaFiscaliza - DataHub - POST/Regulatron"
-                ).resolve()
-            ).is_dir():
-                cloud = rf"{onedrive}"
-    STATE[key] = cloud
-
-
-if "cached_links" not in STATE:
-    STATE.cached_links = {}
-
-if "show_cache" not in STATE:
-    STATE.show_cache = True
-
-if "cached_pages" not in STATE:
-    STATE.cached_pages = None
-
-if "processed_pages" not in STATE:
-    STATE.processed_pages = None
-
-if (key := "use_cache") not in STATE:
-    STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
-
+init_session_state(STATE, CONFIG)
 
 # Retrieve previous Session State to initialize the widgets
 for key in STATE:
@@ -111,22 +71,13 @@ for key in STATE:
         CONFIG[KEYS[key]] = STATE[key]
 
 
-def save_config():
-    # Callback function to save the configuration to a JSON file
-    json.dump(
-        CONFIG,
-        config_file.open("w", encoding="utf-8"),
-        ensure_ascii=False,
-    )
-
-
 @st.fragment
 def set_mkplc():
     # Callback function to save the mkplc selection to Session State
     STATE.mkplc = STATE._mkplc
     img = LOGOS[STATE._mkplc]
     st.logo(img)
-    st.image(img, width=320)
+    st.image(img, width=270)
 
 
 @st.fragment
@@ -489,7 +440,7 @@ def format_df(df):
 
 
 def run():
-    save_config()
+    save_config(CONFIG)
     STATE.show_cache = False
     scraper = SCRAPERS[STATE.mkplc](
         path=STATE.folder,
