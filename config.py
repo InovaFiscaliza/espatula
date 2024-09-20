@@ -1,4 +1,7 @@
 # Configurable default values
+import os
+from fastcore.xtras import Path
+import json
 
 COLUNAS = {
     "url": "string",
@@ -66,3 +69,64 @@ KEYS = {
     "logos": LOGOS,
     "load_user_profile": USER_PROFILE,
 }
+
+
+def load_config(config_file):
+    if config_file.exists():
+        return config_file.read_json()
+    return {}
+
+
+def init_session_state(STATE, CONFIG, KEYS):
+    if "mkplc" not in STATE:
+        STATE.mkplc = None
+
+    for key in [
+        "keyword",
+        "folder",
+        "cloud",
+        "cached_links",
+        "show_cache",
+        "cached_pages",
+        "processed_pages",
+        "use_cache",
+    ]:
+        if key not in STATE:
+            if key == "keyword":
+                STATE[key] = CONFIG.get(KEYS[key], "")
+            elif key == "folder":
+                folder = (Path(__file__).parent / "data").resolve()
+                if not folder.is_dir():
+                    folder.mkdir(parents=True, exist_ok=True)
+                STATE[key] = rf"{folder}"
+            elif key == "cloud":
+                cloud = CONFIG.get(KEYS[key])
+                if not cloud:
+                    cloud = setup_base_cloud()
+                STATE[key] = cloud
+            elif key == "use_cache":
+                STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
+            else:
+                STATE[key] = {}
+
+
+def setup_base_cloud():
+    onedrive = os.environ.get("OneDriveCommercial", "")
+    cloud = None
+    if onedrive:
+        cloud_paths = [
+            (Path(onedrive) / "DataHub - POST/Regulatron"),
+            (Path.home() / "ANATEL/InovaFiscaliza - DataHub - POST/Regulatron"),
+        ]
+        for cloud_path in cloud_paths:
+            if cloud_path.resolve().is_dir():
+                cloud = rf"{cloud_path.resolve()}"
+                break
+    return cloud
+
+
+def save_config(config, config_file):
+    json.dump(config, config_file.open("w", encoding="utf-8"), ensure_ascii=False)
+
+
+# Other utility functions and configuration-related logic can go here...
