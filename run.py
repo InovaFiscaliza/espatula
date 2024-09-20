@@ -14,13 +14,12 @@ if __name__ == "__main__":
         "run",
         resolve_path("app.py"),
         "--global.developmentMode=false",
-        "--server.headless=false",
+        "--server.headless=true",
         "--client.toolbarMode=viewer",
     ]
 
     # Add any additional CLI arguments passed by the user
     user_args = sys.argv[1:]
-    print(f"User CLI arguments: {user_args}")
     sys.argv = default_args + user_args
 
     sys.exit(stcli.main())
