@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 from fastcore.xtras import Path
 from gradio_client import Client, handle_file
+from gradio_client.exceptions import AppError
 
 from config import (
     BASE,
@@ -115,17 +116,22 @@ def set_cached_pages():
 
 
 def request_table(json_path: Path) -> pd.DataFrame:
-    client = Client("ronaldokun/ecomproc")
-    result = client.predict(
-        json_file=handle_file(str(json_path)),
-        api_name="/process_to_table",
-    )
-    df = pd.DataFrame(result["data"], columns=result["headers"], dtype="string").astype(
-        COLUNAS
-    )
-    df["marketplace"] = STATE.mkplc
-
-    return df
+    try:
+        client = Client("ronaldokun/ecomproc")
+        result = client.predict(
+            json_file=handle_file(str(json_path)),
+            api_name="/process_to_table",
+        )
+        df = pd.DataFrame(
+            result["data"], columns=result["headers"], dtype="string"
+        ).astype(COLUNAS)
+        df["marketplace"] = STATE.mkplc
+        return df
+    except AppError as e:
+        st.error(
+            f"Erro ao processar os dados: {e}. Tente novamente, se persistir, reporte o erro no Github."
+        )
+        return None
 
 
 def save_table():
@@ -140,22 +146,25 @@ def save_table():
 
 
 def process_data(pages_file: Path):
-    df = request_table(pages_file)
-    df["probabilidade"] *= 100
-    df.sort_values(
-        by=["passível?", "probabilidade"],
-        ascending=False,
-        inplace=True,
-        ignore_index=True,
-    )
-    df.sort_values(
-        by=["modelo_score", "nome_score"],
-        ascending=False,
-        inplace=True,
-        ignore_index=True,
-    )
-    STATE.processed_pages = df
-    save_table()
+    STATE.processed_pages = None
+    if len(pages_file.read_json()) == 0:
+        return
+    if df := request_table(pages_file) is not None:
+        df["probabilidade"] *= 100
+        df.sort_values(
+            by=["passível?", "probabilidade"],
+            ascending=False,
+            inplace=True,
+            ignore_index=True,
+        )
+        df.sort_values(
+            by=["modelo_score", "nome_score"],
+            ascending=False,
+            inplace=True,
+            ignore_index=True,
+        )
+        STATE.processed_pages = df
+        save_table()
 
 
 @st.fragment
