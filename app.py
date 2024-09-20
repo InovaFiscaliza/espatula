@@ -225,64 +225,74 @@ def update_processed_pages(output_df_key):
 
 
 def run_search(scraper):
-    with st.container():
-        progress_text = "Realizando a busca de produtos...🕸️"
-        progress_bar = st.progress(0, text=progress_text)
-        output = st.empty()
-        percentage = 100 / STATE.max_search
-        for i, result in enumerate(
-            scraper.search(
-                keyword=STATE.keyword,
-                max_pages=STATE.max_search,
-            ),
-            start=1,
-        ):
-            with output.empty():
-                st.write(result)
-            progress_bar.progress(
-                int((i * percentage) % 100),
-                text=progress_text,
-            )
-        time.sleep(1)
-        output.empty()
-        progress_bar.empty()
+    try:
+        with st.container():
+            progress_text = "Realizando a busca de produtos...🕸️"
+            progress_bar = st.progress(0, text=progress_text)
+            output = st.empty()
+            percentage = 100 / STATE.max_search
+            for i, result in enumerate(
+                scraper.search(
+                    keyword=STATE.keyword,
+                    max_pages=STATE.max_search,
+                ),
+                start=1,
+            ):
+                with output.empty():
+                    st.write(result)
+                progress_bar.progress(
+                    int((i * percentage) % 100),
+                    text=progress_text,
+                )
+            time.sleep(1)
+            output.empty()
+            progress_bar.empty()
+    except Exception as e:
+        st.error(
+            f"Erro ao realizar a busca: {e}. Tente novamente, se persistir, reporte o erro no Github."
+        )
 
 
 def inspect_pages(scraper):
-    with st.container():
-        progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
-        progress_bar = st.progress(0, text=progress_text)
-        output = st.empty()
-        percentage = 100 / STATE.max_pages
-        for i, result in enumerate(
-            scraper.inspect_pages(
-                keyword=STATE.keyword,
-                screenshot=STATE.screenshot,
-                sample=STATE.max_pages,
-                shuffle=STATE.shuffle,
-            ),
-            start=1,
-        ):
-            with output.empty():
-                left, right = st.columns([1, 1], vertical_alignment="top")
-                with left:
-                    try:
-                        if len(imagem := result.get("imagens", [])) >= 1:
-                            imagem = imagem[0]
-                        else:
-                            imagem = result.get("imagem")
-                        left.write("Imagem do produto")
-                        nome = result.get("nome")
-                        left.image(imagem, width=480, caption=nome)
-                    except Exception:
-                        left.write("Não foi possível carregar a imagem do produto")
-                with right:
-                    right.write("Dados do produto")
-                    right.json(result, expanded=1)
-            progress_bar.progress(int((i * percentage) % 100), text=progress_text)
-        time.sleep(1)
-        output.empty()
-        progress_bar.empty()
+    try:
+        with st.container():
+            progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
+            progress_bar = st.progress(0, text=progress_text)
+            output = st.empty()
+            percentage = 100 / STATE.max_pages
+            for i, result in enumerate(
+                scraper.inspect_pages(
+                    keyword=STATE.keyword,
+                    screenshot=STATE.screenshot,
+                    sample=STATE.max_pages,
+                    shuffle=STATE.shuffle,
+                ),
+                start=1,
+            ):
+                with output.empty():
+                    left, right = st.columns([1, 1], vertical_alignment="top")
+                    with left:
+                        try:
+                            if len(imagem := result.get("imagens", [])) >= 1:
+                                imagem = imagem[0]
+                            else:
+                                imagem = result.get("imagem")
+                            left.write("Imagem do produto")
+                            nome = result.get("nome")
+                            left.image(imagem, width=480, caption=nome)
+                        except Exception:
+                            left.write("Não foi possível carregar a imagem do produto")
+                    with right:
+                        right.write("Dados do produto")
+                        right.json(result, expanded=1)
+                progress_bar.progress(int((i * percentage) % 100), text=progress_text)
+            time.sleep(1)
+            output.empty()
+            progress_bar.empty()
+    except Exception as e:
+        st.error(
+            f"Erro ao realizar a navegação de páginas: {e}. Tente novamente, se persistir, reporte o erro no Github."
+        )
 
 
 def display_df(df, column_order, output_df_key):
