@@ -3,6 +3,24 @@ import os
 from fastcore.xtras import Path
 import json
 
+from espatula import (
+    AmazonScraper,
+    AmericanasScraper,
+    CarrefourScraper,
+    CasasBahiaScraper,
+    MagaluScraper,
+    MercadoLivreScraper,
+)
+
+SCRAPERS = {
+    "Amazon": AmazonScraper,
+    "Mercado Livre": MercadoLivreScraper,
+    "Magalu": MagaluScraper,
+    "Americanas": AmericanasScraper,
+    "Casas Bahia": CasasBahiaScraper,
+    "Carrefour": CarrefourScraper,
+}
+
 COLUNAS = {
     "url": "string",
     "imagem": "string",

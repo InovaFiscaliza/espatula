@@ -19,34 +19,16 @@ from config import (
     MAX_SEARCH,
     KEYS,
     START,
+    SCRAPERS,
     RECONNECT,
     SCREENSHOT,
     SHUFFLE,
     TIMEOUT,
     TITLE,
-    setup_base_cloud,
     save_config,
     load_config,
     init_session_state,
 )
-from espatula import (
-    AmazonScraper,
-    AmericanasScraper,
-    CarrefourScraper,
-    CasasBahiaScraper,
-    MagaluScraper,
-    MercadoLivreScraper,
-)
-
-SCRAPERS = {
-    "Amazon": AmazonScraper,
-    "Mercado Livre": MercadoLivreScraper,
-    "Magalu": MagaluScraper,
-    "Americanas": AmericanasScraper,
-    "Casas Bahia": CasasBahiaScraper,
-    "Carrefour": CarrefourScraper,
-}
-
 
 CONFIG = load_config()
 
