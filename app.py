@@ -25,6 +25,10 @@ from config import (
     SHUFFLE,
     TIMEOUT,
     TITLE,
+    setup_base_cloud,
+    save_config,
+    load_config,
+    init_session_state,
 )
 from espatula import (
     AmazonScraper,
@@ -44,12 +48,8 @@ SCRAPERS = {
     "Carrefour": CarrefourScraper,
 }
 
-config_file = Path(__file__).parent / "config.json"
 
-if config_file.exists():
-    CONFIG = config_file.read_json()
-else:
-    CONFIG = {}
+CONFIG = load_config()
 
 st.set_page_config(
     page_title="Regulatron",

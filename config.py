@@ -71,13 +71,13 @@ KEYS = {
 }
 
 
-def load_config(config_file):
-    if config_file.exists():
+def load_config() -> dict:
+    if (config_file := Path(__file__).parent / "config.json").exists():
         return config_file.read_json()
     return {}
 
 
-def init_session_state(STATE, CONFIG, KEYS):
+def init_session_state(STATE: dict, CONFIG: dict, KEYS: dict) -> None:
     if "mkplc" not in STATE:
         STATE.mkplc = None
 
@@ -110,7 +110,7 @@ def init_session_state(STATE, CONFIG, KEYS):
                 STATE[key] = {}
 
 
-def setup_base_cloud():
+def setup_base_cloud() -> str:
     onedrive = os.environ.get("OneDriveCommercial", "")
     cloud = None
     if onedrive:
@@ -125,7 +125,7 @@ def setup_base_cloud():
     return cloud
 
 
-def save_config(config, config_file):
+def save_config(config: dict, config_file: Path) -> None:
     json.dump(config, config_file.open("w", encoding="utf-8"), ensure_ascii=False)
 
 
