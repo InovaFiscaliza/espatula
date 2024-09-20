@@ -34,6 +34,7 @@ class CarrefourScraper(BaseScraper):
         return "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
 
     def input_search_params(self, driver, keyword):
+        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         for attempt in range(self.retries):
             try:
                 if department := CATEGORIES.get(keyword):
