@@ -56,9 +56,9 @@ class BaseScraper:
     retries: int = int(os.environ.get("RETRIES", 3))
     load_user_profile: bool = False
     demo: bool = False
-    ad_block_on: bool = False
+    guest_mode: bool = True
     incognito: bool = False
-    do_not_track: bool = False
+    do_not_track: bool = True
     turnstile: bool = False
 
     @property
@@ -123,12 +123,11 @@ class BaseScraper:
             uc=True,  # Always true
             incognito=self.incognito,
             headless2=self.headless,
-            ad_block_on=self.ad_block_on,
+            guest_mode=self.guest_mode,
             do_not_track=self.do_not_track,
             user_data_dir=user_data_dir,
         ) as sb:
             sb.driver.maximize_window()
-            sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
             if self.turnstile:
                 self.click_turnstile_and_verify(sb)
             yield sb
@@ -305,6 +304,7 @@ class BaseScraper:
                 )
 
     def input_search_params(self, driver: SB, keyword: str):
+        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         self.highlight_element(driver, self.input_field)
         for attempt in range(self.retries):
             try:
