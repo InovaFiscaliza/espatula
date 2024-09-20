@@ -30,7 +30,7 @@ LOGOS = {
     "Magalu": "images/magalu.png",
     "Americanas": "images/americanas.png",
     "Casas Bahia": "images/casas_bahia.svg",
-    "Carrefour": "images/carrefour.svg",
+    "Carrefour": "images/carrefour.jpg",
 }
 
 # Constants for string literals
@@ -70,14 +70,16 @@ KEYS = {
     "load_user_profile": USER_PROFILE,
 }
 
+CONFIG_FILE = Path(__file__).parent / "config.json"
+
 
 def load_config() -> dict:
-    if (config_file := Path(__file__).parent / "config.json").exists():
-        return config_file.read_json()
+    if CONFIG_FILE.exists():
+        return CONFIG_FILE.read_json()
     return {}
 
 
-def init_session_state(STATE: dict, CONFIG: dict, KEYS: dict) -> None:
+def init_session_state(STATE: dict, CONFIG: dict) -> None:
     if "mkplc" not in STATE:
         STATE.mkplc = None
 
@@ -92,22 +94,19 @@ def init_session_state(STATE: dict, CONFIG: dict, KEYS: dict) -> None:
         "use_cache",
     ]:
         if key not in STATE:
-            if key == "keyword":
-                STATE[key] = CONFIG.get(KEYS[key], "")
-            elif key == "folder":
-                folder = (Path(__file__).parent / "data").resolve()
-                if not folder.is_dir():
+            match key:
+                case "keyword":
+                    STATE[key] = CONFIG.get(KEYS[key], "")
+                case "folder":
+                    folder = (Path(__file__).parent / "data").resolve()
                     folder.mkdir(parents=True, exist_ok=True)
-                STATE[key] = rf"{folder}"
-            elif key == "cloud":
-                cloud = CONFIG.get(KEYS[key])
-                if not cloud:
-                    cloud = setup_base_cloud()
-                STATE[key] = cloud
-            elif key == "use_cache":
-                STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
-            else:
-                STATE[key] = {}
+                    STATE[key] = rf"{folder}"
+                case "cloud":
+                    STATE[key] = CONFIG.get(KEYS[key]) or setup_base_cloud()
+                case "use_cache":
+                    STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
+                case _:
+                    STATE[key] = {}
 
 
 def setup_base_cloud() -> str:
@@ -125,8 +124,10 @@ def setup_base_cloud() -> str:
     return cloud
 
 
-def save_config(config: dict, config_file: Path) -> None:
-    json.dump(config, config_file.open("w", encoding="utf-8"), ensure_ascii=False)
+def save_config(config: dict) -> None:
+    json.dump(
+        config, CONFIG_FILE.open("w", encoding="utf-8"), ensure_ascii=False, indent=4
+    )
 
 
 # Other utility functions and configuration-related logic can go here...
