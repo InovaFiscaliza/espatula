@@ -201,31 +201,15 @@ class BaseScraper:
             except (NoSuchElementException, ElementNotVisibleException) as e:
                 pass
 
-    @staticmethod
-    def compress_images(pdf_stream):
-        try:
-            from pypdf import PdfReader, PdfWriter
+    def get_selector(self, driver, soup, selector):
+        self.highlight_element(driver, selector)
+        return soup.select_one(selector)
 
-            reader = PdfReader(pdf_stream)
-            writer = PdfWriter()
-
-            for page in reader.pages:
-                writer.add_page(page)
-
-            if reader.metadata is not None:
-                writer.add_metadata(reader.metadata)
-
-            for page in writer.pages:
-                for img in page.images:
-                    img.replace(img.image, quality=80)
-                page.compress_content_streams(level=9)
-
-            bytes_stream = BytesIO()
-            writer.write(bytes_stream)
-            return bytes_stream.getvalue()
-        except ImportError:
-            print("pypdf not installed, skipping screenshot compression")
-            return pdf_stream
+    def uc_click(self, driver, selector, timeout=None):
+        self.highlight_element(driver, selector)
+        if timeout is None:
+            timeout = self.timeout
+        driver.uc_click(selector, timeout=timeout)
 
     def _save_screenshot(self, driver: SB, filename: str):
         folder = self.folder / "screenshots"

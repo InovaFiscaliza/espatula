@@ -160,7 +160,7 @@ class MagaluScraper(BaseScraper):
                 self.highlight_element(driver, self.input_field)
                 driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
                 if department := CATEGORIES.get(keyword):
-                    driver.uc_click(department, timeout=self.reconnect)
+                    self.uc_click(driver, department)
                 break
             except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < self.retries - 1:  # if it's not the last attempt
