@@ -345,68 +345,68 @@ def display_df(df, column_order, output_df_key):
                 "URL",
                 width=None,
                 display_text="Link",
-                help="Dados do Anúncio",
+                help="📜Dados do Anúncio",
                 disabled=True,
             ),
             "imagem": st.column_config.ImageColumn(
-                "Imagem", width="small", help="Dados do Anúncio"
+                "Imagem", width="small", help="📜Dados do Anúncio"
             ),
             "nome": st.column_config.TextColumn(
-                "Título", width=None, help="Dados do Anúncio", disabled=True
+                "Título", width=None, help="📜Dados do Anúncio", disabled=True
             ),
             "fabricante": st.column_config.TextColumn(
-                "Fabricante", width=None, help="Dados do Anúncio", disabled=True
+                "Fabricante", width=None, help="📜Dados do Anúncio", disabled=True
             ),
             "modelo": st.column_config.TextColumn(
-                "Modelo", width=None, help="Dados do Anúncio", disabled=True
+                "Modelo", width=None, help="📜Dados do Anúncio", disabled=True
             ),
             "certificado": st.column_config.TextColumn(
-                "Certificado", width=None, help="Dados do Anúncio", disabled=True
+                "Certificado", width=None, help="📜Dados do Anúncio", disabled=True
             ),
             "ean_gtin": st.column_config.TextColumn(
-                "EAN/GTIN", width=None, help="Dados do Anúncio", disabled=True
+                "EAN/GTIN", width=None, help="📜Dados do Anúncio", disabled=True
             ),
             "subcategoria": st.column_config.TextColumn(
-                "Categoria", width=None, help="Dados do Anúncio", disabled=True
+                "Categoria", width=None, help="📜Dados do Anúncio", disabled=True
             ),
             "nome_sch": st.column_config.SelectboxColumn(
                 "SCH - Nome Comercial",
                 width=None,
-                help="Dados de Certificação - SCH",
+                help="🗃️Dados de Certificação - SCH",
                 disabled=True,
             ),
             "fabricante_sch": st.column_config.SelectboxColumn(
                 "SCH - Fabricante",
                 width=None,
-                help="Dados de Certificação - SCH",
+                help="🗃️Dados de Certificação - SCH",
                 disabled=True,
             ),
             "modelo_sch": st.column_config.SelectboxColumn(
                 "SCH - Modelo",
                 width=None,
-                help="Dados de Certificação - SCH",
+                help="🗃️Dados de Certificação - SCH",
                 disabled=True,
             ),
             "tipo_sch": st.column_config.SelectboxColumn(
                 "SCH - Tipo de Produto",
                 width=None,
-                help="Dados de Certificação - SCH",
+                help="🗃️Dados de Certificação - SCH",
                 disabled=True,
             ),
             "modelo_score": st.column_config.ProgressColumn(
                 "Modelo x SCH - Modelo (%)",
                 width=None,
-                help="Sobreposição de strings - Anúncio versus SCH",
+                help="🖇️Comparação de Strings - Anúncio x SCH",
             ),
             "nome_score": st.column_config.ProgressColumn(
                 "Título x SCH - Nome Comercial (%)",
                 width=None,
-                help="Sobreposição de strings - Anúncio versus SCH",
+                help="🖇️Comparação de Strings - Anúncio x SCH",
             ),
             "passível?": st.column_config.CheckboxColumn(
                 "Classe (True/False)",
                 width=None,
-                help="Classificador - Homologação Compulsória",
+                help="📌Classificador Binário - Homologação Compulsória",
                 disabled=False,
             ),
             "probabilidade": st.column_config.ProgressColumn(
@@ -414,7 +414,7 @@ def display_df(df, column_order, output_df_key):
                 format="%.2f%%",
                 min_value=0,
                 max_value=100,
-                help="Classificador - Homologação Compulsória",
+                help="📌Classificador Binário - Homologação Compulsória",
             ),
         },
         hide_index=True,
@@ -446,7 +446,7 @@ def format_df(df):
     columns = st.columns(4, vertical_alignment="top")
 
     with columns[0]:
-        with st.popover("Dados do Anúncio"):
+        with st.popover("📜Dados do Anúncio"):
             st.markdown("""
                         * Os registros que compõem a primeira tabela serão salvos em um arquivo Excel e posteriormente sincronizados com o [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron).
                         * Todos os dados brutos do anúncio serão salvos, as colunas acima são apenas um recorte.
