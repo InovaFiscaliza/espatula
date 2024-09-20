@@ -133,7 +133,7 @@ class CasasBahiaScraper(BaseScraper):
         try:
             tag = 'p:-soup-contains("Características")'
             get_selector(tag)
-            self.uc_click(driver, tag))
+            self.uc_click(driver, tag)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Características"))
             self.uc_click(driver, 'button[aria-label="Fechar"]')

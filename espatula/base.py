@@ -198,7 +198,7 @@ class BaseScraper:
         if self.demo:
             try:
                 driver.highlight(element, timeout=self.timeout // 2)
-            except (NoSuchElementException, ElementNotVisibleException) as e:
+            except (NoSuchElementException, ElementNotVisibleException):
                 pass
 
     def get_selector(self, driver, soup, selector):
