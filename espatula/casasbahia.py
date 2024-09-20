@@ -133,17 +133,17 @@ class CasasBahiaScraper(BaseScraper):
         try:
             tag = 'p:-soup-contains("Características")'
             get_selector(tag)
-            driver.uc_click(tag, timeout=self.timeout)
+            self.uc_click(driver, tag)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Características"))
-            driver.uc_click('button[aria-label="Fechar"]', timeout=self.timeout)
+            self.uc_click(driver, 'button[aria-label="Fechar"]')
         except Exception as e:
             if not self.headless:
                 driver.post_message(e)
         try:
             tag = 'p:-soup-contains("Especificações Técnicas")'
             get_selector(tag)
-            driver.uc_click(tag, timeout=self.timeout)
+            self.uc_click(driver, tag)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
 

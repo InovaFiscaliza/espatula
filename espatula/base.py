@@ -56,9 +56,9 @@ class BaseScraper:
     retries: int = int(os.environ.get("RETRIES", 3))
     load_user_profile: bool = False
     demo: bool = False
-    ad_block_on: bool = False
+    guest_mode: bool = True
     incognito: bool = False
-    do_not_track: bool = False
+    do_not_track: bool = True
     turnstile: bool = False
 
     @property
@@ -123,12 +123,11 @@ class BaseScraper:
             uc=True,  # Always true
             incognito=self.incognito,
             headless2=self.headless,
-            ad_block_on=self.ad_block_on,
+            guest_mode=self.guest_mode,
             do_not_track=self.do_not_track,
             user_data_dir=user_data_dir,
         ) as sb:
             sb.driver.maximize_window()
-            sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
             if self.turnstile:
                 self.click_turnstile_and_verify(sb)
             yield sb
@@ -199,34 +198,18 @@ class BaseScraper:
         if self.demo:
             try:
                 driver.highlight(element, timeout=self.timeout // 2)
-            except (NoSuchElementException, ElementNotVisibleException) as e:
+            except (NoSuchElementException, ElementNotVisibleException):
                 pass
 
-    @staticmethod
-    def compress_images(pdf_stream):
-        try:
-            from pypdf import PdfReader, PdfWriter
+    def get_selector(self, driver, soup, selector):
+        self.highlight_element(driver, selector)
+        return soup.select_one(selector)
 
-            reader = PdfReader(pdf_stream)
-            writer = PdfWriter()
-
-            for page in reader.pages:
-                writer.add_page(page)
-
-            if reader.metadata is not None:
-                writer.add_metadata(reader.metadata)
-
-            for page in writer.pages:
-                for img in page.images:
-                    img.replace(img.image, quality=80)
-                page.compress_content_streams(level=9)
-
-            bytes_stream = BytesIO()
-            writer.write(bytes_stream)
-            return bytes_stream.getvalue()
-        except ImportError:
-            print("pypdf not installed, skipping screenshot compression")
-            return pdf_stream
+    def uc_click(self, driver, selector, timeout=None):
+        self.highlight_element(driver, selector)
+        if timeout is None:
+            timeout = self.timeout
+        driver.uc_click(selector, timeout=timeout)
 
     def _save_screenshot(self, driver: SB, filename: str):
         folder = self.folder / "screenshots"
@@ -305,6 +288,7 @@ class BaseScraper:
                 )
 
     def input_search_params(self, driver: SB, keyword: str):
+        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         self.highlight_element(driver, self.input_field)
         for attempt in range(self.retries):
             try:

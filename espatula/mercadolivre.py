@@ -177,11 +177,11 @@ class MercadoLivreScraper(BaseScraper):
             vendedor = vendedor_element.get_text().strip()
 
         if get_selector("button[data-testid='action-collapsable-target']"):
-            driver.uc_click("button[data-testid=action-collapsable-target]")
+            self.uc_click(driver, "button[data-testid=action-collapsable-target]")
 
         if soup.select_one("a[data-testid='action-collapsable-target']"):
             self.highlight_element(driver, 'a[title="Ver descrição completa"]')
-            driver.uc_click('a[title="Ver descrição completa"]')
+            self.uc_click(driver, 'a[title="Ver descrição completa"]')
 
         características, marca, modelo, ean, certificado = None, None, None, None, None
         if características_element := get_selector(
@@ -226,6 +226,7 @@ class MercadoLivreScraper(BaseScraper):
         }
 
     def input_search_params(self, driver, keyword):
+        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         for attempt in range(self.retries):
             try:
                 if department := CATEGORIES.get(keyword):

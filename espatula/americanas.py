@@ -110,7 +110,7 @@ class AmericanasScraper(BaseScraper):
 
         marca, modelo, certificado, ean, product_id = None, None, None, None, None
         if características := self.parse_tables(soup):
-            driver.uc_click('button[aria-expanded="false"]')
+            self.uc_click(driver, 'button[aria-expanded="false"]')
             marca = características.get("Marca")
             modelo = características.get("Modelo")
             certificado = self.extrair_certificado(características)
