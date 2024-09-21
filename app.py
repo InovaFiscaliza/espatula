@@ -36,7 +36,7 @@ from callbacks import (
 
 from data_processing import process_data
 
-from ui import show_results
+from ui import show_results, presentation_page
 
 CONFIG = load_config()
 
@@ -236,35 +236,7 @@ mkplc = config_container.selectbox(
 )
 
 if STATE.mkplc is None:
-    st.title(TITLE)
-    columns = st.columns(2, vertical_alignment="center")
-
-    columns[0].image(
-        LOGOS["Espatula"],
-        width=480,
-        caption="Espátula raspando dados de E-commerce",
-    )
-    with columns[1]:
-        st.info("""
-        Essa aplicação efetua a raspagem de dados _(webscraping)_ de
-        produtos para telecomunicações publicados em alguns dos principais _marketplaces_ do país. 
-        """)
-        st.markdown(
-            """
-            **Características**:
-            * 👨🏻‍💻 Pesquisa por palavra-chave.
-            * 👾 Implementação de mecanismos anti-bot sofisticados.
-            * 🤖 Automação da busca de produtos e navegação de páginas.
-            * 🖼️ Captura de página completa do anúncio em pdf otimizado.
-            * 🗄️ Mesclagem dos dados de certificação da base da Anatel e sobreposição de strings.
-            * 📊 Classificação binária baseada em treinamento nos dados anotados pelos fiscais.
-            * 📈 Exportação de dados processados para Excel.
-            """
-        )
-    st.sidebar.success(
-        "Por favor, selecione uma plataforma para iniciar a pesquisa.",
-        icon="👆🏾",
-    )
+    presentation_page()
 else:
     set_folder()
     set_cloud()
