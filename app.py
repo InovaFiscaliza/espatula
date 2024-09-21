@@ -1,15 +1,11 @@
 import time
 
 import streamlit as st
-import pandas as pd
 from fastcore.xtras import Path
-from gradio_client import Client, handle_file
-from gradio_client.exceptions import AppError
 
 from config import (
     BASE,
     CACHE,
-    COLUNAS,
     CLOUD,
     FOLDER,
     KEYWORD,
@@ -29,6 +25,18 @@ from config import (
     load_config,
     init_session_state,
 )
+
+from callbacks import (
+    _set_folder,
+    _set_cloud,
+    _set_cached_links,
+    _set_cached_pages,
+    _set_processed_pages,
+)
+
+from data_processing import process_data
+
+from ui import show_results
 
 CONFIG = load_config()
 
@@ -53,6 +61,8 @@ for key in STATE:
     if key in KEYS:
         CONFIG[KEYS[key]] = STATE[key]
 
+# Functions to set the STATE Variables
+
 
 @st.fragment
 def set_mkplc():
@@ -65,132 +75,37 @@ def set_mkplc():
 
 @st.fragment
 def set_keyword():
-    # Callback function to save the keyword selection to Session State
-    keyword = STATE._keyword.strip()
-    STATE.keyword = keyword
+    STATE.keyword = STATE._keyword.strip()
 
 
 @st.fragment
 def set_folder():
-    # Callback function to save the keyword selection to Session State
-    if Path(STATE._folder).is_dir():
-        STATE.folder = STATE._folder
+    _set_folder(STATE)
 
 
 @st.fragment
 def set_cloud():
-    # Callback function to save the keyword selection to Session State
-    if STATE._cloud is not None and Path(STATE._cloud).is_dir():
-        STATE.cloud = STATE._cloud
-
-
-@st.fragment
-def set_cached_links():
-    # Callback function to save the keyword selection to Session State
-    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-    STATE.cached_links = scraper.get_links(STATE.keyword)
-
-
-@st.fragment
-def set_cached_pages():
-    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-    STATE.cached_pages = scraper.get_pages(STATE.keyword)
-
-
-def request_table(json_path: Path) -> pd.DataFrame:
-    try:
-        client = Client("ronaldokun/ecomproc")
-        result = client.predict(
-            json_file=handle_file(str(json_path)),
-            api_name="/process_to_table",
-        )
-        df = pd.DataFrame(
-            result["data"], columns=result["headers"], dtype="string"
-        ).astype(COLUNAS)
-        df["marketplace"] = STATE.mkplc
-        return df
-    except AppError as e:
-        st.error(
-            f"Erro ao processar os dados: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
-        )
-        return None
-
-
-def save_table():
-    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-    try:
-        if (df := STATE.processed_pages) is not None:
-            output_table = scraper.pages_file(STATE.keyword).with_suffix(".xlsx")
-            df["marketplace"] = STATE.mkplc
-            df.to_excel(output_table, index=False)
-    except Exception as e:
-        st.error(f"Erro ao salvar os dados processados: {e}")
-
-
-def process_data(pages_file: Path):
-    STATE.processed_pages = None
-    if len(pages_file.read_json()) == 0:
-        return
-    if (df := request_table(pages_file)) is not None:
-        df["probabilidade"] *= 100
-        df.sort_values(
-            by=["passível?", "probabilidade"],
-            ascending=False,
-            inplace=True,
-            ignore_index=True,
-        )
-        df.sort_values(
-            by=["modelo_score", "nome_score"],
-            ascending=False,
-            inplace=True,
-            ignore_index=True,
-        )
-        STATE.processed_pages = df
-        save_table()
-
-
-@st.fragment
-def set_processed_pages():
-    scraper = SCRAPERS[STATE.mkplc](path=STATE.folder)
-    json_file = scraper.pages_file(STATE.keyword)
-    excel_file = json_file.with_suffix(".xlsx")
-
-    STATE.processed_pages = None
-    need_processing = True
-
-    if excel_file.is_file():
-        try:
-            df = pd.read_excel(excel_file, dtype="string").astype(COLUNAS)
-            df.sort_values(
-                by=["passível?", "probabilidade", "modelo_score", "nome_score"],
-                ascending=[False, False, False, False],
-                inplace=True,
-                ignore_index=True,
-            )
-            STATE.processed_pages = df
-            need_processing = False
-        except Exception:
-            pass
-
-    if need_processing and json_file.is_file():
-        process_data(json_file)
-        need_processing = False
-
-    if (
-        not need_processing
-        and STATE.cached_pages is not None
-        and STATE.processed_pages is not None
-    ):
-        processed_urls = set(STATE.processed_pages["url"].to_list())
-        cached_urls = set(STATE.cached_pages.keys())
-        if cached_urls.difference(processed_urls):
-            process_data(json_file)
+    _set_cloud(STATE)
 
 
 @st.fragment
 def use_cache():
-    # Callback function to save the keyword selection to Session State
     STATE.use_cache = STATE._use_cache
+
+
+@st.fragment
+def set_cached_links():
+    _set_cached_links(STATE)
+
+
+@st.fragment
+def set_cached_pages():
+    _set_cached_pages(STATE)
+
+
+@st.fragment
+def set_processed_pages():
+    _set_processed_pages(STATE)
 
 
 @st.fragment
@@ -209,14 +124,7 @@ def show_pages():
 def show_processed_pages():
     if STATE.processed_pages is not None:
         with st.container(border=False):
-            format_df(STATE.processed_pages)
-
-
-def update_processed_pages(output_df_key):
-    edited = STATE[output_df_key]["edited_rows"]
-    for index, row in edited.items():
-        for column, value in row.items():
-            STATE.processed_pages.loc[index, column] = str(value)
+            show_results(STATE, STATE.processed_pages)
 
 
 def run_search(scraper):
@@ -243,9 +151,7 @@ def run_search(scraper):
             output.empty()
             progress_bar.empty()
     except Exception as e:
-        st.error(
-            f"Erro ao realizar a busca: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
-        )
+        raise e
 
 
 def inspect_pages(scraper):
@@ -285,163 +191,10 @@ def inspect_pages(scraper):
             output.empty()
             progress_bar.empty()
     except Exception as e:
+        raise e
         st.error(
             f"Erro ao realizar a navegação de páginas: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
         )
-
-
-def display_df(df, column_order, output_df_key):
-    st.data_editor(
-        df,
-        height=720 if len(df) >= 20 else None,
-        use_container_width=True,
-        column_order=column_order,
-        column_config={
-            "url": st.column_config.LinkColumn(
-                "URL",
-                width=None,
-                display_text="Link",
-                help="📜Dados do Anúncio",
-                disabled=True,
-            ),
-            "imagem": st.column_config.ImageColumn(
-                "Imagem", width="small", help="📜Dados do Anúncio"
-            ),
-            "nome": st.column_config.TextColumn(
-                "Título", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "fabricante": st.column_config.TextColumn(
-                "Fabricante", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "modelo": st.column_config.TextColumn(
-                "Modelo", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "certificado": st.column_config.TextColumn(
-                "Certificado", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "ean_gtin": st.column_config.TextColumn(
-                "EAN/GTIN", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "subcategoria": st.column_config.TextColumn(
-                "Categoria", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "nome_sch": st.column_config.SelectboxColumn(
-                "SCH - Nome Comercial",
-                width=None,
-                help="🗃️Dados de Certificação - SCH",
-                disabled=True,
-            ),
-            "fabricante_sch": st.column_config.SelectboxColumn(
-                "SCH - Fabricante",
-                width=None,
-                help="🗃️Dados de Certificação - SCH",
-                disabled=True,
-            ),
-            "modelo_sch": st.column_config.SelectboxColumn(
-                "SCH - Modelo",
-                width=None,
-                help="🗃️Dados de Certificação - SCH",
-                disabled=True,
-            ),
-            "tipo_sch": st.column_config.SelectboxColumn(
-                "SCH - Tipo de Produto",
-                width=None,
-                help="🗃️Dados de Certificação - SCH",
-                disabled=True,
-            ),
-            "modelo_score": st.column_config.ProgressColumn(
-                "Modelo x SCH - Modelo (%)",
-                width=None,
-                help="🖇️Comparação de Strings - Anúncio x SCH",
-            ),
-            "nome_score": st.column_config.ProgressColumn(
-                "Título x SCH - Nome Comercial (%)",
-                width=None,
-                help="🖇️Comparação de Strings - Anúncio x SCH",
-            ),
-            "passível?": st.column_config.CheckboxColumn(
-                "Classe (True/False)",
-                width=None,
-                help="📌Classificador Binário - Homologação Compulsória",
-                disabled=False,
-            ),
-            "probabilidade": st.column_config.ProgressColumn(
-                "Classe (Probabilidade)",
-                format="%.2f%%",
-                min_value=0,
-                max_value=100,
-                help="📌Classificador Binário - Homologação Compulsória",
-            ),
-        },
-        hide_index=True,
-        disabled=False,
-        on_change=update_processed_pages,
-        key=output_df_key,
-        args=(output_df_key,),
-    )
-
-
-def format_df(df):
-    df = STATE.processed_pages
-    with st.expander(
-        "Dados Positivos - Homologação Compulsória pela Anatel", icon="🔥"
-    ):
-        display_df(
-            df.loc[df["passível?"] == "True"],
-            COLUNAS.keys(),
-            output_df_key="df_positive",
-        )
-    with st.expander("Dados Negativos - Não Relevante (_Serão descartados_)", icon="🗑️"):
-        display_df(
-            df.loc[df["passível?"] == "False"],
-            COLUNAS.keys(),
-            output_df_key="df_negative",
-        )
-
-    st.info("É possível alterar a classificação, caso incorreta!", icon="✍🏽")
-    columns = st.columns(4, vertical_alignment="top")
-
-    with columns[0]:
-        with st.popover("📜Dados do Anúncio"):
-            st.markdown("""
-                        * Os registros que compõem a primeira tabela serão salvos em um arquivo Excel e posteriormente sincronizados com o [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron).
-                        * Todos os dados brutos do anúncio serão salvos, as colunas acima são apenas um recorte.
-                        """)
-
-    with columns[1]:
-        with st.popover("🗃️Dados de Certificação - SCH"):
-            st.markdown("""
-                        * Caso o anúncio contenha um nº de homologação, este é verificado e, caso válido, as colunas __Fabricante__, __Modelo__, __Tipo__ e __Nome Comercial__ são preenchidas com os dados do certificado.
-                        * Os dados de Certificação - SCH são extraídos do portal de dados abertos: [link](https://dados.gov.br/dados/conjuntos-dados/produtos-de-telecomunicacoes-homologados-pela-anatel)
-                        """)
-    with columns[2]:
-        with st.popover("🖇️Comparação de Strings - Anúncio x SCH"):
-            st.markdown("""
-                        * Para os registros com dados do certificado inseridos, as seguintes colunas correspondentes são comparadas:
-                            * Título do anúncio x SCH - Nome Comercial
-                            * Modelo do anúncio x SCH - Modelo
-                        * A comparação é feita calculando-se a sobreposição textual (_fuzzy string matching - Distância de Levenshtein_).
-                        * A taxa de sobreposição é mostrada nas colunas __Título x SCH - Nome Comercial (%)__ e __Modelo x SCH - Modelo (%)__.
-                        * Uma taxa de sobreposição de `100%` indica que um dado está contido no outro.
-                        * Este é um indicativo de correspondência entre os dados do anúncio e o certificado apontado.
-                        * Apesar de não garantir a validade da homologação, uma taxa de 100% é mais um artifício a favor da classificação.
-                        
-                        """)
-    with columns[3]:
-        with st.popover("📌Classificador Binário"):
-            st.link_button(
-                "Mais informações",
-                url="https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/Regulatron--Experimento-de-classifica%C3%A7%C3%A3o-3.aspx",
-                use_container_width=True,
-            )
-
-            st.markdown("""
-                    * Classe :green[True] ✅ - O produto foi classificado como **Positivo**, i.e. **possui homologação compulsória**.
-                        * 👉🏽Para alterar de :green[True] para :red[False], basta desmarcar o checkbox na coluna `Classe` da primeira tabela. A `Classe` será alterada para :red[False] e o registro migrado para a segunda tabela.
-                    * Classe :red[False] 🔲 - O produto  foi classificado como **Negativo**, i.e. **NÃO possui homologação compulsória**.
-                        * 👉🏽Para alterar de :red[False] para :green[True], basta marcar o checkbox na coluna `Classe` da segunda tabela. A `Classe` será alterada para :green[True] e o registro migrado para a primeira tabela.
-
-                    """)
 
 
 def run():
@@ -452,13 +205,24 @@ def run():
         reconnect=STATE.reconnect,
         timeout=STATE.timeout,
     )
-    if STATE.use_cache == CACHE[1]:
-        run_search(scraper)
-    inspect_pages(scraper)
-    process_data(scraper.pages_file(STATE.keyword))
-    st.snow()
-    st.success("Processamento dos dados finalizado!", icon="🎉")
-    show_processed_pages()
+    try:
+        if STATE.use_cache == CACHE[1]:
+            run_search(scraper)
+    except Exception as e:
+        st.error(
+            f"Erro ao realizar a busca: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
+        )
+
+    try:
+        inspect_pages(scraper)
+        process_data(scraper.pages_file(STATE.keyword))
+        st.snow()
+        st.success("Processamento dos dados finalizado!", icon="🎉")
+        show_processed_pages()
+    except Exception as e:
+        st.error(
+            f"Erro ao realizar a navegação de páginas: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
+        )
 
 
 config_container = st.sidebar.expander(label=BASE, expanded=True)
