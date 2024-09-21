@@ -1,6 +1,8 @@
+from fastcore.xtras import Path
 import streamlit as st
 
-from config import COLUNAS, LOGOS, TITLE
+from config import COLUNAS, LOGOS, TITLE, FOLDER, CLOUD
+from callbacks import _set_folder, _set_cloud
 from data_processing import update_processed_pages
 
 
@@ -196,3 +198,38 @@ def presentation_page():
         "Por favor, selecione uma plataforma para iniciar a pesquisa.",
         icon="👆🏾",
     )
+
+
+def is_folders_ok(state):
+    check = True
+    if state.folder is None or not Path(state.folder).is_dir():
+        st.error("Insira um caminho válido para a pasta de trabalho local!", icon="🚨")
+        st.text_input(
+            FOLDER,
+            key="_folder",
+            on_change=_set_folder,
+        )
+        check = False
+
+    if state.cloud is None or not Path(state.cloud).is_dir():
+        st.error(
+            "Insira o caminho para a pasta sincronizada do OneDrive: DataHub - POST/Regulatron !",
+            icon="🚨",
+        )
+        st.markdown("""
+                    * Para sincronizar, abra o link [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron)
+                    * Clique em __Add shortcut to OneDrive | Adicionar atalho para OneDrive__
+                    """)
+        st.image("images/onedrive.png", width=720)
+        st.markdown("""
+                    * Copie o caminho da pasta sincronizada e cole no campo abaixo
+        """)
+
+        st.text_input(
+            CLOUD,
+            key="_cloud",
+            on_change=_set_cloud,
+        )
+        check = False
+
+    return check

@@ -7,7 +7,7 @@ from fastcore.xtras import Path
 from config import COLUNAS, SCRAPERS
 
 
-def request_table(json_path: Path, state: dict) -> pd.DataFrame | None:
+def request_table(state: dict, json_path: Path) -> pd.DataFrame | None:
     try:
         client = Client("ronaldokun/ecomproc")
         result = client.predict(
@@ -38,7 +38,7 @@ def process_data(state, pages_file: Path) -> None:
     state.processed_pages = None
     if len(pages_file.read_json()) == 0:
         pages_file.unlink(missing_ok=True)
-    elif (df := request_table(pages_file)) is not None:
+    elif (df := request_table(state, pages_file)) is not None:
         df["probabilidade"] *= 100
         df.sort_values(
             by=["modelo_score", "nome_score", "passível?", "probabilidade"],

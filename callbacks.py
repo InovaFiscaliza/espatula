@@ -60,7 +60,7 @@ def _set_processed_pages(state):
         processed_urls = set(state.processed_pages["url"].to_list())
         cached_urls = set(state.cached_pages.keys())
         if cached_urls.difference(processed_urls):
-            process_data(json_file)
+            process_data(state, json_file)
 
 
 # Other callbacks as necessary...
