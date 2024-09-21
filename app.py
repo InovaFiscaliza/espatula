@@ -8,15 +8,9 @@ from config import (
     KEYWORD,
     LOGOS,
     MARKETPLACE,
-    MAX_PAGES,
-    MAX_SEARCH,
     KEYS,
     START,
     SCRAPERS,
-    RECONNECT,
-    SCREENSHOT,
-    SHUFFLE,
-    TIMEOUT,
     save_config,
     load_config,
     init_session_state,
@@ -32,7 +26,13 @@ from callbacks import (
 
 from data_processing import process_data
 
-from ui import show_results, presentation_page, is_folders_ok
+from ui import (
+    show_results,
+    presentation_page,
+    is_folders_ok,
+    get_cached_info,
+    get_params,
+)
 
 CONFIG = load_config()
 
@@ -57,9 +57,8 @@ for key in STATE:
     if key in KEYS:
         CONFIG[KEYS[key]] = STATE[key]
 
+
 # Functions to set the STATE Variables
-
-
 @st.fragment
 def set_mkplc():
     # Callback function to save the mkplc selection to Session State
@@ -195,7 +194,7 @@ def inspect_pages(scraper):
 
 def run():
     save_config(CONFIG)
-    STATE.show_cache = False
+    # STATE.show_cache = False
     scraper = SCRAPERS[STATE.mkplc](
         path=STATE.folder,
         reconnect=STATE.reconnect,
@@ -250,42 +249,32 @@ else:
             set_cached_pages()
             set_processed_pages()
             container = st.sidebar.expander("DADOS", expanded=True)
-            cache_info = ""
-            if cached_links := STATE.cached_links:
-                cache_info += f" * **{len(cached_links)}** resultados de busca"
+            has_data, cache_info = get_cached_info(STATE)
+            if not has_data:
+                container.warning(
+                    "Não há dados salvos para os parâmetros inseridos acima☝🏽!"
+                )
+                container.info("Efetue uma pesquisa abaixo👇🏽")
             else:
-                cache_info += " * :red[0] resultados de busca"
-                STATE.use_cache = CACHE[1]
-            if cached_pages := STATE.cached_pages:
-                cache_info += f"\n* **{len(cached_pages)}** páginas completas"
-            else:
-                cache_info += "\n * :red[0] páginas completas"
-            if (processed_pages := STATE.processed_pages) is not None:
-                cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
-            else:
-                cache_info += "\n * :red[0] páginas processadas"
-            if not any([cached_links, cached_pages, processed_pages is not None]):
-                container.warning("Não há dados salvos para os parâmetros inseridos")
-            else:
-                container.info(cache_info)
-                if container.toggle("Mostrar Dados Salvos", key="show_cache"):
-                    left_tab, right_tab = st.tabs(
-                        [
-                            "Dado Processado",
-                            "Dado Bruto",
-                        ]
-                    )
-                    with right_tab:
-                        left, right = st.columns([1, 1], vertical_alignment="top")
-                        with left:
-                            left.subheader("Resultado de Busca")
-                            show_links()
-                        with right:
-                            right.subheader("Página Completa")
-                            show_pages()
-                    with left_tab:
-                        show_processed_pages()
-            if cached_links:
+                container.success(cache_info)
+                # if container.toggle("Mostrar Dados Salvos", key="show_cache"):
+                left_tab, right_tab = st.tabs(
+                    [
+                        "Dado Processado",
+                        "Dado Bruto",
+                    ]
+                )
+                with right_tab:
+                    left, right = st.columns([1, 1], vertical_alignment="top")
+                    with left:
+                        left.subheader("Resultado de Busca")
+                        show_links()
+                    with right:
+                        right.subheader("Página Completa")
+                        show_pages()
+                with left_tab:
+                    show_processed_pages()
+            if STATE.cached_links:
                 container.radio(
                     "Links para Navegação de Páginas",
                     options=CACHE,
@@ -296,45 +285,7 @@ else:
 
             with st.sidebar:
                 with st.form("config", border=False):
-                    with st.expander("PARÂMETROS - PESQUISA", expanded=False):
-                        st.number_input(
-                            MAX_SEARCH,
-                            min_value=1,
-                            value=CONFIG.get(KEYS["max_search"], 10),
-                            key="max_search",
-                            disabled=(STATE.use_cache == CACHE[0]),
-                        )
-                        st.number_input(
-                            MAX_PAGES,
-                            min_value=1,
-                            value=CONFIG.get(KEYS["max_pages"], 50),
-                            key="max_pages",
-                        )
-                        st.checkbox(
-                            SHUFFLE,
-                            key="shuffle",
-                            value=CONFIG.get(KEYS["shuffle"], True),
-                        )
-                        st.checkbox(
-                            SCREENSHOT,
-                            key="screenshot",
-                            value=CONFIG.get(KEYS["screenshot"], True),
-                        )
-
-                    with st.expander("CONFIGURAÇÕES - BROWSER", expanded=False):
-                        st.number_input(
-                            RECONNECT,
-                            min_value=2,
-                            key="reconnect",
-                            value=CONFIG.get(KEYS["reconnect"], 4),
-                        )
-                        st.number_input(
-                            TIMEOUT,
-                            min_value=1,
-                            key="timeout",
-                            value=CONFIG.get(KEYS["timeout"], 1),
-                        )
-
+                    get_params(STATE, CONFIG)
                     st.form_submit_button(START, on_click=run, use_container_width=True)
 
         else:

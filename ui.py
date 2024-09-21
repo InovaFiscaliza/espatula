@@ -1,7 +1,21 @@
 from fastcore.xtras import Path
 import streamlit as st
 
-from config import COLUNAS, LOGOS, TITLE, FOLDER, CLOUD
+from config import (
+    COLUNAS,
+    LOGOS,
+    TITLE,
+    FOLDER,
+    CLOUD,
+    CACHE,
+    KEYS,
+    MAX_PAGES,
+    MAX_SEARCH,
+    SHUFFLE,
+    SCREENSHOT,
+    RECONNECT,
+    TIMEOUT,
+)
 from callbacks import _set_folder, _set_cloud
 from data_processing import update_processed_pages
 
@@ -128,7 +142,8 @@ def show_results(state, df):
     with columns[0]:
         with st.popover("📜Dados do Anúncio"):
             st.markdown("""
-                        * Os registros que compõem a primeira tabela serão salvos em um arquivo Excel e posteriormente sincronizados com o [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron).
+                        * Os registros que compõem a primeira tabela serão salvos em um arquivo Excel e sincronizados com o [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron).
+                        * Todos os dados submetidos são periodicamente mesclados numa base única, que será disponibilizada em [OneDrive DataHub - GET/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20GET/Regulatron).
                         * Todos os dados brutos do anúncio serão salvos, as colunas acima são apenas um recorte.
                         """)
 
@@ -148,7 +163,7 @@ def show_results(state, df):
                         * A taxa de sobreposição é mostrada nas colunas __Título x SCH - Nome Comercial (%)__ e __Modelo x SCH - Modelo (%)__.
                         * Uma taxa de sobreposição de `100%` indica que um dado está contido no outro.
                         * Este é um indicativo de correspondência entre os dados do anúncio e o certificado apontado.
-                        * Apesar de não garantir a validade da homologação, uma taxa de 100% é mais um artifício a favor da classificação.
+                        * Apesar de não garantir a validade da homologação, uma taxa de 100% é uma característica útil na análise do anúncios.
                         
                         """)
     with columns[3]:
@@ -194,7 +209,7 @@ def presentation_page():
             * 📈 Exportação de dados processados para Excel.
             """
         )
-    st.sidebar.success(
+    st.sidebar.info(
         "Por favor, selecione uma plataforma para iniciar a pesquisa.",
         icon="👆🏾",
     )
@@ -233,3 +248,62 @@ def is_folders_ok(state):
         check = False
 
     return check
+
+
+def get_cached_info(state):
+    cache_info = ""
+    if cached_links := state.cached_links:
+        cache_info += f" * **{len(cached_links)}** resultados de busca"
+    else:
+        cache_info += " * :red[0] resultados de busca"
+        state.use_cache = CACHE[1]
+    if cached_pages := state.cached_pages:
+        cache_info += f"\n* **{len(cached_pages)}** páginas completas"
+    else:
+        cache_info += "\n * :red[0] páginas completas"
+    if (processed_pages := state.processed_pages) is not None:
+        cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
+    else:
+        cache_info += "\n * :red[0] páginas processadas"
+    return any([cached_links, cached_pages, processed_pages is not None]), cache_info
+
+
+def get_params(state, config):
+    with st.expander("PARÂMETROS - PESQUISA", expanded=False):
+        st.number_input(
+            MAX_SEARCH,
+            min_value=1,
+            value=config.get(KEYS["max_search"], 10),
+            key="max_search",
+            disabled=(state.use_cache == CACHE[0]),
+        )
+        st.number_input(
+            MAX_PAGES,
+            min_value=1,
+            value=config.get(KEYS["max_pages"], 50),
+            key="max_pages",
+        )
+        st.checkbox(
+            SHUFFLE,
+            key="shuffle",
+            value=config.get(KEYS["shuffle"], True),
+        )
+        st.checkbox(
+            SCREENSHOT,
+            key="screenshot",
+            value=config.get(KEYS["screenshot"], True),
+        )
+
+    with st.expander("CONFIGURAÇÕES - BROWSER", expanded=False):
+        st.number_input(
+            RECONNECT,
+            min_value=2,
+            key="reconnect",
+            value=config.get(KEYS["reconnect"], 4),
+        )
+        st.number_input(
+            TIMEOUT,
+            min_value=1,
+            key="timeout",
+            value=config.get(KEYS["timeout"], 1),
+        )
