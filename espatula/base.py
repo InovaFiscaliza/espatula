@@ -123,6 +123,9 @@ class BaseScraper:
             user_data_dir=user_data_dir,
         ) as sb:
             sb.driver.maximize_window()
+            sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
+            if self.handle_captcha:
+                self.click_captcha(sb)
             yield sb
 
     @staticmethod
@@ -281,7 +284,6 @@ class BaseScraper:
                 )
 
     def input_search_params(self, driver: SB, keyword: str):
-        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         self.highlight_element(driver, self.input_field)
         for attempt in range(self.retries):
             try:

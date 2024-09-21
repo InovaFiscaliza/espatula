@@ -15,7 +15,7 @@ CATEGORIES = {
 
 @dataclass
 class CarrefourScraper(BaseScraper):
-    turnstile: bool = True
+    handle_captcha: bool = True
 
     @property
     def name(self) -> str:
@@ -34,9 +34,7 @@ class CarrefourScraper(BaseScraper):
         return "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
 
     def input_search_params(self, driver, keyword):
-        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         for attempt in range(self.retries):
-            self.click_captcha(driver)
             try:
                 if department := CATEGORIES.get(keyword):
                     driver.uc_open_with_reconnect(

@@ -235,7 +235,6 @@ class AmazonScraper(BaseScraper):
         return results
 
     def input_search_params(self, driver, keyword):
-        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         for attempt in range(self.retries):
             try:
                 self.highlight_element(driver, self.input_field)
