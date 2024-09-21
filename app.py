@@ -490,9 +490,9 @@ if STATE.mkplc is None:
             **Características**:
             * 👨🏻‍💻 Pesquisa por palavra-chave.
             * 👾 Implementação de mecanismos anti-bot sofisticados.
-            * 🤖 Automação da busca e navegação para de produtos e navegação  páginas.
-            * 🖼️ Captura de página completa anúncios em pdf otimizado.
-            * 🗄️ Mesclagem dos dados de certificação na base da Anatel com fuzzy search.
+            * 🤖 Automação da busca de produtos e navegação de páginas.
+            * 🖼️ Captura de página completa do anúncio em pdf otimizado.
+            * 🗄️ Mesclagem dos dados de certificação da base da Anatel e sobreposição de strings.
             * 📊 Classificação binária baseada em treinamento nos dados anotados pelos fiscais.
             * 📈 Exportação de dados processados para Excel.
             """
