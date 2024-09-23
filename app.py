@@ -185,7 +185,6 @@ def inspect_pages(scraper):
             output.empty()
             progress_bar.empty()
     except Exception as e:
-        raise e
         st.error(
             f"Erro ao realizar a navegação de páginas: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
         )
