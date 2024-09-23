@@ -138,9 +138,9 @@ def run_search(scraper):
             ):
                 with output.empty():
                     st.write(result)
+                percentage = int((i * percentage) % 100)
                 progress_bar.progress(
-                    int((i * percentage) % 100),
-                    text=progress_text,
+                    percentage, text=f"{progress_text} - {percentage}%"
                 )
             time.sleep(1)
             output.empty()
@@ -181,7 +181,10 @@ def inspect_pages(scraper):
                     with right:
                         right.write("Dados do produto")
                         right.json(result, expanded=1)
-                progress_bar.progress(int((i * percentage) % 100), text=progress_text)
+                percentage = int((i * percentage) % 100)
+                progress_bar.progress(
+                    percentage, text=f"{progress_text} - {percentage}%"
+                )
             time.sleep(1)
             output.empty()
             progress_bar.empty()
@@ -194,7 +197,6 @@ def inspect_pages(scraper):
 
 def run():
     save_config(CONFIG)
-    # STATE.show_cache = False
     scraper = SCRAPERS[STATE.mkplc](
         path=STATE.folder,
         reconnect=STATE.reconnect,
@@ -251,13 +253,10 @@ else:
             container = st.sidebar.expander("DADOS", expanded=True)
             has_data, cache_info = get_cached_info(STATE)
             if not has_data:
-                container.warning(
-                    "Não há dados salvos para os parâmetros inseridos acima☝🏽!"
-                )
-                container.info("Efetue uma pesquisa abaixo👇🏽")
+                container.warning("⚠️ Não há dados salvos! ⚠️")
+                container.info("👇🏽 Inicie uma Pesquisa 👇🏽")
             else:
                 container.success(cache_info)
-                # if container.toggle("Mostrar Dados Salvos", key="show_cache"):
                 left_tab, right_tab = st.tabs(
                     [
                         "Dado Processado",
