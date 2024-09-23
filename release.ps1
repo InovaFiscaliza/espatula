@@ -4,12 +4,16 @@ $filesToCopy = @(
     "espatula",
     "images",
     "app.py",
+    "callbacks.py",
     "config.py",
+    "data_processing.py",
     "LICENSE",
+    "package.txt",
     "pyproject.toml",
     "README.md",
     "run.py",
-    "uv.lock"
+    "ui.py"
+    "uv.lock",
     "D:\Applications\Scoop\apps\uv\current\uv.exe"
 )
 

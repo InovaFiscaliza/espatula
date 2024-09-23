@@ -16,7 +16,7 @@ powershell -Command "[Environment]::SetEnvironmentVariable('PYTHONUTF8','1', 'Us
 cd %REGULATRON%
 call "%REGULATRON%\uv.exe" sync --python 3.12 --frozen
 if %ERRORLEVEL% EQU 0 (
-    start "" "%REGULATRON%\uv.exe" run run.py --frozen
+    start "" "%REGULATRON%\uv.exe" run  --frozen run.py
     timeout /t 5 /nobreak > nul
     start "" "http://localhost:8501" > nul 2>&1
 
