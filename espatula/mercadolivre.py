@@ -5,7 +5,7 @@ from seleniumbase.common.exceptions import (
     NoSuchElementException,
     ElementNotVisibleException,
 )
-
+from markdownify import markdownify as md
 from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
@@ -196,7 +196,7 @@ class MercadoLivreScraper(BaseScraper):
 
         descrição = None
         if descrição_element := get_selector("p[class=ui-pdp-description__content]"):
-            descrição = descrição_element.get_text().strip()
+            descrição = md(str(descrição_element))
 
         url = self.find_single_url(driver.get_current_url())
 
