@@ -125,6 +125,8 @@ class AmericanasScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
             "descrição": descrição,
             "ean_gtin": ean,
+            "estado": None,
+            "estoque": None,
             "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
@@ -133,6 +135,8 @@ class AmericanasScraper(BaseScraper):
             "preço": preço,
             "product_id": product_id,
             "url": driver.get_current_url(),
+            "vendas": None,
+            "vendedor": None,
         }
 
     def parse_tables(self, soup) -> dict:

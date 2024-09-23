@@ -27,7 +27,6 @@ from callbacks import (
 from data_processing import process_data
 
 from ui import (
-    show_results,
     presentation_page,
     is_folders_ok,
     get_cached_info,
@@ -117,6 +116,8 @@ def show_pages():
 
 @st.fragment
 def show_processed_pages():
+    from ui import show_results
+
     if STATE.processed_pages is not None:
         with st.container(border=False):
             show_results(STATE, STATE.processed_pages)
@@ -129,13 +130,12 @@ def run_search(scraper):
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
             percentage = 100 / STATE.max_search
-            for i, result in enumerate(
-                scraper.search(
-                    keyword=STATE.keyword,
-                    max_pages=STATE.max_search,
-                ),
-                start=1,
+            i = 0
+            for result in scraper.search(
+                keyword=STATE.keyword,
+                max_pages=STATE.max_search,
             ):
+                i += 1
                 percentage = int(i * percentage)
                 progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
@@ -154,15 +154,14 @@ def inspect_pages(scraper):
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
             percentage = 100 / STATE.max_pages
-            for i, result in enumerate(
-                scraper.inspect_pages(
-                    keyword=STATE.keyword,
-                    screenshot=STATE.screenshot,
-                    sample=STATE.max_pages,
-                    shuffle=STATE.shuffle,
-                ),
-                start=1,
+            i = 0
+            for result in scraper.inspect_pages(
+                keyword=STATE.keyword,
+                screenshot=STATE.screenshot,
+                sample=STATE.max_pages,
+                shuffle=STATE.shuffle,
             ):
+                i += 1
                 percentage = int(i * percentage)
                 progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():

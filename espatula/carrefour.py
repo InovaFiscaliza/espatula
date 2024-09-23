@@ -63,9 +63,6 @@ class CarrefourScraper(BaseScraper):
         if imagem := product_tag.select_one('img[class*="product-summary"]'):
             imagem = imagem.get("src")
 
-        if preço_original := product_tag.select_one('span[class*="listPrice"]'):
-            preço_original = preço_original.get_text().strip()
-
         if preço := product_tag.select_one('span[class*="spotPriceValue"]'):
             preço = preço.get_text().strip()
 
@@ -74,7 +71,6 @@ class CarrefourScraper(BaseScraper):
 
         return {
             "nome": nome,
-            "preço_original": preço_original,
             "preço": preço,
             "imagem": imagem,
             "url": url,
@@ -116,9 +112,6 @@ class CarrefourScraper(BaseScraper):
         if vendedor := get_selector('span[class*="carrefourSeller"]'):
             vendedor = vendedor.get_text().strip()
 
-        if desconto := get_selector('span[class*="PriceSavings"]'):
-            desconto = desconto.get_text().strip()
-
         if cod_produto := get_selector('span[class*="product-identifier__value"]'):
             cod_produto = cod_produto.get_text().strip()
 
@@ -137,20 +130,24 @@ class CarrefourScraper(BaseScraper):
             modelo = características.get("Modelo")
 
         return {
+            "avaliações": None,
             "categoria": categoria,
             "certificado": certificado,
             "características": características,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
-            "desconto": desconto,
             "descrição": descrição,
             "ean_gtin": ean,
+            "estado": None,
+            "estoque": None,
             "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
             "nome": nome,
+            "nota": None,
             "preço": preço,
             "product_id": cod_produto,
             "url": driver.get_current_url(),
+            "vendas": None,
             "vendedor": vendedor,
         }
 

@@ -206,8 +206,8 @@ class MercadoLivreScraper(BaseScraper):
         return {
             "avaliações": avaliações,
             "categoria": categoria,
-            "características": características,
             "certificado": certificado,
+            "características": características,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
             "descrição": descrição,
             "ean_gtin": ean,
