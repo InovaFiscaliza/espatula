@@ -215,6 +215,32 @@ class BaseScraper:
         with open(folder / filename, "wb") as f:
             f.write(screenshot)
 
+    @staticmethod
+    def compress_images(pdf_stream):
+        try:
+            from pypdf import PdfReader, PdfWriter
+
+            reader = PdfReader(pdf_stream)
+            writer = PdfWriter()
+
+            for page in reader.pages:
+                writer.add_page(page)
+
+            if reader.metadata is not None:
+                writer.add_metadata(reader.metadata)
+
+            for page in writer.pages:
+                for img in page.images:
+                    img.replace(img.image, quality=80)
+                page.compress_content_streams(level=9)
+
+            bytes_stream = BytesIO()
+            writer.write(bytes_stream)
+            return bytes_stream.getvalue()
+        except ImportError:
+            print("pypdf not installed, skipping screenshot compression")
+            return pdf_stream
+
     def save_screenshot(self, sb: SB, result_page: dict, i: int):
         filename = self.generate_filename(result_page, i)
         self._save_screenshot(sb.driver, filename)
