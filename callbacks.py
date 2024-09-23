@@ -39,7 +39,7 @@ def _set_processed_pages(state):
             df = pd.read_excel(excel_file, dtype="string").astype(COLUNAS)
             df.sort_values(
                 by=["passível?", "probabilidade", "modelo_score", "nome_score"],
-                ascending=[False, False, False, False],
+                ascending=False,
                 inplace=True,
                 ignore_index=True,
             )
@@ -49,7 +49,7 @@ def _set_processed_pages(state):
             pass
 
     if need_processing and json_file.is_file():
-        process_data(json_file)
+        process_data(state, json_file)
         need_processing = False
 
     if (
