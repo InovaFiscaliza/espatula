@@ -124,7 +124,7 @@ def show_processed_pages():
 
 def run_search(scraper):
     try:
-        with st.empty():
+        with st.container():
             progress_text = "Realizando a busca de produtos...🕸️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
@@ -140,16 +140,16 @@ def run_search(scraper):
                 progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     st.write(result)
-            # time.sleep(1)
-            # output.empty()
-            # progress_bar.empty()
+            time.sleep(1)
+            output.empty()
+            progress_bar.empty()
     except Exception as e:
         raise e
 
 
 def inspect_pages(scraper):
     try:
-        with st.empty():
+        with st.container():
             progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
@@ -181,9 +181,9 @@ def inspect_pages(scraper):
                     with right:
                         right.write("Dados do produto")
                         right.json(result, expanded=1)
-            # time.sleep(1)
-            # output.empty()
-            # progress_bar.empty()
+            time.sleep(1)
+            output.empty()
+            progress_bar.empty()
     except Exception as e:
         raise e
         st.error(
