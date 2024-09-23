@@ -124,7 +124,7 @@ def show_processed_pages():
 
 def run_search(scraper):
     try:
-        with st.container():
+        with st.empty():
             progress_text = "Realizando a busca de produtos...🕸️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
@@ -136,22 +136,20 @@ def run_search(scraper):
                 ),
                 start=1,
             ):
+                percentage = int((i * percentage) % 100)
+                progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     st.write(result)
-                percentage = int((i * percentage) % 100)
-                progress_bar.progress(
-                    percentage, text=f"{progress_text} - {percentage}%"
-                )
-            time.sleep(1)
-            output.empty()
-            progress_bar.empty()
+            # time.sleep(1)
+            # output.empty()
+            # progress_bar.empty()
     except Exception as e:
         raise e
 
 
 def inspect_pages(scraper):
     try:
-        with st.container():
+        with st.empty():
             progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
@@ -165,6 +163,8 @@ def inspect_pages(scraper):
                 ),
                 start=1,
             ):
+                percentage = int((i * percentage) % 100)
+                progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     left, right = st.columns([1, 1], vertical_alignment="top")
                     with left:
@@ -181,13 +181,9 @@ def inspect_pages(scraper):
                     with right:
                         right.write("Dados do produto")
                         right.json(result, expanded=1)
-                percentage = int((i * percentage) % 100)
-                progress_bar.progress(
-                    percentage, text=f"{progress_text} - {percentage}%"
-                )
-            time.sleep(1)
-            output.empty()
-            progress_bar.empty()
+            # time.sleep(1)
+            # output.empty()
+            # progress_bar.empty()
     except Exception as e:
         raise e
         st.error(
@@ -212,7 +208,7 @@ def run():
 
     try:
         inspect_pages(scraper)
-        process_data(scraper.pages_file(STATE.keyword))
+        process_data(STATE, scraper.pages_file(STATE.keyword))
         st.snow()
         st.success("Processamento dos dados finalizado!", icon="🎉")
         show_processed_pages()
