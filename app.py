@@ -136,10 +136,8 @@ def run_search(scraper):
                 ),
                 start=1,
             ):
-                percentage = i * percentage
-                progress_bar.progress(
-                    percentage, text=f"{progress_text} {percentage:.0}%"
-                )
+                percentage = int(i * percentage)
+                progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     st.write(result)
             time.sleep(1)
@@ -166,9 +164,7 @@ def inspect_pages(scraper):
                 start=1,
             ):
                 percentage = int(i * percentage)
-                progress_bar.progress(
-                    percentage, text=f"{progress_text} {percentage:.0}%"
-                )
+                progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     left, right = st.columns([1, 1], vertical_alignment="top")
                     with left:
