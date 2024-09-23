@@ -173,8 +173,9 @@ class MercadoLivreScraper(BaseScraper):
             estoque = estoque_element.get_text().strip().split(" ")[0].replace("(", "")
 
         vendedor = None
-        if vendedor_element := get_selector('div[class="ui-pdp-seller__header"]'):
-            vendedor = vendedor_element.get_text().strip()
+        if vendedor_element := get_selector('span[class*="ui-pdp-seller__label-sold"]'):
+            if vendedor := vendedor_element.find_next_sibling("span"):
+                vendedor = vendedor.get_text().strip()
 
         if get_selector("button[data-testid='action-collapsable-target']"):
             self.uc_click(driver, "button[data-testid=action-collapsable-target]")
