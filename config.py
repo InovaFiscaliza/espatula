@@ -75,17 +75,12 @@ KEYS = {
     "folder": FOLDER,
     "cloud": CLOUD,
     "use_cache": CACHE[0],
-    "show_browser": SHOW_BROWSER,
-    "marketplace": MARKETPLACE,
-    "max_pages": MAX_PAGES,
     "max_search": MAX_SEARCH,
-    "reconnect": RECONNECT,
-    "screenshot": SCREENSHOT,
+    "max_pages": MAX_PAGES,
     "shuffle": SHUFFLE,
+    "screenshot": SCREENSHOT,
+    "reconnect": RECONNECT,
     "timeout": TIMEOUT,
-    "title": TITLE,
-    "logos": LOGOS,
-    "load_user_profile": USER_PROFILE,
 }
 
 CONFIG_FILE = Path(__file__).parent / "config.json"
@@ -117,7 +112,7 @@ def init_session_state(STATE: dict, CONFIG: dict) -> None:
                 case "keyword":
                     STATE[key] = CONFIG.get(KEYS[key], "")
                 case "folder":
-                    folder = (Path(__file__).parent / "data").resolve()
+                    folder = Path(__file__).parent / "data"
                     folder.mkdir(parents=True, exist_ok=True)
                     STATE[key] = rf"{folder}"
                 case "cloud":
