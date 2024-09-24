@@ -22,6 +22,7 @@ from callbacks import (
     _set_cached_links,
     _set_cached_pages,
     _set_processed_pages,
+    _set_client,
 )
 
 from data_processing import process_data
@@ -31,6 +32,7 @@ from ui import (
     is_folders_ok,
     get_cached_info,
     get_params,
+    show_results,
 )
 
 CONFIG = load_config()
@@ -51,8 +53,8 @@ init_session_state(STATE, CONFIG)
 
 # Retrieve previous Session State to initialize the widgets
 for key in STATE:
-    if key != "use_cache":
-        STATE["_" + key] = STATE[key]
+    # if key != "use_cache":
+    #     STATE["_" + key] = STATE[key]
     if key in KEYS:
         CONFIG[KEYS[key]] = STATE[key]
 
@@ -60,11 +62,13 @@ for key in STATE:
 # Functions to set the STATE Variables
 @st.fragment
 def set_mkplc():
-    # Callback function to save the mkplc selection to Session State
-    STATE.mkplc = STATE._mkplc
-    img = LOGOS[STATE._mkplc]
-    st.logo(img)
-    st.image(img, width=270)
+    if mkplc := STATE.get("_mkplc"):
+        STATE.mkplc = mkplc
+        img = LOGOS[mkplc]
+        st.logo(img)
+        st.image(img, width=270)
+    else:
+        STATE.mkplc = None
 
 
 @st.fragment
@@ -83,8 +87,9 @@ def set_cloud():
 
 
 @st.fragment
-def use_cache():
-    STATE.use_cache = STATE._use_cache
+def set_use_cache():
+    if "_use_cache" in STATE:
+        STATE.use_cache = STATE._use_cache
 
 
 @st.fragment
@@ -102,6 +107,11 @@ def set_processed_pages():
     _set_processed_pages(STATE)
 
 
+@st.cache_resource
+def set_client():
+    _set_client(STATE)
+
+
 @st.fragment
 def show_links():
     if STATE.cached_links:
@@ -116,8 +126,6 @@ def show_pages():
 
 @st.fragment
 def show_processed_pages():
-    from ui import show_results
-
     if STATE.processed_pages is not None:
         with st.container(border=False):
             show_results(STATE, STATE.processed_pages)
@@ -136,7 +144,7 @@ def run_search(scraper):
                 max_pages=STATE.max_search,
             ):
                 i += 1
-                percentage = int(i * percentage)
+                percentage = min(int(i * percentage), 100)
                 progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     st.write(result)
@@ -162,7 +170,7 @@ def inspect_pages(scraper):
                 shuffle=STATE.shuffle,
             ):
                 i += 1
-                percentage = int(i * percentage)
+                percentage = min(int(i * percentage), 100)
                 progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     left, right = st.columns([1, 1], vertical_alignment="top")
@@ -221,6 +229,7 @@ config_container = st.sidebar.expander(label=BASE, expanded=True)
 mkplc = config_container.selectbox(
     MARKETPLACE,
     SCRAPERS.keys(),
+    index=None,
     key="_mkplc",
     on_change=set_mkplc,
     placeholder="Selecione uma opção",
@@ -231,7 +240,6 @@ if STATE.mkplc is None:
 else:
     set_folder()
     set_cloud()
-
     if is_folders_ok(STATE):
         config_container.text_input(
             KEYWORD,
@@ -242,7 +250,9 @@ else:
 
         if STATE.keyword:
             set_cached_links()
+            set_use_cache()
             set_cached_pages()
+            set_client()  # It has to be called before set_processed_pages
             set_processed_pages()
             container = st.sidebar.expander("DADOS", expanded=True)
             has_data, cache_info = get_cached_info(STATE)
@@ -273,7 +283,7 @@ else:
                     options=CACHE,
                     index=0 if CONFIG[CACHE[0]] else 1,
                     key="_use_cache",
-                    on_change=use_cache,
+                    on_change=set_use_cache,
                 )
 
             with st.sidebar:
