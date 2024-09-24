@@ -20,12 +20,13 @@ from callbacks import _set_folder, _set_cloud
 from data_processing import update_processed_pages
 
 
-def display_df(state, df, column_order, output_df_key):
-    return st.data_editor(
+def display_df(state, df, output_df_key):
+    # The index in df should be in the default numeric order
+    state[f"df_{output_df_key}"] = st.data_editor(
         df,
         height=720 if len(df) >= 20 else None,
         use_container_width=True,
-        column_order=column_order,
+        column_order=COLUNAS.keys(),
         column_config={
             "url": st.column_config.LinkColumn(
                 "URL",
@@ -94,6 +95,7 @@ def display_df(state, df, column_order, output_df_key):
                 width=None,
                 help="📌Classificador Binário - Homologação Compulsória",
                 disabled=False,
+                required=True,
             ),
             "probabilidade": st.column_config.ProgressColumn(
                 "Classe (Probabilidade)",
@@ -112,27 +114,25 @@ def display_df(state, df, column_order, output_df_key):
             output_df_key,
         ),
     )
+    return state[output_df_key]
 
 
-def show_results(state, df):
-    df = state.processed_pages
-    with st.expander(
+def show_results(state, container):
+    with container.expander(
         "Dados Positivos - Homologação Compulsória pela Anatel", icon="🔥"
     ):
+        rows = state.processed_pages["passível?"]
         display_df(
             state,
-            df.loc[df["passível?"] == "True"],
-            COLUNAS.keys(),
-            output_df_key="df_positive",
+            state.processed_pages.loc[rows],
+            output_df_key="positive",
         )
-    with st.expander("Dados Negativos - Não Relevante (_Serão descartados_)", icon="🗑️"):
+    with container.expander("Dados Negativos - Não Relevantes", icon="🗑️"):
         display_df(
             state,
-            df.loc[df["passível?"] == "False"],
-            COLUNAS.keys(),
-            output_df_key="df_negative",
+            state.processed_pages.loc[~rows],
+            output_df_key="negative",
         )
-
     st.info(
         "**É possível alterar a classificação (classe - `True/False`) de cada registro, caso incorreta!**",
         icon="✍🏽",
@@ -258,39 +258,43 @@ def get_cached_info(state):
         cache_info += " * :red[0] resultados de busca"
         state.use_cache = CACHE[1]
     if cached_pages := state.cached_pages:
-        cache_info += f"\n* **{len(cached_pages)}** páginas completas"
+        cache_info += f"\n* **{len(cached_pages)}** anúncios completos"
     else:
-        cache_info += "\n * :red[0] páginas completas"
+        cache_info += "\n * :red[0] anúncios completos"
     if (processed_pages := state.processed_pages) is not None:
-        cache_info += f"\n* **{len(processed_pages)}** páginas processadas"
+        cache_info += f"\n* **{len(processed_pages)}** anúncios processados"
     else:
-        cache_info += "\n * :red[0] páginas processadas"
+        cache_info += "\n * :red[0] anúncios processados"
     return any([cached_links, cached_pages, processed_pages is not None]), cache_info
 
 
 def get_params(state, config):
-    with st.expander("PARÂMETROS - PESQUISA", expanded=False):
+    with st.expander("PARÂMETROS - NAVEGAÇÃO", expanded=False):
         st.number_input(
             MAX_SEARCH,
             min_value=1,
             value=config.get(KEYS["max_search"], 10),
             key="max_search",
+            help="Nº máximo de páginas de busca a navegar, a cada nova pesquisa",
             disabled=(state.use_cache == CACHE[0]),
         )
         st.number_input(
             MAX_PAGES,
             min_value=1,
+            help="Nº máximo de produtos a capturar, dentre os links coletados",
             value=config.get(KEYS["max_pages"], 50),
             key="max_pages",
         )
         st.checkbox(
             SHUFFLE,
             key="shuffle",
+            help="Seleciona aleatoriamente os links para navegação de páginas",
             value=config.get(KEYS["shuffle"], True),
         )
         st.checkbox(
             SCREENSHOT,
             key="screenshot",
+            help="Captura a página completa do anúncio em pdf otimizado",
             value=config.get(KEYS["screenshot"], True),
         )
 
@@ -299,11 +303,13 @@ def get_params(state, config):
             RECONNECT,
             min_value=2,
             key="reconnect",
-            value=config.get(KEYS["reconnect"], 4),
+            help="Tempo de espera para o driver se conectar ao navegador (seg)",
+            value=config.get(KEYS["reconnect"], 5),
         )
         st.number_input(
             TIMEOUT,
             min_value=1,
             key="timeout",
-            value=config.get(KEYS["timeout"], 1),
+            help="Tempo de espera para carregar os elementos da página (seg)",
+            value=config.get(KEYS["timeout"], 2),
         )

@@ -1,4 +1,3 @@
-# data_processing.py
 import shutil
 from datetime import datetime
 import pandas as pd
@@ -22,22 +21,25 @@ def request_table(state, json_path: Path) -> pd.DataFrame | None:
         return None
 
 
-def save_table(state: dict):
+def save_table(state: dict, subset_df: pd.DataFrame = None) -> bool:
     scraper = SCRAPERS[state.mkplc](path=state.folder)
     try:
         if (df := state.processed_pages) is not None:
             output_table = scraper.pages_file(state.keyword).with_suffix(".xlsx")
             df["marketplace"] = state.mkplc
-            df.loc[df["passível?"] == "True"].to_excel(output_table, index=False)
+            df.to_excel(output_table, index=False)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             cloud_output = (
                 f"{state.cloud}/{output_table.stem}_{timestamp}{output_table.suffix}"
             )
-            shutil.copy(str(output_table), str(cloud_output))
+            if subset_df is None:
+                shutil.copy(str(output_table), str(cloud_output))
+            else:
+                subset_df.to_excel(cloud_output, index=False)
 
     except Exception as e:
-        print(e)
+        print(f"Erro ao salvar os dados processados: {e}")
 
 
 def process_data(state, pages_file: Path) -> None:
@@ -50,6 +52,7 @@ def process_data(state, pages_file: Path) -> None:
             by=["modelo_score", "nome_score", "passível?", "probabilidade"],
             ascending=False,
             inplace=True,
+            ignore_index=True,
         )
 
         state.processed_pages = df
@@ -58,6 +61,11 @@ def process_data(state, pages_file: Path) -> None:
 
 def update_processed_pages(state, output_df_key):
     edited = state[output_df_key]["edited_rows"]
+    df = state[f"df_{output_df_key}"].reset_index(drop=True)
     for index, row in edited.items():
         for column, value in row.items():
-            state.processed_pages.loc[index, column] = str(value)
+            df.at[index, column] = value
+    state.processed_pages.loc[state[f"df_{output_df_key}"].index, "passível?"] = df[
+        "passível?"
+    ].to_list()
+    state[f"df_{output_df_key}"] = df

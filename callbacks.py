@@ -46,16 +46,21 @@ def _set_processed_pages(state):
 
     if excel_file.is_file():
         try:
-            df = pd.read_excel(excel_file, dtype="string").astype(COLUNAS)
+            df = pd.read_excel(excel_file, dtype="string")
+            df["passível?"] = df["passível?"].map(
+                {"True": True, "False": False, pd.NA: False}
+            )
+            df = df.astype(COLUNAS)
             df.sort_values(
-                by=["passível?", "probabilidade", "modelo_score", "nome_score"],
+                by=["modelo_score", "nome_score", "passível?", "probabilidade"],
                 ascending=False,
                 inplace=True,
+                ignore_index=True,
             )
             state.processed_pages = df
             need_processing = False
-        except Exception:
-            pass
+        except Exception as e:
+            raise e
 
     if need_processing and json_file.is_file():
         process_data(state, json_file)

@@ -273,10 +273,10 @@ else:
                 with right_tab:
                     left, right = st.columns([1, 1], vertical_alignment="top")
                     with left:
-                        left.subheader("Resultado de Busca")
+                        left.subheader("Resultados de Busca")
                         show_links()
                     with right:
-                        right.subheader("Página Completa")
+                        right.subheader("Anúncios Completos")
                         show_pages()
                 with left_tab:
                     show_processed_pages()
