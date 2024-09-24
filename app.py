@@ -127,8 +127,8 @@ def show_pages():
 @st.fragment
 def show_processed_pages():
     if STATE.processed_pages is not None:
-        with st.container(border=False):
-            show_results(STATE, STATE.processed_pages)
+        container = st.container(border=False)
+        show_results(STATE, container)
 
 
 def run_search(scraper):
@@ -246,6 +246,7 @@ else:
             placeholder="Qual a palavra-chave a pesquisar?",
             key="_keyword",
             on_change=set_keyword,
+            value=STATE.keyword or "",
         )
 
         if STATE.keyword:
@@ -259,6 +260,8 @@ else:
             if not has_data:
                 container.warning("⚠️ Não há dados salvos! ⚠️")
                 container.info("👇🏽 Inicie uma Pesquisa 👇🏽")
+                STATE.use_cache = CACHE[1]
+
             else:
                 container.success(cache_info)
                 left_tab, right_tab = st.tabs(

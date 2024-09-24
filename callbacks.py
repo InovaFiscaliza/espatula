@@ -51,7 +51,6 @@ def _set_processed_pages(state):
                 by=["passível?", "probabilidade", "modelo_score", "nome_score"],
                 ascending=False,
                 inplace=True,
-                ignore_index=True,
             )
             state.processed_pages = df
             need_processing = False

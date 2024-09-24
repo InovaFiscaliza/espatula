@@ -50,7 +50,6 @@ def process_data(state, pages_file: Path) -> None:
             by=["modelo_score", "nome_score", "passível?", "probabilidade"],
             ascending=False,
             inplace=True,
-            ignore_index=True,
         )
 
         state.processed_pages = df
