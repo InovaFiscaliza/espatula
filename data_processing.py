@@ -1,37 +1,43 @@
 # data_processing.py
+import shutil
+from datetime import datetime
 import pandas as pd
-from gradio_client import Client, handle_file
+from gradio_client import handle_file
 from gradio_client.exceptions import AppError
 
 from fastcore.xtras import Path
 from config import COLUNAS, SCRAPERS
 
 
-def request_table(state: dict, json_path: Path) -> pd.DataFrame | None:
+def request_table(state, json_path: Path) -> pd.DataFrame | None:
     try:
-        client = Client("ronaldokun/ecomproc")
-        result = client.predict(
+        result = state.client.predict(
             json_file=handle_file(str(json_path)), api_name="/process_to_table"
         )
         df = pd.DataFrame(
             result["data"], columns=result["headers"], dtype="string"
         ).astype(COLUNAS)
-        df["marketplace"] = state.mkplc
         return df
     except AppError:
         return None
 
 
-def save_table(state: dict) -> bool:
+def save_table(state: dict):
     scraper = SCRAPERS[state.mkplc](path=state.folder)
     try:
         if (df := state.processed_pages) is not None:
             output_table = scraper.pages_file(state.keyword).with_suffix(".xlsx")
             df["marketplace"] = state.mkplc
-            df.to_excel(output_table, index=False)
-            return True
-    except Exception:
-        return False
+            df.loc[df["passível?"] == "True"].to_excel(output_table, index=False)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            cloud_output = (
+                f"{state.cloud}/{output_table.stem}_{timestamp}{output_table.suffix}"
+            )
+            shutil.copy(str(output_table), str(cloud_output))
+
+    except Exception as e:
+        print(e)
 
 
 def process_data(state, pages_file: Path) -> None:
