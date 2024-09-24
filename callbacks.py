@@ -26,7 +26,9 @@ def _set_cloud(state):
 def _set_cached_links(state):
     # Callback function to save the keyword selection to Session state
     scraper = SCRAPERS[state.mkplc](path=state.folder)
-    state.cached_links = scraper.get_links(state.keyword)
+    if cached_links := scraper.get_links(state.keyword):
+        state.cached_links = cached_links
+        state.use_cache = CACHE[0]
 
 
 def _set_cached_pages(state):
