@@ -1,18 +1,26 @@
 # callbacks.py
 from fastcore.xtras import Path
 import pandas as pd
-from config import SCRAPERS, COLUNAS
+from gradio_client import Client
+
+from config import SCRAPERS, COLUNAS, CACHE
 from data_processing import process_data
 
 
+def _set_client(state):
+    state.client = Client("ronaldokun/ecomproc")
+
+
 def _set_folder(state):
-    if Path(state._folder).is_dir():
-        state.folder = state._folder
+    if folder := state.get("_folder"):
+        if Path(folder).is_dir():
+            state.folder = folder
 
 
 def _set_cloud(state):
-    if state._cloud is not None and Path(state._cloud).is_dir():
-        state.cloud = state._cloud
+    if cloud := state.get("_cloud"):
+        if Path(cloud).is_dir():
+            state.cloud = cloud
 
 
 def _set_cached_links(state):
