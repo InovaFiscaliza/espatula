@@ -201,7 +201,8 @@ class BaseScraper:
     @staticmethod
     def match_ean(string: str) -> str | None:
         if match := re.search(EAN, string):
-            return match.group(1)
+            # Remove all non-digit characters
+            return re.sub(r"\D", "", match[1])
         return None
 
     @staticmethod
