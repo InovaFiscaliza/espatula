@@ -36,6 +36,7 @@ def save_table(state: dict, subset_df: pd.DataFrame = None) -> bool:
             if subset_df is None:
                 shutil.copy(str(output_table), str(cloud_output))
             else:
+                subset_df["marketplace"] = state.mkplc
                 subset_df.to_excel(cloud_output, index=False)
 
     except Exception as e:
