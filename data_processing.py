@@ -63,10 +63,15 @@ def process_data(state, pages_file: Path) -> None:
 def update_processed_pages(state, output_df_key):
     edited = state[output_df_key]["edited_rows"]
     df = state[f"df_{output_df_key}"].reset_index(drop=True)
-    for index, row in edited.items():
-        for column, value in row.items():
-            df.at[index, column] = value
+    index, row = edited.popitem()
+    column, value = row.popitem()
+    df.at[index, column] = value
+    # Sanity check
+    assert (
+        not edited and not row
+    ), f"Ambos dicionários deveriam estar vazios: {edited}, {row}"
     state.processed_pages.loc[state[f"df_{output_df_key}"].index, "passível?"] = df[
         "passível?"
     ].to_list()
     state[f"df_{output_df_key}"] = df
+    save_table(state, state[f"df_{output_df_key}"].loc[index].to_frame().T)
