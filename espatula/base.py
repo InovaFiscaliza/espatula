@@ -183,7 +183,7 @@ class BaseScraper:
     def match_certificado(certificado: str) -> str | None:
         if match := re.search(CERTIFICADO, certificado):
             # Remove all non-digit characters
-            return re.sub(r"\D", "", match[2]).zfill(12)
+            return re.sub(r"\D", "", match[1]).zfill(12)
         return None
 
     @staticmethod
