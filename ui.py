@@ -12,7 +12,6 @@ from config import (
     MAX_PAGES,
     MAX_SEARCH,
     SHUFFLE,
-    SCREENSHOT,
     RECONNECT,
     TIMEOUT,
 )

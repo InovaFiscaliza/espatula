@@ -3,6 +3,7 @@ import base64
 import json
 import platform
 import re
+import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
@@ -207,8 +208,9 @@ class BaseScraper:
             timeout = self.reconnect
         driver.uc_click(selector, timeout=timeout, reconnect_time=timeout)
 
+    # TODO: #21 Generalizar o screenshot inserindo uuid e salvando numa pasta única para todos os marketplaces
     def _save_screenshot(self, driver: SB, filename: str):
-        folder = self.folder / "screenshots"
+        folder = self.folder.parent / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
         screenshot = self.compress_images(BytesIO(screenshot))
@@ -241,15 +243,10 @@ class BaseScraper:
             print("pypdf not installed, skipping screenshot compression")
             return pdf_stream
 
-    def save_screenshot(self, sb: SB, result_page: dict, i: int):
-        filename = self.generate_filename(result_page, i)
+    def save_screenshot(self, sb: SB, result_page: dict):
+        filename = f"{uuid.uuid4()}.pdf"
         self._save_screenshot(sb.driver, filename)
         result_page["screenshot"] = filename
-
-    def generate_filename(self, result_page: dict, i: int):
-        if product_id := result_page.get("product_id"):
-            return f"{self.name}_{product_id}.pdf"
-        return f"{self.name}_{i}.pdf"
 
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
         json.dump(
@@ -290,7 +287,7 @@ class BaseScraper:
                         continue
 
                     if screenshot:
-                        self.save_screenshot(driver, result_page, i)
+                        self.save_screenshot(driver, result_page)
                     else:
                         result_page["screenshot"] = ""
 

@@ -8,7 +8,8 @@ from data_processing import process_data
 
 
 def _set_client(state):
-    state.client = Client("ronaldokun/ecomproc")
+    if state.client is None:
+        state.client = Client("ronaldokun/ecomproc")
 
 
 def _set_folder(state):

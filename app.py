@@ -107,7 +107,7 @@ def set_processed_pages():
     _set_processed_pages(STATE)
 
 
-@st.cache_resource
+@st.fragment
 def set_client():
     _set_client(STATE)
 
@@ -137,14 +137,14 @@ def run_search(scraper):
             progress_text = "Realizando a busca de produtos...🕸️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
-            percentage = 100 / STATE.max_search
+            step = 100 / STATE.max_search
             i = 0
             for result in scraper.search(
                 keyword=STATE.keyword,
                 max_pages=STATE.max_search,
             ):
                 i += 1
-                percentage = min(int(i * percentage), 100)
+                percentage = min(int(i * step), 100)
                 progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     st.write(result)
@@ -161,7 +161,7 @@ def inspect_pages(scraper):
             progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
-            percentage = 100 / STATE.max_pages
+            step = 100 / STATE.max_pages
             i = 0
             for result in scraper.inspect_pages(
                 keyword=STATE.keyword,
@@ -170,7 +170,7 @@ def inspect_pages(scraper):
                 shuffle=STATE.shuffle,
             ):
                 i += 1
-                percentage = min(int(i * percentage), 100)
+                percentage = int(i * step)
                 progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     left, right = st.columns([1, 1], vertical_alignment="top")
