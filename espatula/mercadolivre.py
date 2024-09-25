@@ -184,16 +184,6 @@ class MercadoLivreScraper(BaseScraper):
             self.highlight_element(driver, 'a[title="Ver descrição completa"]')
             self.uc_click(driver, 'a[title="Ver descrição completa"]')
 
-        características, marca, modelo, ean, certificado = None, None, None, None, None
-        if características_element := get_selector(
-            'div[class="ui-vpp-highlighted-specs__striped-specs"]'
-        ):
-            características = self.parse_specs(características_element)
-            marca = características.get("Marca")
-            modelo = características.get("Modelo")
-            ean = self.extrair_ean(características)
-            certificado = self.extrair_certificado(características)
-
         descrição = None
         if descrição_element := get_selector("p[class=ui-pdp-description__content]"):
             descrição = md(str(descrição_element))
@@ -203,6 +193,21 @@ class MercadoLivreScraper(BaseScraper):
         product_id = None
         if product_id_match := re.match(PRODUCT_ID, url):
             product_id = product_id_match[0]
+
+        características, marca, modelo, ean, certificado = None, None, None, None, None
+        if características_element := get_selector(
+            'div[class="ui-vpp-highlighted-specs__striped-specs"]'
+        ):
+            características = self.parse_specs(características_element)
+            marca = características.get("Marca")
+            modelo = características.get("Modelo")
+            ean = self.extrair_ean(características)
+            certificado = self.extrair_certificado(características)
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,

@@ -127,6 +127,11 @@ class MagaluScraper(BaseScraper):
             modelo = características.get("Modelo")
             certificado = self.extrair_certificado(características)
             ean = self.extrair_ean(características)
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         product_id = None
         match = re.search(r"/p/([\w\d]+)/", driver.get_current_url())

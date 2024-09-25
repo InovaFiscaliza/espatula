@@ -153,8 +153,10 @@ class CasasBahiaScraper(BaseScraper):
                 self.extrair_ean(características),
             )
         elif descrição:
-            certificado = self.match_certificado(descrição)
-            ean = self.match_ean(descrição)
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,

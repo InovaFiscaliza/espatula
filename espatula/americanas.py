@@ -117,6 +117,11 @@ class AmericanasScraper(BaseScraper):
             certificado = self.extrair_certificado(características)
             ean = self.extrair_ean(características)
             product_id = características.get("Código")
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,

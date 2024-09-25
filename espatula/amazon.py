@@ -201,6 +201,11 @@ class AmazonScraper(BaseScraper):
 
             modelo = extrair_modelo(características)
             asin = características.pop("ASIN", None)
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,

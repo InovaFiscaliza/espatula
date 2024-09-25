@@ -129,6 +129,11 @@ class CarrefourScraper(BaseScraper):
             certificado = self.extrair_certificado(características)
             ean = self.extrair_ean(características)
             modelo = características.get("Modelo")
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": None,
