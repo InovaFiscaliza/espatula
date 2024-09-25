@@ -36,8 +36,8 @@ COLUNAS = {
     "modelo_sch": "category",
     "modelo_score": "int8",
     "nome_score": "int8",
+    "probabilidade": "float",
     "passível?": "bool",
-    "probabilidade": "float32",
 }
 
 # GUI Images

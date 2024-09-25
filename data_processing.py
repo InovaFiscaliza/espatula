@@ -13,8 +13,8 @@ def request_table(state, json_path: Path) -> pd.DataFrame | None:
         result = state.client.predict(
             json_file=handle_file(str(json_path)), api_name="/process_to_table"
         )
-        df = pd.DataFrame(result["data"], columns=result["headers"], dtype="string")
-        return df
+        return pd.DataFrame(result["data"], columns=result["headers"])
+
     except AppError:
         return None
 
@@ -46,9 +46,11 @@ def process_data(state, pages_file: Path) -> None:
     if len(pages_file.read_json()) == 0:
         pages_file.unlink(missing_ok=True)
     elif (df := request_table(state, pages_file)) is not None:
-        df["probabilidade"] *= 100
-        df["passível?"] = df["passível?"].map(
-            {"True": True, "False": False, pd.NA: False}
+        df["probabilidade"] = df["probabilidade"].astype("float") * 100
+        df["passível?"] = (
+            df["passível?"]
+            .astype("string")
+            .map({"True": True, "False": False, pd.NA: False})
         )
         df.sort_values(
             by=["modelo_score", "nome_score", "passível?", "probabilidade"],
