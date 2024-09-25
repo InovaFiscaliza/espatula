@@ -91,18 +91,18 @@ def display_df(state, df, output_df_key):
                 help="🖇️Comparação de Strings - Anúncio x SCH",
             ),
             "passível?": st.column_config.CheckboxColumn(
-                "Classe (True/False)",
+                "Homologação Compulsória (Sim/Não)",
                 width=None,
-                help="📌Classificador Binário - Homologação Compulsória",
+                help="📌Classificador Binário - Homologação Compulsória (Sim/Não)",
                 disabled=False,
                 required=True,
             ),
             "probabilidade": st.column_config.ProgressColumn(
-                "Classe (Probabilidade)",
+                "Homologação Compulsória (%)",
                 format="%.2f%%",
                 min_value=0,
                 max_value=100,
-                help="📌Classificador Binário - Homologação Compulsória",
+                help="📌Classificador Binário - Probabilidade de Homologação Compulsória",
             ),
         },
         hide_index=True,
@@ -119,7 +119,8 @@ def display_df(state, df, output_df_key):
 
 def show_results(state, container):
     with container.expander(
-        "Dados Positivos - Homologação Compulsória pela Anatel", icon="🔥"
+        "Classificador Binário: Homologação Compulsória pela Anatel",
+        icon="🔥",
     ):
         rows = state.processed_pages["passível?"]
         display_df(
@@ -127,7 +128,9 @@ def show_results(state, container):
             state.processed_pages.loc[rows],
             output_df_key="positive",
         )
-    with container.expander("Dados Negativos - Não Relevantes", icon="🗑️"):
+    with container.expander(
+        "Classificador Binário: Não é produto de Telecomunicações", icon="🗑️"
+    ):
         display_df(
             state,
             state.processed_pages.loc[~rows],
