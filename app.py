@@ -161,7 +161,7 @@ def inspect_pages(scraper):
             progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
             progress_bar = st.progress(0, text=progress_text)
             output = st.empty()
-            percentage = 100 / STATE.max_pages
+            percentage_total = 100 / STATE.max_pages
             i = 0
             for result in scraper.inspect_pages(
                 keyword=STATE.keyword,
@@ -170,7 +170,7 @@ def inspect_pages(scraper):
                 shuffle=STATE.shuffle,
             ):
                 i += 1
-                percentage = min(int(i * percentage), 100)
+                percentage = int(i * percentage_total)
                 progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
                 with output.empty():
                     left, right = st.columns([1, 1], vertical_alignment="top")
