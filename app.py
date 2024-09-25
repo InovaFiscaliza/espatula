@@ -165,7 +165,7 @@ def inspect_pages(scraper):
             i = 0
             for result in scraper.inspect_pages(
                 keyword=STATE.keyword,
-                screenshot=STATE.screenshot,
+                screenshot=True,  # STATE.screenshot,
                 sample=STATE.max_pages,
                 shuffle=STATE.shuffle,
             ):
