@@ -127,9 +127,8 @@ class CasasBahiaScraper(BaseScraper):
 
         características, modelo, certificado, ean = {}, None, None, None
         try:
-            tag = 'p:-soup-contains("Características")'
-            get_selector(tag)
-            self.uc_click(driver, tag)
+            tag = 'svg[data-testid="Características"]'
+            self.uc_click(driver, tag, timeout=self.timeout)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Características"))
             self.uc_click(driver, 'button[aria-label="Fechar"]')
@@ -137,9 +136,8 @@ class CasasBahiaScraper(BaseScraper):
             if not self.headless:
                 driver.post_message(e)
         try:
-            tag = 'p:-soup-contains("Especificações Técnicas")'
-            get_selector(tag)
-            self.uc_click(driver, tag)
+            tag = 'svg[data-testid="Especificações-Técnicas"]'
+            self.uc_click(driver, tag, timeout=self.timeout)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
         except Exception as e:
