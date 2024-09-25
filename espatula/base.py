@@ -25,9 +25,14 @@ from seleniumbase.common.exceptions import (
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 CERTIFICADO = re.compile(
     r"""
-    (?ix)                  # Case-insensitive and verbose mode
-    ^                      # Start of the string
-    (Anatel[:\s]*)?        # Optional "Anatel" followed by colon or spaces
+    (?i)                  # Case-insensitive matching
+    (?:                   # Non-capturing group for identifiers
+       certifica |        # Match "certificado" or "certificação"
+       homologa  |        # Match "homologação"
+       "anatel"           # Match "Anatel"
+    )
+    .*?                   # Non-greedy match of any characters
+    (                     # Capturing group for the actual code
     (                      # Start of main capturing group
         (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
     )
@@ -46,9 +51,9 @@ EAN = re.compile(
                 )
                 .*?                 # Non-greedy match of any characters
                 (                   # Capturing group for the actual code
-                    \d{8}|          # Match 8 digits (EAN-8)
+                    \d{14}|          # Match 8 digits (EAN-8)
                     \d{13}|         # or 13 digits (EAN-13)
-                    \d{14}          # or 14 digits (GTIN-14)
+                    \d{8}          # or 14 digits (GTIN-14)
                 )
             """,
     re.VERBOSE,
