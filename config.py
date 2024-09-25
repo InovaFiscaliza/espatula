@@ -78,7 +78,7 @@ KEYS = {
     "max_search": MAX_SEARCH,
     "max_pages": MAX_PAGES,
     "shuffle": SHUFFLE,
-    "screenshot": SCREENSHOT,
+    # "screenshot": SCREENSHOT,
     "reconnect": RECONNECT,
     "timeout": TIMEOUT,
 }
@@ -138,7 +138,8 @@ def setup_base_cloud() -> str:
     return cloud
 
 
-def save_config(config: dict) -> None:
+def save_config(state) -> None:
+    config = {state[key] for key in KEYS if key in state}
     json.dump(
         config, CONFIG_FILE.open("w", encoding="utf-8"), ensure_ascii=False, indent=4
     )

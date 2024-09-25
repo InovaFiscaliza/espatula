@@ -198,7 +198,7 @@ def inspect_pages(scraper):
 
 
 def run():
-    save_config(CONFIG)
+    save_config(STATE)
     scraper = SCRAPERS[STATE.mkplc](
         path=STATE.folder,
         reconnect=STATE.reconnect,
