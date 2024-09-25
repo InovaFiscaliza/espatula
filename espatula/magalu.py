@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 
+from markdownify import markdownify as md
 from seleniumbase.common.exceptions import (
     NoSuchElementException,
     ElementNotVisibleException,
@@ -118,7 +119,7 @@ class MagaluScraper(BaseScraper):
                 avaliações = avaliações.replace("(", "").replace(")", "")
 
         if descrição := get_selector('div[data-testid="rich-content-container"]'):
-            descrição = descrição.get_text().strip()
+            descrição = md(str(descrição))
 
         marca, modelo, certificado, ean = None, None, None, None
         if características := self.parse_tables(soup):
