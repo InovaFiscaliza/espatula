@@ -137,7 +137,7 @@ def show_results(state, container):
             output_df_key="df_negative",
         )
     st.info(
-        "**É possível alterar a Classificação de cada registro, caso incorreta, clicando na célula!**",
+        "**É possível alterar a Classificação clicando na célula!**",
         icon="✍🏽",
     )
     columns = st.columns(4, vertical_alignment="top")
