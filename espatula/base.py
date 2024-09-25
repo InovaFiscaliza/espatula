@@ -33,7 +33,6 @@ CERTIFICADO = re.compile(
     )
     .*?                   # Non-greedy match of any characters
     (                     # Capturing group for the actual code
-    (                      # Start of main capturing group
         (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
     )
 """,
