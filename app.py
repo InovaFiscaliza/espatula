@@ -107,7 +107,7 @@ def set_processed_pages():
     _set_processed_pages(STATE)
 
 
-@st.cache_resource
+@st.fragment
 def set_client():
     _set_client(STATE)
 
