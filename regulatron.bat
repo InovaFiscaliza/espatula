@@ -8,8 +8,8 @@ if not exist "%REGULATRON%" (
     mkdir "%REGULATRON%"
 )
 powershell -Command "robocopy .\app $Env:APPDATA\Anatel\Regulatron /E /XO /NFL /NDL /NJH /NJS /NC /NS /NP" > nul 2>&1
-powershell -Command "Remove-Item -Path $Env:APPDATA\Anatel\Regulatron\__pycache__ -Recurse -Force" > nul 2>&1
-powershell -Command "Remove-Item -Path $Env:APPDATA\Anatel\Regulatron\espatula\__pycache__ -Recurse -Force" > nul 2>&1
+@REM powershell -Command "Remove-Item -Path $Env:APPDATA\Anatel\Regulatron\__pycache__ -Recurse -Force" > nul 2>&1
+@REM powershell -Command "Remove-Item -Path $Env:APPDATA\Anatel\Regulatron\espatula\__pycache__ -Recurse -Force" > nul 2>&1
 
 
 powershell -Command "[Environment]::SetEnvironmentVariable('PYTHONUTF8','1', 'User')" > nul 2>&1
