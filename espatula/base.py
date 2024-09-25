@@ -35,6 +35,24 @@ CERTIFICADO = re.compile(
     re.VERBOSE,
 )
 
+# Regular expression pattern to match EAN, GTIN, or barcode
+EAN = re.compile(
+    r"""
+                (?i)                # Case-insensitive matching
+                (?:                 # Non-capturing group for product code identifiers
+                    ean|            # Match "EAN" (European Article Number)
+                    gtin|           # or "GTIN" (Global Trade Item Number)
+                    digo\ de\ barras # or "código de barras" (barcode in Portuguese)
+                )
+                .*?                 # Non-greedy match of any characters
+                (                   # Capturing group for the actual code
+                    \d{8}|          # Match 8 digits (EAN-8)
+                    \d{13}|         # or 13 digits (EAN-13)
+                    \d{14}          # or 14 digits (GTIN-14)
+                )
+            """,
+    re.VERBOSE,
+)
 if platform.system() == "Windows":
     if local_app_data := os.environ.get("LOCALAPPDATA"):
         CHROME_DATA_DIR = f"{Path(local_app_data)}/Google/Chrome/User Data"
@@ -158,6 +176,13 @@ class BaseScraper:
             return None
 
     @staticmethod
+    def match_certificado(certificado: str) -> str | None:
+        if match := re.search(CERTIFICADO, certificado):
+            # Remove all non-digit characters
+            return re.sub(r"\D", "", match[2]).zfill(12)
+        return None
+
+    @staticmethod
     def extrair_certificado(caracteristicas: dict) -> str | None:
         certificado = next(
             (
@@ -167,9 +192,12 @@ class BaseScraper:
             ),
             "",
         )
-        if match := re.search(CERTIFICADO, certificado):
-            # Remove all non-digit characters
-            return re.sub(r"\D", "", match[2]).zfill(12)
+        return BaseScraper.match_certificado(certificado)
+
+    @staticmethod
+    def match_ean(string: str) -> str | None:
+        if match := re.search(EAN, string):
+            return match.group(1)
         return None
 
     @staticmethod

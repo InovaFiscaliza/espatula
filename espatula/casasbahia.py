@@ -122,7 +122,6 @@ class CasasBahiaScraper(BaseScraper):
             if vendedor := vendedor.select_one("a"):
                 vendedor = vendedor.text.strip()
 
-        # BUG: #23 Casas Bahia: Campo Descrição não está sendo capturado
         if descrição := get_selector('div[id="product-description"]'):
             descrição = md(str(descrição))
 
@@ -154,6 +153,9 @@ class CasasBahiaScraper(BaseScraper):
                 self.extrair_certificado(características),
                 self.extrair_ean(características),
             )
+        elif descrição:
+            certificado = self.match_certificado(descrição)
+            ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,
