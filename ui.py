@@ -117,8 +117,8 @@ def display_df(state, df, output_df_key):
     return state[output_df_key]
 
 
-def show_results(state, container):
-    with container.expander(
+def show_results(state, st):
+    with st.expander(
         "Classificador Binário: :green[Homologação Compulsória pela Anatel]",
         icon="🔥",
     ):
@@ -128,7 +128,7 @@ def show_results(state, container):
             state.processed_pages.loc[rows],
             output_df_key="df_positive",
         )
-    with container.expander(
+    with st.expander(
         "Classificador Binário: :red[Não é produto de Telecomunicações]", icon="🗑️"
     ):
         display_df(

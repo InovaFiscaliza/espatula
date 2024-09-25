@@ -127,8 +127,8 @@ def show_pages():
 @st.fragment
 def show_processed_pages():
     if STATE.processed_pages is not None:
-        container = st.container(border=False)
-        show_results(STATE, container)
+        with st.container(border=False):
+            show_results(STATE)
 
 
 def run_search(scraper):
