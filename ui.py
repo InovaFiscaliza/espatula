@@ -1,5 +1,6 @@
 from fastcore.xtras import Path
 import streamlit as st
+import uuid
 
 from config import (
     COLUNAS,
@@ -20,7 +21,10 @@ from data_processing import update_processed_pages
 
 
 def display_df(state, df, output_df_key):
+    # Generate a unique key for the edited rows state to avoid conflicts
+    edited_key = f"{output_df_key}_{uuid.uuid4()}"
     # The index in df should be in the default numeric order
+
     state[f"df_{output_df_key}"] = st.data_editor(
         df,
         height=720 if len(df) >= 20 else None,
@@ -107,11 +111,8 @@ def display_df(state, df, output_df_key):
         hide_index=True,
         disabled=False,
         on_change=update_processed_pages,
-        key=output_df_key,
-        args=(
-            state,
-            output_df_key,
-        ),
+        key=edited_key,
+        args=(state, output_df_key, edited_key),
     )
     return state[output_df_key]
 

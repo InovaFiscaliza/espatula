@@ -63,8 +63,8 @@ def process_data(state, pages_file: Path) -> None:
         save_table(state)
 
 
-def update_processed_pages(state, output_df_key):
-    edited = state[output_df_key]["edited_rows"]
+def update_processed_pages(state, output_df_key, edited_key):
+    edited = state[edited_key]["edited_rows"]
     df = state[f"df_{output_df_key}"].reset_index(drop=True)
     index, row = edited.popitem()
     column, value = row.popitem()

@@ -146,7 +146,6 @@ class CasasBahiaScraper(BaseScraper):
             if not self.headless:
                 driver.post_message(e)
 
-        # TODO: #24 Caso nulo, tentar extrair Certificado e EAN do campo Descrição
         if características:
             modelo, certificado, ean = (
                 características.get("Código de Referência"),
