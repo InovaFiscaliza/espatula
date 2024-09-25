@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from markdownify import markdownify as md
+
 from .base import TIMEZONE, BaseScraper
 
 
@@ -120,8 +122,9 @@ class CasasBahiaScraper(BaseScraper):
             if vendedor := vendedor.select_one("a"):
                 vendedor = vendedor.text.strip()
 
-        if descrição := get_selector('div[data-testid*="rich-content-container"]'):
-            descrição = descrição.text.strip()
+        # BUG: #23 Casas Bahia: Campo Descrição não está sendo capturado
+        if descrição := get_selector('div[id="product-description"]'):
+            descrição = md(str(descrição))
 
         características, modelo, certificado, ean = {}, None, None, None
         try:
@@ -140,11 +143,11 @@ class CasasBahiaScraper(BaseScraper):
             self.uc_click(driver, tag)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
-
         except Exception as e:
             if not self.headless:
                 driver.post_message(e)
 
+        # TODO: #24 Caso nulo, tentar extrair Certificado e EAN do campo Descrição
         if características:
             modelo, certificado, ean = (
                 características.get("Código de Referência"),

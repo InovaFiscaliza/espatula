@@ -3,6 +3,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from urllib.parse import unquote
+
+from markdownify import markdownify as md
 from seleniumbase.common.exceptions import (
     NoSuchElementException,
     ElementNotVisibleException,
@@ -175,15 +177,12 @@ class AmazonScraper(BaseScraper):
 
         if descrição_principal := soup.select_one("div#feature-bullets"):
             self.highlight_element(driver, 'div[id="feature-bullets"]')
-            descrição += "\n".join(
-                s.text.strip() for s in descrição_principal.select("span")
-            )
+
+            descrição = md(str(descrição_principal.select("span")))
 
         if descrição_secundária := soup.select_one("div#productDescription"):
             self.highlight_element(driver, 'div[id="productDescription"]')
-            descrição += "\n".join(
-                s.text.strip() for s in descrição_secundária.select("span")
-            )
+            descrição += md(str(descrição_secundária.select("span")))
 
         modelo, ean, certificado, asin = None, None, None, None
 

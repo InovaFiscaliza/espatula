@@ -1,5 +1,6 @@
 from datetime import datetime
 from dataclasses import dataclass
+from markdownify import markdownify as md
 
 from .base import TIMEZONE, BaseScraper
 
@@ -106,7 +107,7 @@ class AmericanasScraper(BaseScraper):
             nota = nota.get_text().strip()
 
         if descrição := get_selector('div[data-testid="rich-content-container"]'):
-            descrição = descrição.get_text().strip()
+            descrição = md(str(descrição))
 
         marca, modelo, certificado, ean, product_id = None, None, None, None, None
         if características := self.parse_tables(soup):

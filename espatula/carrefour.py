@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from markdownify import markdownify as md
 from seleniumbase.common.exceptions import (
     NoSuchElementException,
     ElementNotVisibleException,
@@ -116,7 +117,7 @@ class CarrefourScraper(BaseScraper):
             cod_produto = cod_produto.get_text().strip()
 
         if descrição := get_selector('td[class*="ItemSpecifications"]'):
-            descrição = descrição.get("data-specification")
+            descrição = md(descrição.get("data-specification", ""))
 
         imagens = []
         for img in soup.select('img[class*="thumbImg"]'):
