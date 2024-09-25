@@ -139,7 +139,7 @@ def setup_base_cloud() -> str:
 
 
 def save_config(state) -> None:
-    config = {state[key] for key in KEYS if key in state}
+    config = {key: state[key] for key in KEYS if key in state}
     json.dump(
         config, CONFIG_FILE.open("w", encoding="utf-8"), ensure_ascii=False, indent=4
     )
