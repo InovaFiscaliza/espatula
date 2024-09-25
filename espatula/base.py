@@ -287,7 +287,7 @@ class BaseScraper:
                         continue
 
                     if screenshot:
-                        self.save_screenshot(driver, result_page, i)
+                        self.save_screenshot(driver, result_page)
                     else:
                         result_page["screenshot"] = ""
 
