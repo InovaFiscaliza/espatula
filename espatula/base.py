@@ -23,7 +23,7 @@ from seleniumbase.common.exceptions import (
 
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-CERTIFICADO = re.compile(
+CERTIFICADO2 = re.compile(
     r"""
     (?i)                  # Case-insensitive matching
     (?:                   # Non-capturing group for identifiers
@@ -33,6 +33,18 @@ CERTIFICADO = re.compile(
     )
     .*?                   # Non-greedy match of any characters
     (                     # Capturing group for the actual code
+        (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
+    )
+""",
+    re.VERBOSE,
+)
+
+CERTIFICADO1 = re.compile(
+    r"""
+    (?ix)                  # Case-insensitive and verbose mode
+    ^                      # Start of the string
+    (Anatel[:\s]*)?        # Optional "Anatel" followed by colon or spaces
+    (                      # Start of main capturing group
         (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
     )
 """,
@@ -180,8 +192,8 @@ class BaseScraper:
             return None
 
     @staticmethod
-    def match_certificado(certificado: str) -> str | None:
-        if match := re.search(CERTIFICADO, certificado):
+    def match_certificado(certificado: str, pattern=CERTIFICADO2) -> str | None:
+        if match := re.search(pattern, certificado):
             # Remove all non-digit characters
             return re.sub(r"\D", "", match[1]).zfill(12)
         return None
@@ -196,7 +208,7 @@ class BaseScraper:
             ),
             "",
         )
-        return BaseScraper.match_certificado(certificado)
+        return BaseScraper.match_certificado(certificado, CERTIFICADO1)
 
     @staticmethod
     def match_ean(string: str) -> str | None:
