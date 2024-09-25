@@ -35,8 +35,6 @@ from ui import (
     show_results,
 )
 
-CONFIG = load_config()
-
 st.set_page_config(
     page_title="Regulatron",
     page_icon="🤖",
@@ -48,6 +46,8 @@ st.set_page_config(
 )
 
 STATE = st.session_state
+
+CONFIG = load_config()
 
 init_session_state(STATE, CONFIG)
 
@@ -200,9 +200,7 @@ def inspect_pages(scraper):
 def run():
     save_config(STATE)
     scraper = SCRAPERS[STATE.mkplc](
-        path=STATE.folder,
-        reconnect=STATE.reconnect,
-        timeout=STATE.timeout,
+        path=STATE.folder, reconnect=STATE.reconnect, timeout=STATE.timeout, demo=True
     )
     try:
         if STATE.use_cache == CACHE[1]:
