@@ -25,7 +25,7 @@ def display_df(state, df, output_df_key):
     edited_key = f"{output_df_key}_{uuid.uuid4()}"
     # The index in df should be in the default numeric order
 
-    state[f"df_{output_df_key}"] = st.data_editor(
+    state[output_df_key] = st.data_editor(
         df,
         height=720 if len(df) >= 20 else None,
         use_container_width=True,
@@ -119,25 +119,25 @@ def display_df(state, df, output_df_key):
 
 def show_results(state, container):
     with container.expander(
-        "Classificador Binário: Homologação Compulsória pela Anatel",
+        "Classificador Binário: :green[Homologação Compulsória pela Anatel]",
         icon="🔥",
     ):
         rows = state.processed_pages["passível?"]
         display_df(
             state,
             state.processed_pages.loc[rows],
-            output_df_key="positive",
+            output_df_key="df_positive",
         )
     with container.expander(
-        "Classificador Binário: Não é produto de Telecomunicações", icon="🗑️"
+        "Classificador Binário: :red[Não é produto de Telecomunicações]", icon="🗑️"
     ):
         display_df(
             state,
             state.processed_pages.loc[~rows],
-            output_df_key="negative",
+            output_df_key="df_negative",
         )
     st.info(
-        "**É possível alterar a classificação (classe - `True/False`) de cada registro, caso incorreta!**",
+        "**É possível alterar a Classificação de cada registro, caso incorreta, clicando na célula!**",
         icon="✍🏽",
     )
     columns = st.columns(4, vertical_alignment="top")
