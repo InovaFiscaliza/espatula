@@ -117,7 +117,7 @@ def display_df(state, df, output_df_key):
     return state[output_df_key]
 
 
-def show_results(state, st):
+def show_results(state):
     with st.expander(
         "Classificador Binário: :green[Homologação Compulsória pela Anatel]",
         icon="🔥",
