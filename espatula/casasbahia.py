@@ -131,7 +131,7 @@ class CasasBahiaScraper(BaseScraper):
             self.uc_click(driver, tag, timeout=self.timeout)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Características"))
-            self.uc_click(driver, 'button[aria-label="Fechar"]')
+            self.uc_click(driver, 'button[aria-label="Fechar"]', timeout=self.timeout)
         except Exception as e:
             if not self.headless:
                 driver.post_message(e)
@@ -140,6 +140,8 @@ class CasasBahiaScraper(BaseScraper):
             self.uc_click(driver, tag, timeout=self.timeout)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
+            self.uc_click(driver, 'button[aria-label="Fechar"]', timeout=self.timeout)
+
         except Exception as e:
             if not self.headless:
                 driver.post_message(e)
