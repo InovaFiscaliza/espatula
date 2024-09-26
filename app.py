@@ -127,7 +127,7 @@ def show_pages():
 @st.fragment
 def show_processed_pages():
     if STATE.processed_pages is not None:
-        with st.empty():
+        with st.container(border=False):
             show_results(STATE)
 
 
@@ -222,7 +222,6 @@ def run():
             )
         st.snow()
         st.success("Processamento dos dados finalizado!", icon="🎉")
-        show_processed_pages()
 
 
 config_container = st.sidebar.expander(label=BASE, expanded=True)

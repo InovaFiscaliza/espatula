@@ -93,16 +93,18 @@ class CarrefourScraper(BaseScraper):
             self.highlight_element(driver, selector)
             return soup.select_one(selector)
 
-        categoria = ""
-        for i in soup.select('span[class*="breadcrumb"]'):
-            if hasattr(i, "get_text") and i.get_text().strip():
-                categoria += f"|{i.get_text().strip()}"
-
         if preço := get_selector('span[class*="currencyContainer"]'):
             preço = preço.get_text().strip()
 
         if nome := get_selector('h1[class*="productNameContainer"]'):
             nome = nome.get_text().strip()
+
+        categoria = []
+        for i in soup.select('span[class*="breadcrumb"]'):
+            if hasattr(i, "get_text"):
+                if (cat := i.get_text().strip()) not in ["", nome]:
+                    categoria.append(cat)
+        categoria = "|".join(categoria)
 
         if not all([categoria, nome, preço]):
             return {}
