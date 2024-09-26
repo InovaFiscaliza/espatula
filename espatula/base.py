@@ -194,8 +194,9 @@ class BaseScraper:
     @staticmethod
     def match_certificado(certificado: str, pattern=CERTIFICADO2) -> str | None:
         if match := re.search(pattern, certificado):
-            # Remove all non-digit characters
-            return re.sub(r"\D", "", match[1]).zfill(12)
+            if match[2]:
+                # Remove all non-digit characters
+                return re.sub(r"\D", "", match[2]).zfill(12)
         return None
 
     @staticmethod
@@ -213,8 +214,9 @@ class BaseScraper:
     @staticmethod
     def match_ean(string: str) -> str | None:
         if match := re.search(EAN, string):
-            # Remove all non-digit characters
-            return re.sub(r"\D", "", match[1])
+            if match[2]:
+                # Remove all non-digit characters
+                return re.sub(r"\D", "", match[2])
         return None
 
     @staticmethod
@@ -253,9 +255,8 @@ class BaseScraper:
             timeout = self.reconnect
         driver.uc_click(selector, timeout=timeout, reconnect_time=timeout)
 
-    # TODO: #21 Generalizar o screenshot inserindo uuid e salvando numa pasta única para todos os marketplaces
     def _save_screenshot(self, driver: SB, filename: str):
-        folder = self.folder.parent / "screenshots"
+        folder = self.folder / "screenshots"
         folder.mkdir(parents=True, exist_ok=True)
         screenshot = self.capture_full_page_screenshot(driver)
         screenshot = self.compress_images(BytesIO(screenshot))
