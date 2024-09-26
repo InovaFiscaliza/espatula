@@ -127,7 +127,7 @@ def show_pages():
 @st.fragment
 def show_processed_pages():
     if STATE.processed_pages is not None:
-        with st.container(border=False):
+        with st.empty():
             show_results(STATE)
 
 
@@ -151,50 +151,46 @@ def run_search(scraper):
             time.sleep(1)
             output.empty()
             progress_bar.empty()
+        set_cached_links()
     except Exception as e:
         raise e
 
 
 def inspect_pages(scraper):
-    try:
-        with st.container():
-            progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
-            progress_bar = st.progress(0, text=progress_text)
-            output = st.empty()
-            step = 100 / STATE.max_pages
-            i = 0
-            for result in scraper.inspect_pages(
-                keyword=STATE.keyword,
-                screenshot=True,  # STATE.screenshot,
-                sample=STATE.max_pages,
-                shuffle=STATE.shuffle,
-            ):
-                i += 1
-                percentage = int(i * step)
-                progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
-                with output.empty():
-                    left, right = st.columns([1, 1], vertical_alignment="top")
-                    with left:
-                        try:
-                            if imagem := result.get("imagens"):
-                                imagem = imagem[0]
-                            else:
-                                imagem = result.get("imagem")
-                            left.write("Imagem do produto")
-                            nome = result.get("nome")
-                            left.image(imagem, width=480, caption=nome)
-                        except Exception:
-                            left.write("Não foi possível carregar a imagem do produto")
-                    with right:
-                        right.write("Dados do produto")
-                        right.json(result, expanded=1)
-            time.sleep(1)
-            output.empty()
-            progress_bar.empty()
-    except Exception as e:
-        st.error(
-            f"Erro ao realizar a navegação de páginas: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
-        )
+    with st.container():
+        progress_text = "Realizando raspagem das páginas dos produtos...🕷️"
+        progress_bar = st.progress(0, text=progress_text)
+        output = st.empty()
+        step = 100 / STATE.max_pages
+        i = 0
+        for result in scraper.inspect_pages(
+            keyword=STATE.keyword,
+            screenshot=True,  # STATE.screenshot,
+            sample=STATE.max_pages,
+            shuffle=STATE.shuffle,
+        ):
+            i += 1
+            percentage = min(int(i * step), 100)
+            progress_bar.progress(percentage, text=f"{progress_text} {percentage}%")
+            with output.empty():
+                left, right = st.columns([1, 1], vertical_alignment="top")
+                with left:
+                    try:
+                        if imagem := result.get("imagens"):
+                            imagem = imagem[0]
+                        else:
+                            imagem = result.get("imagem")
+                        left.write("Imagem do produto")
+                        nome = result.get("nome")
+                        left.image(imagem, width=480, caption=nome)
+                    except Exception:
+                        left.write("Não foi possível carregar a imagem do produto")
+                with right:
+                    right.write("Dados do produto")
+                    right.json(result, expanded=1)
+        time.sleep(1)
+        output.empty()
+        progress_bar.empty()
 
 
 def run():
@@ -210,16 +206,23 @@ def run():
             f"Erro ao realizar a busca: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
         )
 
-    try:
-        inspect_pages(scraper)
-        process_data(STATE, scraper.pages_file(STATE.keyword))
+    if STATE.cached_links:
+        try:
+            inspect_pages(scraper)
+        except Exception as e:
+            st.error(
+                f"Erro ao realizar a navegação de páginas: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
+            )
+
+        try:
+            process_data(STATE, scraper.pages_file(STATE.keyword))
+        except Exception as e:
+            st.error(
+                f"Erro ao realizar o processamento dos dados: {e}. Se o erro persistir, reporte o erro no Github."
+            )
         st.snow()
         st.success("Processamento dos dados finalizado!", icon="🎉")
         show_processed_pages()
-    except Exception as e:
-        st.error(
-            f"Erro ao realizar a navegação de páginas: {e}. Verifique sua conexão e tente novamente, se persistir, reporte o erro no Github."
-        )
 
 
 config_container = st.sidebar.expander(label=BASE, expanded=True)

@@ -304,15 +304,17 @@ def get_params(state, config):
     with st.expander("CONFIGURAÇÕES - BROWSER", expanded=False):
         st.number_input(
             RECONNECT,
-            min_value=2,
+            min_value=1,
             key="reconnect",
             help="Tempo de espera para o driver se conectar ao navegador (seg)",
             value=config.get(KEYS["reconnect"], 5),
         )
         st.number_input(
             TIMEOUT,
-            min_value=1,
+            min_value=0.1,
+            max_value=60.0,
+            step=0.1,
             key="timeout",
             help="Tempo de espera para carregar os elementos da página (seg)",
-            value=config.get(KEYS["timeout"], 2),
+            value=float(config.get(KEYS["timeout"], 1)),
         )
