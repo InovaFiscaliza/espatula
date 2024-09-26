@@ -62,9 +62,9 @@ $destinationFolder = "D:\OneDrive - ANATEL\Regulatron"
 
 Copy-FilesToDestination -filesToCopy $filesToCopy -destinationFolder $destinationFolder
  
-Get-ChildItem -Path $destinationFolder -Recurse | ForEach-Object {
-    $_.Attributes = $_.Attributes -bor [System.IO.FileAttributes]::ReadOnly
-}
+# Get-ChildItem -Path $destinationFolder -Recurse | ForEach-Object {
+#     $_.Attributes = $_.Attributes -bor [System.IO.FileAttributes]::ReadOnly
+# }
 # cd $destinationFolder
 
 # cd ..
