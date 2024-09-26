@@ -33,6 +33,9 @@ def save_table(state: dict, subset_df: pd.DataFrame = None) -> bool:
             )
             if subset_df is None:
                 shutil.copy(str(output_table), str(cloud_output))
+                shutil.copy(
+                    str(scraper.folder / "screenshots"), f"{cloud_output}/screenshots"
+                )
             else:
                 subset_df["marketplace"] = state.mkplc
                 subset_df.to_excel(cloud_output, index=False)
@@ -44,6 +47,7 @@ def save_table(state: dict, subset_df: pd.DataFrame = None) -> bool:
 def process_data(state, pages_file: Path) -> None:
     state.processed_pages = None
     if len(pages_file.read_json()) == 0:
+        state.cached_pages = None
         pages_file.unlink(missing_ok=True)
     elif (df := request_table(state, pages_file)) is not None:
         df["probabilidade"] = df["probabilidade"].astype("float") * 100

@@ -120,7 +120,7 @@ def init_session_state(STATE: dict, CONFIG: dict) -> None:
                 case "use_cache":
                     STATE[key] = CACHE[0] if CONFIG.get(KEYS[key]) else CACHE[1]
                 case _:
-                    STATE[key] = None
+                    STATE[key] = CONFIG.get(KEYS.get(key))
 
 
 def setup_base_cloud() -> str:
@@ -139,7 +139,7 @@ def setup_base_cloud() -> str:
 
 
 def save_config(state) -> None:
-    config = {key: state[key] for key in KEYS if key in state}
+    config = {KEYS[key]: state[key] for key in KEYS if key in state}
     json.dump(
         config, CONFIG_FILE.open("w", encoding="utf-8"), ensure_ascii=False, indent=4
     )

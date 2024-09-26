@@ -30,11 +30,17 @@ def _set_cached_links(state):
     if cached_links := scraper.get_links(state.keyword):
         state.cached_links = cached_links
         state.use_cache = CACHE[0]
+    else:
+        state.cached_links = None
+        state.use_cache = CACHE[1]
 
 
 def _set_cached_pages(state):
     scraper = SCRAPERS[state.mkplc](path=state.folder)
-    state.cached_pages = scraper.get_pages(state.keyword)
+    if cached_pages := scraper.get_pages(state.keyword):
+        state.cached_pages = cached_pages
+    else:
+        state.cached_pages = None
 
 
 def _set_processed_pages(state):
