@@ -34,7 +34,7 @@ def save_table(state: dict, subset_df: pd.DataFrame = None) -> bool:
             if subset_df is None:
                 shutil.copy(str(output_table), str(cloud_output))
                 shutil.copy(
-                    str(scraper.folder / "screenshots"), f"{cloud_output}/screenshots"
+                    str(scraper.folder / "screenshots"), f"{state.cloud}/screenshots"
                 )
             else:
                 subset_df["marketplace"] = state.mkplc
