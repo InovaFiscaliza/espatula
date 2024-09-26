@@ -199,8 +199,11 @@ class MercadoLivreScraper(BaseScraper):
             'div[class="ui-vpp-highlighted-specs__striped-specs"]'
         ):
             características = self.parse_specs(características_element)
-            marca = características.get("Marca")
-            modelo = características.get("Modelo")
+            for key, value in características.items():
+                if "marca" in key.lower():
+                    marca = value
+                if "modelo" in key.lower():
+                    modelo = value
             ean = self.extrair_ean(características)
             certificado = self.extrair_certificado(características)
         elif descrição:
