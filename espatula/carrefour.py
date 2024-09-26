@@ -127,7 +127,7 @@ class CarrefourScraper(BaseScraper):
             if i := img.get("src"):
                 i = i.replace(r"=85", r"=480")
                 i = i.replace(r"-85-", r"-480-")
-                imagens.append()
+                imagens.append(i)
 
         certificado, ean, modelo = None, None, None
         if características := self.parse_tables(soup):
