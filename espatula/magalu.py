@@ -41,7 +41,7 @@ class MagaluScraper(BaseScraper):
         if price_lower := produto.select_one('p[data-testid="price-value"]'):
             price_lower = price_lower.get_text().strip()
         if imgs := produto.select_one('img[data-testid="image"]'):
-            imgs = imgs.get("src")
+            imgs = imgs.get("src").replace(r"280x210", r"480x480")
         if not all([name, price_lower, imgs]):
             return None
         return {
@@ -110,7 +110,11 @@ class MagaluScraper(BaseScraper):
 
         if imagens := soup.select('img[data-testid="media-gallery-image"]'):
             self.highlight_element(driver, "div[data-testid=media-gallery-image]")
-            imagens = [i.get("src") for i in imagens if i.get("src")]
+            imagens = [
+                i.get("src").replace(r"90x90", r"480x480")
+                for i in imagens
+                if i.get("src")
+            ]
 
         nota, avaliações = None, None
         if eval_div := get_selector('div[data-testid="mod-row"]'):

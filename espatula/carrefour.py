@@ -62,7 +62,8 @@ class CarrefourScraper(BaseScraper):
             nome = nome.get_text().strip()
 
         if imagem := product_tag.select_one('img[class*="product-summary"]'):
-            imagem = imagem.get("src")
+            imagem = imagem.get("src").replace(r"160-160", r"480-480")
+            imagem = imagem.replace(r"=160", r"=480")
 
         if preço := product_tag.select_one('span[class*="spotPriceValue"]'):
             preço = preço.get_text().strip()
@@ -124,7 +125,9 @@ class CarrefourScraper(BaseScraper):
         imagens = []
         for img in soup.select('img[class*="thumbImg"]'):
             if i := img.get("src"):
-                imagens.append(i)
+                i = i.replace(r"=85", r"=480")
+                i = i.replace(r"-85-", r"-480-")
+                imagens.append()
 
         certificado, ean, modelo = None, None, None
         if características := self.parse_tables(soup):

@@ -61,6 +61,8 @@ class AmazonScraper(BaseScraper):
         stars = safe_get("i.a-icon-star-small span")
         evals = safe_get("span.a-size-base.s-underline-text")
         imgs = safe_get("img.s-image", "srcset")
+        if imgs:
+            imgs = imgs.split(" ")[0]
 
         link_produto = f"{self.url}{link_relativo}" if link_relativo else ""
 
