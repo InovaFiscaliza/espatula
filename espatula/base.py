@@ -3,6 +3,7 @@ import base64
 import json
 import platform
 import re
+import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
@@ -22,7 +23,23 @@ from seleniumbase.common.exceptions import (
 
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-CERTIFICADO = re.compile(
+CERTIFICADO2 = re.compile(
+    r"""
+    (?i)                  # Case-insensitive matching
+    (?:                   # Non-capturing group for identifiers
+       certifica |        # Match "certificado" or "certificação"
+       homologa  |        # Match "homologação"
+       "anatel"           # Match "Anatel"
+    )
+    .*?                   # Non-greedy match of any characters
+    (                     # Capturing group for the actual code
+        (\d[-\s]*)+        # One or more digits, each optionally followed by hyphen or spaces
+    )
+""",
+    re.VERBOSE,
+)
+
+CERTIFICADO1 = re.compile(
     r"""
     (?ix)                  # Case-insensitive and verbose mode
     ^                      # Start of the string
@@ -34,6 +51,24 @@ CERTIFICADO = re.compile(
     re.VERBOSE,
 )
 
+# Regular expression pattern to match EAN, GTIN, or barcode
+EAN = re.compile(
+    r"""
+                (?i)                # Case-insensitive matching
+                (?:                 # Non-capturing group for product code identifiers
+                    ean|            # Match "EAN" (European Article Number)
+                    gtin|           # or "GTIN" (Global Trade Item Number)
+                    digo\ de\ barras # or "código de barras" (barcode in Portuguese)
+                )
+                .*?                 # Non-greedy match of any characters
+                (                   # Capturing group for the actual code
+                    \d{14}|          # Match 8 digits (EAN-8)
+                    \d{13}|         # or 13 digits (EAN-13)
+                    \d{8}          # or 14 digits (GTIN-14)
+                )
+            """,
+    re.VERBOSE,
+)
 if platform.system() == "Windows":
     if local_app_data := os.environ.get("LOCALAPPDATA"):
         CHROME_DATA_DIR = f"{Path(local_app_data)}/Google/Chrome/User Data"
@@ -59,7 +94,7 @@ class BaseScraper:
     guest_mode: bool = True
     incognito: bool = False
     do_not_track: bool = True
-    turnstile: bool = False
+    handle_captcha: bool = False
 
     @property
     def name(self):
@@ -104,13 +139,8 @@ class BaseScraper:
             return {}
         return loads(pages_file.read_text(encoding="utf-8"))
 
-    @staticmethod
-    def click_turnstile_and_verify(sb):
-        try:
-            sb.switch_to_frame("iframe")
-            sb.uc_click("span.mark")
-        except Exception as e:
-            print(e)
+    def click_captcha(self, driver):
+        driver.uc_gui_click_captcha(retry=True)
 
     @contextmanager
     def browser(self):
@@ -128,8 +158,9 @@ class BaseScraper:
             user_data_dir=user_data_dir,
         ) as sb:
             sb.driver.maximize_window()
-            if self.turnstile:
-                self.click_turnstile_and_verify(sb)
+            sb.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
+            if self.handle_captcha:
+                self.click_captcha(sb)
             yield sb
 
     @staticmethod
@@ -161,6 +192,14 @@ class BaseScraper:
             return None
 
     @staticmethod
+    def match_certificado(certificado: str, pattern=CERTIFICADO2) -> str | None:
+        if match := re.search(pattern, certificado):
+            if match[2]:
+                # Remove all non-digit characters
+                return re.sub(r"\D", "", match[2]).zfill(12)
+        return None
+
+    @staticmethod
     def extrair_certificado(caracteristicas: dict) -> str | None:
         certificado = next(
             (
@@ -170,9 +209,14 @@ class BaseScraper:
             ),
             "",
         )
-        if match := re.search(CERTIFICADO, certificado):
-            # Remove all non-digit characters
-            return re.sub(r"\D", "", match[2]).zfill(12)
+        return BaseScraper.match_certificado(certificado, CERTIFICADO1)
+
+    @staticmethod
+    def match_ean(string: str) -> str | None:
+        if match := re.search(EAN, string):
+            if match[2]:
+                # Remove all non-digit characters
+                return re.sub(r"\D", "", match[2])
         return None
 
     @staticmethod
@@ -197,7 +241,7 @@ class BaseScraper:
             return
         if self.demo:
             try:
-                driver.highlight(element, timeout=self.timeout // 2)
+                driver.highlight(element, timeout=self.timeout)
             except (NoSuchElementException, ElementNotVisibleException):
                 pass
 
@@ -208,8 +252,8 @@ class BaseScraper:
     def uc_click(self, driver, selector, timeout=None):
         self.highlight_element(driver, selector)
         if timeout is None:
-            timeout = self.timeout
-        driver.uc_click(selector, timeout=timeout)
+            timeout = self.reconnect
+        driver.uc_click(selector, timeout=timeout, reconnect_time=timeout)
 
     def _save_screenshot(self, driver: SB, filename: str):
         folder = self.folder / "screenshots"
@@ -219,15 +263,36 @@ class BaseScraper:
         with open(folder / filename, "wb") as f:
             f.write(screenshot)
 
-    def save_screenshot(self, sb: SB, result_page: dict, i: int):
-        filename = self.generate_filename(result_page, i)
+    @staticmethod
+    def compress_images(pdf_stream):
+        try:
+            from pypdf import PdfReader, PdfWriter
+
+            reader = PdfReader(pdf_stream)
+            writer = PdfWriter()
+
+            for page in reader.pages:
+                writer.add_page(page)
+
+            if reader.metadata is not None:
+                writer.add_metadata(reader.metadata)
+
+            for page in writer.pages:
+                for img in page.images:
+                    img.replace(img.image, quality=80)
+                page.compress_content_streams(level=9)
+
+            bytes_stream = BytesIO()
+            writer.write(bytes_stream)
+            return bytes_stream.getvalue()
+        except ImportError:
+            print("pypdf not installed, skipping screenshot compression")
+            return pdf_stream
+
+    def save_screenshot(self, sb: SB, result_page: dict):
+        filename = f"{uuid.uuid4()}.pdf"
         self._save_screenshot(sb.driver, filename)
         result_page["screenshot"] = filename
-
-    def generate_filename(self, result_page: dict, i: int):
-        if product_id := result_page.get("product_id"):
-            return f"{self.name}_{product_id}.pdf"
-        return f"{self.name}_{i}.pdf"
 
     def save_sampled_pages(self, keyword: str, sampled_pages: dict):
         json.dump(
@@ -268,7 +333,7 @@ class BaseScraper:
                         continue
 
                     if screenshot:
-                        self.save_screenshot(driver, result_page, i)
+                        self.save_screenshot(driver, result_page)
                     else:
                         result_page["screenshot"] = ""
 
@@ -288,7 +353,6 @@ class BaseScraper:
                 )
 
     def input_search_params(self, driver: SB, keyword: str):
-        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         self.highlight_element(driver, self.input_field)
         for attempt in range(self.retries):
             try:

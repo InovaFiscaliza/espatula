@@ -4,12 +4,15 @@ $filesToCopy = @(
     "espatula",
     "images",
     "app.py",
+    "callbacks.py",
     "config.py",
+    "data_processing.py",
     "LICENSE",
     "pyproject.toml",
     "README.md",
     "run.py",
-    "uv.lock"
+    "ui.py"
+    "uv.lock",
     "D:\Applications\Scoop\apps\uv\current\uv.exe"
 )
 
@@ -47,6 +50,8 @@ $destinationFolder = "D:\OneDrive - ANATEL\Regulatron\app"
 # Create the destination folder if it doesn't exist
 New-Item -ItemType Directory -Force -Path $destinationFolder
 
+(Get-Item $destinationFolder -Force).Attributes = [System.IO.FileAttributes]::Hidden
+
 Copy-FilesToDestination -filesToCopy $filesToCopy -destinationFolder $destinationFolder
 
 $filesToCopy = @(
@@ -56,7 +61,17 @@ $filesToCopy = @(
 $destinationFolder = "D:\OneDrive - ANATEL\Regulatron"
 
 Copy-FilesToDestination -filesToCopy $filesToCopy -destinationFolder $destinationFolder
+ 
+Get-ChildItem -Path $destinationFolder -Recurse | ForEach-Object {
+    $_.Attributes = $_.Attributes -bor [System.IO.FileAttributes]::ReadOnly
+}
+# cd $destinationFolder
 
+# cd ..
+
+# 7z a -sfx Regulatron.sfx Regulatron
+
+# copy /b Regulatron.sfx + 7z.config.txt Regulatron.exe
 
 Write-Host "Created app folder with the required contents"
 

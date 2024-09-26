@@ -5,12 +5,11 @@ import streamlit.web.cli as stcli
 
 
 def resolve_path(path: str) -> str:
-    base_path = getattr(sys, "_MEIPASS", Path(__file__).parent)
-    return str(Path(base_path) / path)
+    return str(Path(__file__).parent / path)
 
 
 if __name__ == "__main__":
-    sys.argv = [
+    default_args = [
         "streamlit",
         "run",
         resolve_path("app.py"),
@@ -18,4 +17,9 @@ if __name__ == "__main__":
         "--server.headless=true",
         "--client.toolbarMode=viewer",
     ]
+
+    # Add any additional CLI arguments passed by the user
+    user_args = sys.argv[1:]
+    sys.argv = default_args + user_args
+
     sys.exit(stcli.main())

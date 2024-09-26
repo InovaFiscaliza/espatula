@@ -1,5 +1,6 @@
 from datetime import datetime
 from dataclasses import dataclass
+from markdownify import markdownify as md
 
 from .base import TIMEZONE, BaseScraper
 
@@ -106,7 +107,7 @@ class AmericanasScraper(BaseScraper):
             nota = nota.get_text().strip()
 
         if descrição := get_selector('div[data-testid="rich-content-container"]'):
-            descrição = descrição.get_text().strip()
+            descrição = md(str(descrição))
 
         marca, modelo, certificado, ean, product_id = None, None, None, None, None
         if características := self.parse_tables(soup):
@@ -116,6 +117,11 @@ class AmericanasScraper(BaseScraper):
             certificado = self.extrair_certificado(características)
             ean = self.extrair_ean(características)
             product_id = características.get("Código")
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,
@@ -125,6 +131,8 @@ class AmericanasScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
             "descrição": descrição,
             "ean_gtin": ean,
+            "estado": None,
+            "estoque": None,
             "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
@@ -133,6 +141,8 @@ class AmericanasScraper(BaseScraper):
             "preço": preço,
             "product_id": product_id,
             "url": driver.get_current_url(),
+            "vendas": None,
+            "vendedor": None,
         }
 
     def parse_tables(self, soup) -> dict:

@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 
+from markdownify import markdownify as md
 from seleniumbase.common.exceptions import (
     NoSuchElementException,
     ElementNotVisibleException,
@@ -39,8 +40,6 @@ class MagaluScraper(BaseScraper):
             evals = evals.get_text().strip()
         if price_lower := produto.select_one('p[data-testid="price-value"]'):
             price_lower = price_lower.get_text().strip()
-        if price_higher := produto.select_one('p[data-testid="price-original"]'):
-            price_higher = price_higher.get_text().strip()
         if imgs := produto.select_one('img[data-testid="image"]'):
             imgs = imgs.get("src")
         if not all([name, price_lower, imgs]):
@@ -48,7 +47,6 @@ class MagaluScraper(BaseScraper):
         return {
             "nome": name,
             "preço": price_lower,
-            "preço_original": price_higher,
             "avaliações": evals,
             "imagem": imgs,
             "url": self.url + relative_url,
@@ -121,7 +119,7 @@ class MagaluScraper(BaseScraper):
                 avaliações = avaliações.replace("(", "").replace(")", "")
 
         if descrição := get_selector('div[data-testid="rich-content-container"]'):
-            descrição = descrição.get_text().strip()
+            descrição = md(str(descrição))
 
         marca, modelo, certificado, ean = None, None, None, None
         if características := self.parse_tables(soup):
@@ -129,6 +127,11 @@ class MagaluScraper(BaseScraper):
             modelo = características.get("Modelo")
             certificado = self.extrair_certificado(características)
             ean = self.extrair_ean(características)
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         product_id = None
         match = re.search(r"/p/([\w\d]+)/", driver.get_current_url())
@@ -137,12 +140,14 @@ class MagaluScraper(BaseScraper):
 
         return {
             "avaliações": avaliações,
-            "características": características,
             "categoria": categoria,
             "certificado": certificado,
+            "características": características,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
             "descrição": descrição,
             "ean_gtin": ean,
+            "estado": None,
+            "estoque": None,
             "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
@@ -151,10 +156,11 @@ class MagaluScraper(BaseScraper):
             "preço": preço,
             "product_id": product_id,
             "url": driver.get_current_url(),
+            "vendas": None,
+            "vendedor": None,
         }
 
     def input_search_params(self, driver, keyword):
-        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         for attempt in range(self.retries):
             try:
                 self.highlight_element(driver, self.input_field)

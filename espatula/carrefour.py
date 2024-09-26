@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from markdownify import markdownify as md
 from seleniumbase.common.exceptions import (
     NoSuchElementException,
     ElementNotVisibleException,
@@ -15,7 +16,7 @@ CATEGORIES = {
 
 @dataclass
 class CarrefourScraper(BaseScraper):
-    turnstile: bool = True
+    handle_captcha: bool = True
 
     @property
     def name(self) -> str:
@@ -34,7 +35,6 @@ class CarrefourScraper(BaseScraper):
         return "li.carrefourbr-carrefour-components-0-x-Pagination_NextButtonContainer>a>div"
 
     def input_search_params(self, driver, keyword):
-        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         for attempt in range(self.retries):
             try:
                 if department := CATEGORIES.get(keyword):
@@ -64,9 +64,6 @@ class CarrefourScraper(BaseScraper):
         if imagem := product_tag.select_one('img[class*="product-summary"]'):
             imagem = imagem.get("src")
 
-        if preço_original := product_tag.select_one('span[class*="listPrice"]'):
-            preço_original = preço_original.get_text().strip()
-
         if preço := product_tag.select_one('span[class*="spotPriceValue"]'):
             preço = preço.get_text().strip()
 
@@ -75,7 +72,6 @@ class CarrefourScraper(BaseScraper):
 
         return {
             "nome": nome,
-            "preço_original": preço_original,
             "preço": preço,
             "imagem": imagem,
             "url": url,
@@ -119,14 +115,11 @@ class CarrefourScraper(BaseScraper):
         if vendedor := get_selector('span[class*="carrefourSeller"]'):
             vendedor = vendedor.get_text().strip()
 
-        if desconto := get_selector('span[class*="PriceSavings"]'):
-            desconto = desconto.get_text().strip()
-
         if cod_produto := get_selector('span[class*="product-identifier__value"]'):
             cod_produto = cod_produto.get_text().strip()
 
         if descrição := get_selector('td[class*="ItemSpecifications"]'):
-            descrição = descrição.get("data-specification")
+            descrição = md(descrição.get("data-specification", ""))
 
         imagens = []
         for img in soup.select('img[class*="thumbImg"]'):
@@ -138,22 +131,31 @@ class CarrefourScraper(BaseScraper):
             certificado = self.extrair_certificado(características)
             ean = self.extrair_ean(características)
             modelo = características.get("Modelo")
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
+            "avaliações": None,
             "categoria": categoria,
             "certificado": certificado,
             "características": características,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
-            "desconto": desconto,
             "descrição": descrição,
             "ean_gtin": ean,
+            "estado": None,
+            "estoque": None,
             "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
             "nome": nome,
+            "nota": None,
             "preço": preço,
             "product_id": cod_produto,
             "url": driver.get_current_url(),
+            "vendas": None,
             "vendedor": vendedor,
         }
 

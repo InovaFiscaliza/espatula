@@ -5,7 +5,7 @@ from seleniumbase.common.exceptions import (
     NoSuchElementException,
     ElementNotVisibleException,
 )
-
+from markdownify import markdownify as md
 from .base import TIMEZONE, BaseScraper
 
 CATEGORIES = {
@@ -173,8 +173,9 @@ class MercadoLivreScraper(BaseScraper):
             estoque = estoque_element.get_text().strip().split(" ")[0].replace("(", "")
 
         vendedor = None
-        if vendedor_element := get_selector('div[class="ui-pdp-seller__header"]'):
-            vendedor = vendedor_element.get_text().strip()
+        if vendedor_element := get_selector('span[class*="ui-pdp-seller__label-sold"]'):
+            if vendedor := vendedor_element.find_next_sibling("span"):
+                vendedor = vendedor.get_text().strip()
 
         if get_selector("button[data-testid='action-collapsable-target']"):
             self.uc_click(driver, "button[data-testid=action-collapsable-target]")
@@ -182,6 +183,16 @@ class MercadoLivreScraper(BaseScraper):
         if soup.select_one("a[data-testid='action-collapsable-target']"):
             self.highlight_element(driver, 'a[title="Ver descrição completa"]')
             self.uc_click(driver, 'a[title="Ver descrição completa"]')
+
+        descrição = None
+        if descrição_element := get_selector("p[class=ui-pdp-description__content]"):
+            descrição = md(str(descrição_element))
+
+        url = self.find_single_url(driver.get_current_url())
+
+        product_id = None
+        if product_id_match := re.match(PRODUCT_ID, url):
+            product_id = product_id_match[0]
 
         características, marca, modelo, ean, certificado = None, None, None, None, None
         if características_element := get_selector(
@@ -192,22 +203,17 @@ class MercadoLivreScraper(BaseScraper):
             modelo = características.get("Modelo")
             ean = self.extrair_ean(características)
             certificado = self.extrair_certificado(características)
-
-        descrição = None
-        if descrição_element := get_selector("p[class=ui-pdp-description__content]"):
-            descrição = descrição_element.get_text().strip()
-
-        url = self.find_single_url(driver.get_current_url())
-
-        product_id = None
-        if product_id_match := re.match(PRODUCT_ID, url):
-            product_id = product_id_match[0]
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,
             "categoria": categoria,
-            "características": características,
             "certificado": certificado,
+            "características": características,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
             "descrição": descrição,
             "ean_gtin": ean,

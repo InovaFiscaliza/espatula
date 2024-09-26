@@ -3,6 +3,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from urllib.parse import unquote
+
+from markdownify import markdownify as md
 from seleniumbase.common.exceptions import (
     NoSuchElementException,
     ElementNotVisibleException,
@@ -175,15 +177,12 @@ class AmazonScraper(BaseScraper):
 
         if descrição_principal := soup.select_one("div#feature-bullets"):
             self.highlight_element(driver, 'div[id="feature-bullets"]')
-            descrição += "\n".join(
-                s.text.strip() for s in descrição_principal.select("span")
-            )
+
+            descrição = md(str(descrição_principal.select("span")))
 
         if descrição_secundária := soup.select_one("div#productDescription"):
             self.highlight_element(driver, 'div[id="productDescription"]')
-            descrição += "\n".join(
-                s.text.strip() for s in descrição_secundária.select("span")
-            )
+            descrição += md(str(descrição_secundária.select("span")))
 
         modelo, ean, certificado, asin = None, None, None, None
 
@@ -202,6 +201,11 @@ class AmazonScraper(BaseScraper):
 
             modelo = extrair_modelo(características)
             asin = características.pop("ASIN", None)
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,
@@ -211,8 +215,9 @@ class AmazonScraper(BaseScraper):
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
             "descrição": descrição,
             "ean_gtin": ean,
+            "estado": None,
+            "estoque": None,
             "imagens": imagens,
-            "link_vendedor": link_vendedor,
             "marca": marca,
             "modelo": modelo,
             "nome": nome,
@@ -235,7 +240,6 @@ class AmazonScraper(BaseScraper):
         return results
 
     def input_search_params(self, driver, keyword):
-        driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
         for attempt in range(self.retries):
             try:
                 self.highlight_element(driver, self.input_field)

@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from markdownify import markdownify as md
+
 from .base import TIMEZONE, BaseScraper
 
 
@@ -42,11 +44,6 @@ class CasasBahiaScraper(BaseScraper):
         ):
             price_lower = price_lower.text.strip()
 
-        if price_higher := produto.select_one(
-            'div[class*="product-card__installment-text"]'
-        ):
-            price_higher = price_higher.text.strip()
-
         if imagem := produto.select_one('img[class*="product-card__image"]'):
             imagem = imagem.get("src")
 
@@ -55,7 +52,6 @@ class CasasBahiaScraper(BaseScraper):
         return {
             "nome": name,
             "preço": price_lower,
-            "preço_original": price_higher,
             "avaliações": evals,
             "imagem": imagem,
             "url": url,
@@ -126,26 +122,25 @@ class CasasBahiaScraper(BaseScraper):
             if vendedor := vendedor.select_one("a"):
                 vendedor = vendedor.text.strip()
 
-        if descrição := get_selector('div[data-testid*="rich-content-container"]'):
-            descrição = descrição.text.strip()
+        if descrição := get_selector('div[id="product-description"]'):
+            descrição = md(str(descrição))
 
         características, modelo, certificado, ean = {}, None, None, None
         try:
-            tag = 'p:-soup-contains("Características")'
-            get_selector(tag)
-            self.uc_click(driver, tag)
+            tag = 'svg[data-testid="Características"]'
+            self.uc_click(driver, tag, timeout=self.timeout)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Características"))
-            self.uc_click(driver, 'button[aria-label="Fechar"]')
+            self.uc_click(driver, 'button[aria-label="Fechar"]', timeout=self.timeout)
         except Exception as e:
             if not self.headless:
                 driver.post_message(e)
         try:
-            tag = 'p:-soup-contains("Especificações Técnicas")'
-            get_selector(tag)
-            self.uc_click(driver, tag)
+            tag = 'svg[data-testid="Especificações-Técnicas"]'
+            self.uc_click(driver, tag, timeout=self.timeout)
             soup = driver.get_beautiful_soup()
             características.update(self.parse_tables(soup, "Especificações Técnicas"))
+            self.uc_click(driver, 'button[aria-label="Fechar"]', timeout=self.timeout)
 
         except Exception as e:
             if not self.headless:
@@ -157,15 +152,22 @@ class CasasBahiaScraper(BaseScraper):
                 self.extrair_certificado(características),
                 self.extrair_ean(características),
             )
+        elif descrição:
+            if certificado is None:
+                certificado = self.match_certificado(descrição)
+            if ean is None:
+                ean = self.match_ean(descrição)
 
         return {
             "avaliações": avaliações,
             "categoria": categoria,
-            "características": características,
             "certificado": certificado,
+            "características": características,
             "data": datetime.now().astimezone(TIMEZONE).strftime("%Y-%m-%dT%H:%M:%S"),
             "descrição": descrição,
             "ean_gtin": ean,
+            "estado": None,
+            "estoque": None,
             "imagens": imagens,
             "marca": marca,
             "modelo": modelo,
@@ -174,6 +176,7 @@ class CasasBahiaScraper(BaseScraper):
             "preço": preço,
             "product_id": product_id,
             "url": driver.get_current_url(),
+            "vendas": None,
             "vendedor": vendedor,
         }
 
