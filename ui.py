@@ -175,7 +175,6 @@ def show_results(state):
                 "Mais Informações 🧐",
                 url="https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/Regulatron--Experimento-de-classifica%C3%A7%C3%A3o-3.aspx",
                 use_container_width=True,
-                type="primary",
             )
 
             st.markdown("""
