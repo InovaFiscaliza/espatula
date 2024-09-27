@@ -94,9 +94,9 @@ def display_df(state, df, output_df_key):
                 help="🖇️Comparação de Strings - Anúncio x SCH",
             ),
             "passível?": st.column_config.CheckboxColumn(
-                "Homologação Compulsória (Sim/Não)",
+                "Homologação Compulsória (Positivo/Negativo)",
                 width=None,
-                help="📌Classificador Binário - Homologação Compulsória (Sim/Não)",
+                help="📌Classe do Produto considerando a probabilidade retornada pelo modelo",
                 disabled=False,
                 required=True,
             ),
@@ -105,7 +105,7 @@ def display_df(state, df, output_df_key):
                 format="%.2f%%",
                 min_value=0,
                 max_value=100,
-                help="📌Classificador Binário - Probabilidade de Homologação Compulsória",
+                help="📌Classificador - Probabilidade de Homologação Compulsória",
             ),
         },
         hide_index=True,
@@ -119,7 +119,7 @@ def display_df(state, df, output_df_key):
 
 def show_results(state):
     with st.expander(
-        "Classificador Binário: :green[Homologação Compulsória pela Anatel]",
+        "Classificação: :green[Positivo ✅ - Homologação Compulsória pela Anatel]",
         icon="🔥",
     ):
         rows = state.processed_pages["passível?"]
@@ -129,7 +129,7 @@ def show_results(state):
             output_df_key="df_positive",
         )
     with st.expander(
-        "Classificador Binário: :red[Não é produto de Telecomunicações]", icon="🗑️"
+        "Classificação: :red[Negativo🔲 - Não é produto de Telecomunicações]", icon="🗑️"
     ):
         display_df(
             state,
@@ -137,7 +137,7 @@ def show_results(state):
             output_df_key="df_negative",
         )
     st.info(
-        "**É possível alterar a Classificação clicando na célula!**",
+        "É possível alterar a Classe, caso incorreta, clicando na coluna _Homologação Compulsória (Sim/Não)_!",
         icon="✍🏽",
     )
     columns = st.columns(4, vertical_alignment="top")
@@ -172,16 +172,19 @@ def show_results(state):
     with columns[3]:
         with st.popover("📌Classificador Binário"):
             st.link_button(
-                "Mais informações",
+                "Mais Informações 🧐",
                 url="https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/Regulatron--Experimento-de-classifica%C3%A7%C3%A3o-3.aspx",
                 use_container_width=True,
+                type="primary",
             )
 
             st.markdown("""
-                    * Classe :green[True] ✅ - O produto foi classificado como **Positivo**, i.e. **possui homologação compulsória**.
-                        * 👉🏽Para alterar de :green[True] para :red[False], basta desmarcar o checkbox na coluna `Classe` da primeira tabela. A `Classe` será alterada para :red[False] e o registro migrado para a segunda tabela.
-                    * Classe :red[False] 🔲 - O produto  foi classificado como **Negativo**, i.e. **NÃO possui homologação compulsória**.
-                        * 👉🏽Para alterar de :red[False] para :green[True], basta marcar o checkbox na coluna `Classe` da segunda tabela. A `Classe` será alterada para :green[True] e o registro migrado para a primeira tabela.
+                    * :green[Positivo] ✅ - O modelo retornou probabilidade **acima** de `50%`, portanto o produto foi considerado de **Homologação Compulsória**.
+                        * 👉🏽Para alterar de :green[Positivo] para :red[Negativo], basta *desmarcar* o checkbox da linha correspondente na última coluna `Homologação Compulsória (Sim/Não)`
+                        * *O registro será migrado para a segunda tabela.*
+                    * :red[Negativo] 🔲 - O modelo retornou probabilidade **abaixo** de `50%`, portanto o produto **não** foi considerado de **Homologação Compulsória**.
+                        * 👉🏽Para alterar de :red[Negativo] para :green[Positivo], basta *selecionar* o checkbox da linha correspondente na última coluna `Homologação Compulsória (Sim/Não)`
+                        * *O registro será migrado para a primeira tabela.*
 
                     """)
 
