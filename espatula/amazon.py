@@ -129,7 +129,7 @@ class AmazonScraper(BaseScraper):
 
         if preço := soup.select_one('span[class="aok-offscreen"]'):
             self.highlight_element(driver, 'span[class="aok-offscreen"]')
-            preço = re.sub(r"R\$|\.", "", preço.get_text().strip()).replace(",", ".")
+            preço = re.sub(r"R\$|\.", "", preço.get_text()).replace(",", ".").strip()
 
         if not all([nome, preço, categoria]):
             return {}
