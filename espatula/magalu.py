@@ -99,11 +99,10 @@ class MagaluScraper(BaseScraper):
             if preço := preço_div.select_one('p[data-testid="price-value"]'):
                 preço = (
                     preço.get_text()
-                    .strip()
                     .replace("R$", "")
                     .replace(".", "")
                     .replace(",", ".")
-                )
+                ).strip()
 
         if not all([categoria, nome, preço]):
             return {}

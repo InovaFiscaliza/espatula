@@ -90,7 +90,7 @@ class CasasBahiaScraper(BaseScraper):
                     .replace("R$", "")
                     .replace(".", "")
                     .replace(",", ".")
-                )
+                ).strip()
 
         if not all([categoria, nome, preço]):
             return {}

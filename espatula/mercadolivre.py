@@ -177,12 +177,15 @@ class MercadoLivreScraper(BaseScraper):
             if vendedor := vendedor_element.find_next_sibling("span"):
                 vendedor = vendedor.get_text().strip()
 
-        if get_selector("button[data-testid='action-collapsable-target']"):
+        try:
             self.uc_click(driver, "button[data-testid=action-collapsable-target]")
+        except:  # noqa: E722
+            pass
 
-        if soup.select_one("a[data-testid='action-collapsable-target']"):
-            self.highlight_element(driver, 'a[title="Ver descrição completa"]')
+        try:
             self.uc_click(driver, 'a[title="Ver descrição completa"]')
+        except:  # noqa: E722
+            pass
 
         descrição = None
         if descrição_element := get_selector("p[class=ui-pdp-description__content]"):
