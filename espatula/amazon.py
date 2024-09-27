@@ -85,30 +85,32 @@ class AmazonScraper(BaseScraper):
         table_data = {}
         if tables := self.get_selector(driver, soup, 'table[id^="productDetails"]'):
             for table in tables:
-                for row in table.select("tr"):
-                    key = row.select_one("th")
-                    value = row.select_one("td")
-                    if key and value:
-                        table_data[key.text.strip()] = value.text.strip().replace(
-                            "\u200e", ""
-                        )
+                if hasattr(table, "select"):
+                    for row in table.select("tr"):
+                        key = row.select_one("th")
+                        value = row.select_one("td")
+                        if key and value:
+                            table_data[key.text.strip()] = value.text.strip().replace(
+                                "\u200e", ""
+                            )
         elif tables := self.get_selector(
             driver, soup, 'table[class="a-bordered"]'
         ):  # special pages like iphone
             for table in tables:
-                rows = table.select("td")
-                if rows:
-                    table_data.update(
-                        {
-                            k.text.strip(): v.text.strip()
-                            for k, v in zip(rows[::2], rows[1::2])
-                            if (
-                                hasattr(k, "text")
-                                and "R$" not in k.text.strip()
-                                and "R$" not in v.text.strip()
-                            )
-                        }
-                    )
+                if hasattr(table, "select"):
+                    rows = table.select("td")
+                    if rows:
+                        table_data.update(
+                            {
+                                k.text.strip(): v.text.strip()
+                                for k, v in zip(rows[::2], rows[1::2])
+                                if (
+                                    hasattr(k, "text")
+                                    and "R$" not in k.text.strip()
+                                    and "R$" not in v.text.strip()
+                                )
+                            }
+                        )
         return table_data
 
     def extract_item_data(self, driver):
@@ -120,7 +122,11 @@ class AmazonScraper(BaseScraper):
         if categoria := self.get_selector(
             driver, soup, 'div[id="wayfinding-breadcrumbs_feature_div"]'
         ):
-            categoria = "|".join(s.text.strip() for s in categoria.select("a"))
+            categoria = "|".join(
+                s.text.strip()
+                for s in categoria.select("a")
+                if hasattr(categoria, "select")
+            )
         elif nome and "iphone" in nome.lower():
             categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
 
@@ -177,12 +183,14 @@ class AmazonScraper(BaseScraper):
         if descrição_principal := self.get_selector(
             driver, soup, 'div[id="feature-bullets"]'
         ):
-            descrição = md(str(descrição_principal.select("span")))
+            if hasattr(descrição_principal, "select"):
+                descrição = md(str(descrição_principal.select("span")))
 
         if descrição_secundária := self.get_selector(
             driver, soup, 'div[id="productDescription"]'
         ):
-            descrição += md(str(descrição_secundária.select("span")))
+            if hasattr(descrição_secundária, "select"):
+                descrição += md(str(descrição_secundária.select("span")))
 
         modelo, ean, certificado, asin = None, None, None, None
 
