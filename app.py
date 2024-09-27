@@ -182,7 +182,7 @@ def inspect_pages(scraper):
                             imagem = result.get("imagem")
                         left.write("Imagem do produto")
                         nome = result.get("nome")
-                        left.image(imagem, width=480, caption=nome)
+                        left.image(imagem, width=360, caption=nome)
                     except Exception:
                         left.write("Não foi possível carregar a imagem do produto")
                 with right:
