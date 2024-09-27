@@ -13,10 +13,35 @@ def request_table(state, json_path: Path) -> pd.DataFrame | None:
         result = state.client.predict(
             json_file=handle_file(str(json_path)), api_name="/process_to_table"
         )
-        return pd.DataFrame(result["data"], columns=result["headers"])
+        return pd.DataFrame(result["data"], columns=result["headers"], dtype="string")
 
     except AppError:
         return None
+
+
+def manage_screenshots(scraper, state):
+    # Copy screenshots to cloud
+    if (screenshots := scraper.folder / "screenshots").is_dir():
+        cloud_screenshots = Path(f"{state.cloud}/screenshots")
+        cloud_screenshots.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(
+            str(screenshots),
+            str(cloud_screenshots),
+            dirs_exist_ok=True,
+        )
+
+        # Sort Delete screenshots from local
+        files_in_session = pd.concat(
+            [
+                pd.read_excel(f, usecols=["screenshot"])
+                for f in scraper.folder.glob("*.xlsx")
+            ],
+            ignore_index=True,
+        )["screenshot"].to_list()
+
+        screenshots.ls().filter(lambda p: p.name not in files_in_session).map(
+            lambda p: p.unlink(missing_ok=True)
+        )
 
 
 def save_table(state: dict, subset_df: pd.DataFrame = None) -> bool:
@@ -33,9 +58,7 @@ def save_table(state: dict, subset_df: pd.DataFrame = None) -> bool:
             )
             if subset_df is None:
                 shutil.copy(str(output_table), str(cloud_output))
-                shutil.copy(
-                    str(scraper.folder / "screenshots"), f"{state.cloud}/screenshots"
-                )
+                manage_screenshots(scraper, state)
             else:
                 subset_df["marketplace"] = state.mkplc
                 subset_df.to_excel(cloud_output, index=False)
