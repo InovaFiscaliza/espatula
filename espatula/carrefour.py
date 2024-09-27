@@ -42,7 +42,8 @@ class CarrefourScraper(BaseScraper):
                         department, reconnect_time=self.reconnect
                     )
                 self.highlight_element(driver, self.input_field)
-                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                driver.type(self.input_field, keyword, timeout=self.timeout)
+                self.uc_click(driver, 'button[aria-label="Buscar produtos"]')
                 break
             except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < self.retries - 1:  # if it's not the last attempt
@@ -94,11 +95,21 @@ class CarrefourScraper(BaseScraper):
             self.highlight_element(driver, selector)
             return soup.select_one(selector)
 
-        if preço := get_selector('span[class*="currencyContainer"]'):
-            preço = preço.get_text().strip()
+        self.highlight_element(driver, 'div[data-testid="breadcrumb"]')
+
+        imagens = []
+        self.highlight_element(driver, 'picture[class*="productImagePicture"]')
+        for img in soup.select('img[class*="thumbImg"]'):
+            if i := img.get("src"):
+                i = i.replace(r"=85", r"=480")
+                i = i.replace(r"-85-", r"-480-")
+                imagens.append(i)
 
         if nome := get_selector('h1[class*="productNameContainer"]'):
-            nome = nome.get_text().strip()
+            if hasattr(nome, "get_text"):
+                nome = nome.get_text().strip()
+            else:
+                nome = None
 
         categoria = []
         for i in soup.select('span[class*="breadcrumb"]'):
@@ -107,27 +118,35 @@ class CarrefourScraper(BaseScraper):
                     categoria.append(cat)
         categoria = "|".join(categoria)
 
+        if marca := get_selector('span[class*="productBrandName"]'):
+            if hasattr(marca, "get_text"):
+                marca = marca.get_text().strip()
+            else:
+                marca = None
+
+        if cod_produto := get_selector('span[class*="product-identifier__value"]'):
+            if hasattr(cod_produto, "get_text"):
+                cod_produto = cod_produto.get_text().strip()
+            else:
+                cod_produto = None
+
+        if vendedor := get_selector('span[class*="carrefourSeller"]'):
+            if hasattr(vendedor, "get_text"):
+                vendedor = vendedor.get_text().strip()
+            else:
+                vendedor = None
+
+        if preço := get_selector('span[class*="sellingPriceValue"]'):
+            if hasattr(preço, "get_text"):
+                preço = preço.get_text().strip()
+            else:
+                preço = None
+
         if not all([categoria, nome, preço]):
             return {}
 
-        if marca := get_selector('span[class*="productBrandName"]'):
-            marca = marca.get_text().strip()
-
-        if vendedor := get_selector('span[class*="carrefourSeller"]'):
-            vendedor = vendedor.get_text().strip()
-
-        if cod_produto := get_selector('span[class*="product-identifier__value"]'):
-            cod_produto = cod_produto.get_text().strip()
-
         if descrição := get_selector('td[class*="ItemSpecifications"]'):
             descrição = md(descrição.get("data-specification", ""))
-
-        imagens = []
-        for img in soup.select('img[class*="thumbImg"]'):
-            if i := img.get("src"):
-                i = i.replace(r"=85", r"=480")
-                i = i.replace(r"-85-", r"-480-")
-                imagens.append(i)
 
         certificado, ean, modelo = None, None, None
         if características := self.parse_tables(soup):

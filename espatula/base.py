@@ -172,7 +172,7 @@ class BaseScraper:
             "displayHeaderFooter": True,
             "printBackground": True,
             "preferCSSPageSize": False,
-            "scale": 1,
+            "scale": 0.8,
         }
 
         body = json.dumps({"cmd": "Page.printToPDF", "params": params})
@@ -306,7 +306,7 @@ class BaseScraper:
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
                 if not self.headless:
-                    driver.post_message("Anúncio sem categoria - 🚮")
+                    driver.post_message("Anúncio com dados incompletos - 🚮")
                 return {}
 
         return result_page
