@@ -136,7 +136,7 @@ class CarrefourScraper(BaseScraper):
             else:
                 vendedor = None
 
-        if preço := get_selector('span[class*="sellingPriceValue"]'):
+        if preço := get_selector('span[class*="currencyContainer"]'):
             if hasattr(preço, "get_text"):
                 preço = preço.get_text().strip()
             else:
