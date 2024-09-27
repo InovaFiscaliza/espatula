@@ -83,8 +83,7 @@ class AmazonScraper(BaseScraper):
     def parse_tables(self, driver, soup) -> dict:
         """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
         table_data = {}
-        if tables := soup.select('table[id^="productDetails"]'):
-            self.highlight_element(driver, 'table[id="productDetails"]')
+        if tables := self.get_selector(driver, soup, 'table[id^="productDetails"]'):
             for table in tables:
                 for row in table.select("tr"):
                     key = row.select_one("th")
@@ -93,10 +92,9 @@ class AmazonScraper(BaseScraper):
                         table_data[key.text.strip()] = value.text.strip().replace(
                             "\u200e", ""
                         )
-        elif tables := soup.select(
-            'table[class="a-bordered"]'
+        elif tables := self.get_selector(
+            driver, soup, 'table[class="a-bordered"]'
         ):  # special pages like iphone
-            self.highlight_element(driver, 'table[class="a-bordered"]')
             for table in tables:
                 rows = table.select("td")
                 if rows:
@@ -115,29 +113,26 @@ class AmazonScraper(BaseScraper):
 
     def extract_item_data(self, driver):
         soup = driver.get_beautiful_soup()
-        if nome := soup.select_one("span#productTitle"):
-            self.highlight_element(driver, 'span[id="productTitle"]')
+
+        if nome := self.get_selector(driver, soup, 'span[id="productTitle"]'):
             nome = nome.get_text().strip()
 
-        if categoria := soup.select_one("div#wayfinding-breadcrumbs_feature_div"):
-            self.highlight_element(
-                driver, 'div[id="wayfinding-breadcrumbs_feature_div"]'
-            )
+        if categoria := self.get_selector(
+            driver, soup, 'div[id="wayfinding-breadcrumbs_feature_div"]'
+        ):
             categoria = "|".join(s.text.strip() for s in categoria.select("a"))
         elif nome and "iphone" in nome.lower():
             categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
 
-        if preço := soup.select_one('span[class="aok-offscreen"]'):
-            self.highlight_element(driver, 'span[class="aok-offscreen"]')
+        if preço := self.get_selector(driver, soup, 'span[class="a-offscreen"]'):
             preço = re.sub(r"R\$|\.", "", preço.get_text()).replace(",", ".").strip()
 
         if not all([nome, preço, categoria]):
             return {}
 
-        if vendas := soup.select_one("span#social-proofing-faceout-title-tk_bought"):
-            self.highlight_element(
-                driver, 'span[id="social-proofing-faceout-title-tk_bought"]'
-            )
+        if vendas := self.get_selector(
+            driver, soup, 'span[id="social-proofing-faceout-title-tk_bought"]'
+        ):
             vendas = vendas.get_text().strip()
 
         if imagens := re.findall(
@@ -149,27 +144,29 @@ class AmazonScraper(BaseScraper):
                 if isinstance(d, dict)
             ]
 
-        if nota := soup.select_one('i[class="cm-cr-review-stars-spacing-big"]'):
-            self.highlight_element(driver, 'i[class="cm-cr-review-stars-spacing-big"]')
+        if nota := self.get_selector(
+            driver, soup, 'i[class="cm-cr-review-stars-spacing-big"]'
+        ):
             nota = nota.get_text().strip()
 
-        if avaliações := soup.select_one('div[data-hook="total-review-count"]'):
-            # self.highlight_element(driver, 'div[data-hook="total-review-count"]')
+        if avaliações := self.get_selector(
+            driver, soup, 'div[data-hook="total-review-count"]'
+        ):
             avaliações = "".join(re.findall(r"\d", avaliações.get_text().strip()))
-        elif avaliações := soup.select_one("span#acrCustomerReviewText"):
-            self.highlight_element(driver, 'span[id="acrCustomerReviewText"]')
+        elif avaliações := self.get_selector(
+            driver, soup, "span#acrCustomerReviewText"
+        ):
             avaliações = avaliações.get_text().strip()
 
-        if marca := soup.select_one("a#bylineInfo"):
-            self.highlight_element(driver, 'a[id="bylineInfo"]')
+        if marca := self.get_selector(driver, soup, 'a[id="bylineInfo"]'):
             marca = f'{re.sub(r"Marca: |Visite a loja ", "", marca.get_text().strip())}'.title()
 
-        if vendedor := soup.select_one("a#sellerProfileTriggerId"):
-            self.highlight_element(driver, 'a[id="sellerProfileTriggerId"]')
+        if vendedor := self.get_selector(
+            driver, soup, 'a[id="sellerProfileTriggerId"]'
+        ):
             link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = vendedor.get_text().strip()
-        elif vendedor := soup.select_one("a#bylineInfo"):
-            self.highlight_element(driver, 'a[id="bylineInfo"]')
+        elif vendedor := self.get_selector(driver, soup, 'a[id="bylineInfo"]'):
             link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.get_text().strip())}'.title()
         else:
@@ -177,13 +174,14 @@ class AmazonScraper(BaseScraper):
 
         descrição = ""
 
-        if descrição_principal := soup.select_one("div#feature-bullets"):
-            self.highlight_element(driver, 'div[id="feature-bullets"]')
-
+        if descrição_principal := self.get_selector(
+            driver, soup, 'div[id="feature-bullets"]'
+        ):
             descrição = md(str(descrição_principal.select("span")))
 
-        if descrição_secundária := soup.select_one("div#productDescription"):
-            self.highlight_element(driver, 'div[id="productDescription"]')
+        if descrição_secundária := self.get_selector(
+            driver, soup, 'div[id="productDescription"]'
+        ):
             descrição += md(str(descrição_secundária.select("span")))
 
         modelo, ean, certificado, asin = None, None, None, None
@@ -245,7 +243,10 @@ class AmazonScraper(BaseScraper):
         for attempt in range(self.retries):
             try:
                 self.highlight_element(driver, self.input_field)
-                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                driver.type(self.input_field, keyword, timeout=self.timeout)
+                self.uc_click(
+                    driver, 'input[id="nav-search-submit-button"]', timeout=self.timeout
+                )
                 break  # Success, exit the loop
             except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < self.retries - 1:  # if it's not the last attempt

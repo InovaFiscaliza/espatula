@@ -306,7 +306,7 @@ class BaseScraper:
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
                 if not self.headless:
-                    driver.post_message("Anúncio com dados incompletos - 🚮")
+                    driver.post_message("Anúncio com dados sem categoria - 🚮")
                 return {}
 
         return result_page
