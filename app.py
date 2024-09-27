@@ -292,7 +292,9 @@ else:
             with st.sidebar:
                 with st.form("config", border=False):
                     get_params(STATE, CONFIG)
-                    st.form_submit_button(START, on_click=run, use_container_width=True)
+                    st.form_submit_button(
+                        START, on_click=run, type="primary", use_container_width=True
+                    )
 
         else:
             st.sidebar.warning("Insira uma palavra-chave não vazia!", icon="⚠️")
