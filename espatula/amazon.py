@@ -170,13 +170,13 @@ class AmazonScraper(BaseScraper):
         if vendedor := self.get_selector(
             driver, soup, 'a[id="sellerProfileTriggerId"]'
         ):
-            link_vendedor = f"{self.url}{vendedor.get('href')}"
+            # link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = vendedor.get_text().strip()
         elif vendedor := self.get_selector(driver, soup, 'a[id="bylineInfo"]'):
-            link_vendedor = f"{self.url}{vendedor.get('href')}"
+            # link_vendedor = f"{self.url}{vendedor.get('href')}"
             vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.get_text().strip())}'.title()
-        else:
-            link_vendedor = ""
+        # else:
+        #     link_vendedor = ""
 
         descrição = ""
 
