@@ -116,9 +116,6 @@ class AmazonScraper(BaseScraper):
     def extract_item_data(self, driver):
         soup = driver.get_beautiful_soup()
 
-        if nome := self.get_selector(driver, soup, 'span[id="productTitle"]'):
-            nome = nome.get_text().strip()
-
         if categoria := self.get_selector(
             driver, soup, 'div[id="wayfinding-breadcrumbs_feature_div"]'
         ):
@@ -127,28 +124,26 @@ class AmazonScraper(BaseScraper):
                 for s in categoria.select("a")
                 if hasattr(categoria, "select")
             )
-        elif nome and "iphone" in nome.lower():
+
+        if nome := self.get_selector(driver, soup, 'span[id="productTitle"]'):
+            nome = nome.get_text().strip()
+
+        if not categoria and nome and "iphone" in nome.lower():
             categoria = "Eletrônicos e Tecnologia|Celulares e Comunicação|Celulares e Smartphones"
 
-        if preço := self.get_selector(driver, soup, 'span[class="a-offscreen"]'):
-            preço = re.sub(r"R\$|\.", "", preço.get_text()).replace(",", ".").strip()
+        if marca := self.get_selector(driver, soup, 'a[id="bylineInfo"]'):
+            marca = f'{re.sub(r"Marca: |Visite a loja ", "", marca.get_text().strip())}'.title()
 
-        if not all([nome, preço, categoria]):
-            return {}
-
-        if vendas := self.get_selector(
-            driver, soup, 'span[id="social-proofing-faceout-title-tk_bought"]'
+        if vendedor := self.get_selector(
+            driver, soup, 'a[id="sellerProfileTriggerId"]'
         ):
-            vendas = vendas.get_text().strip()
-
-        if imagens := re.findall(
-            r"colorImages':.*'initial':\s*(\[.+?\])},\n", str(soup)
-        ):
-            imagens = [
-                d.get("large", "")
-                for d in json.loads(imagens[0])
-                if isinstance(d, dict)
-            ]
+            # link_vendedor = f"{self.url}{vendedor.get('href')}"
+            vendedor = vendedor.get_text().strip()
+        elif vendedor := self.get_selector(driver, soup, 'a[id="bylineInfo"]'):
+            # link_vendedor = f"{self.url}{vendedor.get('href')}"
+            vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.get_text().strip())}'.title()
+        # else:
+        #     link_vendedor = ""
 
         if nota := self.get_selector(
             driver, soup, 'i[class="cm-cr-review-stars-spacing-big"]'
@@ -164,19 +159,22 @@ class AmazonScraper(BaseScraper):
         ):
             avaliações = avaliações.get_text().strip()
 
-        if marca := self.get_selector(driver, soup, 'a[id="bylineInfo"]'):
-            marca = f'{re.sub(r"Marca: |Visite a loja ", "", marca.get_text().strip())}'.title()
+        if preço := self.get_selector(driver, soup, 'span[class="a-offscreen"]'):
+            preço = re.sub(r"R\$|\.", "", preço.get_text()).replace(",", ".").strip()
 
-        if vendedor := self.get_selector(
-            driver, soup, 'a[id="sellerProfileTriggerId"]'
+        if vendas := self.get_selector(
+            driver, soup, 'span[id="social-proofing-faceout-title-tk_bought"]'
         ):
-            # link_vendedor = f"{self.url}{vendedor.get('href')}"
-            vendedor = vendedor.get_text().strip()
-        elif vendedor := self.get_selector(driver, soup, 'a[id="bylineInfo"]'):
-            # link_vendedor = f"{self.url}{vendedor.get('href')}"
-            vendedor = f'{re.sub(r"Marca: |Visite a loja ", "", vendedor.get_text().strip())}'.title()
-        # else:
-        #     link_vendedor = ""
+            vendas = vendas.get_text().strip()
+
+        if imagens := re.findall(
+            r"colorImages':.*'initial':\s*(\[.+?\])},\n", str(soup)
+        ):
+            imagens = [
+                d.get("large", "")
+                for d in json.loads(imagens[0])
+                if isinstance(d, dict)
+            ]
 
         descrição = ""
 
@@ -209,11 +207,15 @@ class AmazonScraper(BaseScraper):
 
             modelo = extrair_modelo(características)
             asin = características.pop("ASIN", None)
-        elif descrição:
+
+        if descrição:
             if certificado is None:
                 certificado = self.match_certificado(descrição)
             if ean is None:
                 ean = self.match_ean(descrição)
+
+        if not all([nome, preço, categoria]):
+            return {}
 
         return {
             "avaliações": avaliações,
