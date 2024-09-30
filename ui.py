@@ -1,9 +1,15 @@
+import base64
+import uuid
+
+
 from fastcore.xtras import Path
 import streamlit as st
-import uuid
+from streamlit_pdf_viewer import pdf_viewer
+
 
 from config import (
     COLUNAS,
+    CLOUD_PATH,
     LOGOS,
     TITLE,
     FOLDER,
@@ -24,11 +30,9 @@ def display_df(state, df, output_df_key):
     # Generate a unique key for the edited rows state to avoid conflicts
     edited_key = f"{output_df_key}_{uuid.uuid4()}"
     # The index in df should be in the default numeric order
-    df.loc[:, "pdf"] = f"{Path(state.screenshots).as_posix()}/" + df[
-        "screenshot"
-    ].astype("string")
+    df.loc[:, "pdf"] = f"{CLOUD_PATH}/" + df["screenshot"].astype("string")
     colunas = list(COLUNAS.keys())
-    # colunas.insert(1, "pdf")
+    colunas.insert(1, "pdf")
     state[output_df_key] = st.data_editor(
         df,
         height=720 if len(df) >= 20 else None,
@@ -42,13 +46,13 @@ def display_df(state, df, output_df_key):
                 help="📜Dados do Anúncio",
                 disabled=True,
             ),
-            # "pdf": st.column_config.LinkColumn(
-            #     "PDF",
-            #     width=None,
-            #     # display_text="PDF",
-            #     help="📜Dados do Anúncio",
-            #     disabled=True,
-            # ),
+            "pdf": st.column_config.LinkColumn(
+                "PDF",
+                width=None,
+                display_text="PDF",
+                help="📜Dados do Anúncio",
+                disabled=True,
+            ),
             "imagem": st.column_config.ImageColumn(
                 "Imagem", width="small", help="📜Dados do Anúncio"
             ),
@@ -128,6 +132,11 @@ def display_df(state, df, output_df_key):
     return state[output_df_key]
 
 
+def pdf_container(pdf_path):
+    base64_pdf = base64.b64encode(Path(pdf_path).read_bytes()).decode("utf-8")
+    return pdf_viewer(input=base64_pdf, width="100%")
+
+
 def show_results(state):
     columns = st.columns(4, gap="small", vertical_alignment="top")
 
@@ -183,6 +192,7 @@ def show_results(state):
             state.processed_pages.loc[rows],
             output_df_key="df_positive",
         )
+
     with st.expander(
         "Classificação: :red[Negativo🔲 - Não é produto de Telecomunicações]", icon="🗑️"
     ):
@@ -333,18 +343,10 @@ def get_params(state, config):
         )
 
 
-# import base64
-
-# import io
-
 # file_path = "C:/streamlit/todo_app/assets/todo_guide.pdf"
 # with open(file_path, "rb") as f:  # pdf file is binary, use rb
 #     bytes_data = f.read()
 # uploaded_file = io.BytesIO(bytes_data)  # this one
-
-# base64_pdf = base64.b64encode(bytes_data.read()).decode("utf-8")
-# pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
-# st.markdown(pdf_display, unsafe_allow_html=True)
 
 
 # from streamlit_pdf_viewer import pdf_viewer

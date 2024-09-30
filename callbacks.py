@@ -39,6 +39,7 @@ def _set_cached_pages(state):
     scraper = SCRAPERS[state.mkplc](path=state.folder)
     if cached_pages := scraper.get_pages(state.keyword):
         state.cached_pages = cached_pages
+        state["screenshots"] = Path(f"{scraper.folder}/screenshots")
     else:
         state.cached_pages = None
 
