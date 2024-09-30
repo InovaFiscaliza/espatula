@@ -30,7 +30,7 @@ def display_df(state, df, output_df_key):
     # Generate a unique key for the edited rows state to avoid conflicts
     edited_key = f"{output_df_key}_{uuid.uuid4()}"
     # The index in df should be in the default numeric order
-    df.loc[:, "pdf"] = f"{CLOUD_PATH}/" + df["screenshot"].astype("string")
+    df.loc[:, ["pdf"]] = f"{CLOUD_PATH}/" + df.loc[:, "screenshot"].astype("string")
     colunas = list(COLUNAS.keys())
     colunas.insert(1, "pdf")
     state[output_df_key] = st.data_editor(
@@ -185,6 +185,7 @@ def show_results(state):
     with st.expander(
         "Classificação: :green[Positivo ✅ - Homologação Compulsória pela Anatel]",
         icon="🔥",
+        expanded=True,
     ):
         rows = state.processed_pages["passível?"]
         display_df(
