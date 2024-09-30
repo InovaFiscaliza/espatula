@@ -145,4 +145,4 @@ def save_config(state) -> None:
     )
 
 
-# Other utility functions and configuration-related logic can go here...
+CLOUD_PATH = "https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST%2FRegulatron%2Fscreenshots"

@@ -1,9 +1,15 @@
+import base64
+import uuid
+
+
 from fastcore.xtras import Path
 import streamlit as st
-import uuid
+from streamlit_pdf_viewer import pdf_viewer
+
 
 from config import (
     COLUNAS,
+    CLOUD_PATH,
     LOGOS,
     TITLE,
     FOLDER,
@@ -24,17 +30,26 @@ def display_df(state, df, output_df_key):
     # Generate a unique key for the edited rows state to avoid conflicts
     edited_key = f"{output_df_key}_{uuid.uuid4()}"
     # The index in df should be in the default numeric order
-
+    df.loc[:, ["pdf"]] = f"{CLOUD_PATH}/" + df.loc[:, "screenshot"].astype("string")
+    colunas = list(COLUNAS.keys())
+    colunas.insert(1, "pdf")
     state[output_df_key] = st.data_editor(
         df,
         height=720 if len(df) >= 20 else None,
         use_container_width=True,
-        column_order=COLUNAS.keys(),
+        column_order=colunas,
         column_config={
             "url": st.column_config.LinkColumn(
                 "URL",
                 width=None,
                 display_text="Link",
+                help="📜Dados do Anúncio",
+                disabled=True,
+            ),
+            "pdf": st.column_config.LinkColumn(
+                "PDF",
+                width=None,
+                display_text="PDF",
                 help="📜Dados do Anúncio",
                 disabled=True,
             ),
@@ -94,7 +109,7 @@ def display_df(state, df, output_df_key):
                 help="🖇️Comparação de Strings - Anúncio x SCH",
             ),
             "passível?": st.column_config.CheckboxColumn(
-                "Homologação Compulsória (Positivo/Negativo)",
+                "Positivo/Negativo",
                 width=None,
                 help="📌Classe do Produto considerando a probabilidade retornada pelo modelo",
                 disabled=False,
@@ -117,57 +132,37 @@ def display_df(state, df, output_df_key):
     return state[output_df_key]
 
 
+def pdf_container(pdf_path):
+    base64_pdf = base64.b64encode(Path(pdf_path).read_bytes()).decode("utf-8")
+    return pdf_viewer(input=base64_pdf, width="100%")
+
+
 def show_results(state):
-    with st.expander(
-        "Classificação: :green[Positivo ✅ - Homologação Compulsória pela Anatel]",
-        icon="🔥",
-    ):
-        rows = state.processed_pages["passível?"]
-        display_df(
-            state,
-            state.processed_pages.loc[rows],
-            output_df_key="df_positive",
-        )
-    with st.expander(
-        "Classificação: :red[Negativo🔲 - Não é produto de Telecomunicações]", icon="🗑️"
-    ):
-        display_df(
-            state,
-            state.processed_pages.loc[~rows],
-            output_df_key="df_negative",
-        )
-    st.info(
-        "É possível alterar a Classe, caso incorreta, clicando na coluna _Homologação Compulsória (Sim/Não)_!",
-        icon="✍🏽",
-    )
-    columns = st.columns(4, vertical_alignment="top")
+    columns = st.columns(4, gap="small", vertical_alignment="top")
 
     with columns[0]:
         with st.popover("📜Dados do Anúncio"):
             st.markdown("""
                         * Os registros que compõem a primeira tabela serão salvos em um arquivo Excel e sincronizados com o [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron).
                         * Todos os dados submetidos são periodicamente mesclados numa base única, que será disponibilizada em [OneDrive DataHub - GET/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20GET/Regulatron).
-                        * Todos os dados brutos do anúncio serão salvos, as colunas acima são apenas um recorte.
+                        * :red[Todos os dados brutos do anúncio serão salvos, as colunas acima são apenas um recorte.]
                         """)
-
     with columns[1]:
         with st.popover("🗃️Dados de Certificação - SCH"):
             st.markdown("""
                         * Caso o anúncio contenha um nº de homologação, este é verificado e, caso válido, as colunas __Fabricante__, __Modelo__, __Tipo__ e __Nome Comercial__ são preenchidas com os dados do certificado.
-                        * Os dados de Certificação - SCH são extraídos do portal de dados abertos: [link](https://dados.gov.br/dados/conjuntos-dados/produtos-de-telecomunicacoes-homologados-pela-anatel)
+                        * :red[Os dados de Certificação - SCH são extraídos do portal de dados abertos: [link](https://dados.gov.br/dados/conjuntos-dados/produtos-de-telecomunicacoes-homologados-pela-anatel)]
                         """)
     with columns[2]:
         with st.popover("🖇️Comparação de Strings - Anúncio x SCH"):
             st.markdown("""
-                        * Para os registros com dados do certificado inseridos, as seguintes colunas correspondentes são comparadas:
+                        * Para os registros contendo certificado válido, são comparados:
                             * Título do anúncio x SCH - Nome Comercial
                             * Modelo do anúncio x SCH - Modelo
-                        * A comparação é feita calculando-se a sobreposição textual (_fuzzy string matching - Distância de Levenshtein_).
-                        * A taxa de sobreposição é mostrada nas colunas __Título x SCH - Nome Comercial (%)__ e __Modelo x SCH - Modelo (%)__.
-                        * Uma taxa de sobreposição de `100%` indica que um dado está contido no outro.
-                        * Este é um indicativo de correspondência entre os dados do anúncio e o certificado apontado.
-                        * Apesar de não garantir a validade da homologação, uma taxa de 100% é uma característica útil na análise do anúncios.
-                        
+                        * A comparação é feita calculando-se a % de sobreposição textual
+                            * (_fuzzy string matching - Distância de Levenshtein_).
+                        * _Uma taxa de `100%` indica que um dado está contido no outro._
+                            * :red[Isso não garante a validade da homologação, somente é um indicativo de correspondência dos dados.]                        
                         """)
     with columns[3]:
         with st.popover("📌Classificador Binário"):
@@ -179,13 +174,38 @@ def show_results(state):
 
             st.markdown("""
                     * :green[Positivo] ✅ - O modelo retornou probabilidade **acima** de `50%`, portanto o produto foi considerado de **Homologação Compulsória**.
-                        * 👉🏽Para alterar de :green[Positivo] para :red[Negativo], basta *desmarcar* o checkbox da linha correspondente na última coluna `Homologação Compulsória (Sim/Não)`
+                        * 👉🏽Para alterar de :green[Positivo] para :red[Negativo], basta *desmarcar* o checkbox da linha correspondente na última coluna à direita `Positivo/Negativo`
                         * *O registro será migrado para a segunda tabela.*
                     * :red[Negativo] 🔲 - O modelo retornou probabilidade **abaixo** de `50%`, portanto o produto **não** foi considerado de **Homologação Compulsória**.
-                        * 👉🏽Para alterar de :red[Negativo] para :green[Positivo], basta *selecionar* o checkbox da linha correspondente na última coluna `Homologação Compulsória (Sim/Não)`
+                        * 👉🏽Para alterar de :red[Negativo] para :green[Positivo], basta *selecionar* o checkbox da linha correspondente na última coluna à direita `Positivo/Negativo`
                         * *O registro será migrado para a primeira tabela.*
 
                     """)
+
+    with st.expander(
+        "Classificação: :green[Positivo ✅ - Homologação Compulsória pela Anatel]",
+        icon="🔥",
+        expanded=True,
+    ):
+        rows = state.processed_pages["passível?"]
+        display_df(
+            state,
+            state.processed_pages.loc[rows],
+            output_df_key="df_positive",
+        )
+
+    with st.expander(
+        "Classificação: :red[Negativo🔲 - Não é produto de Telecomunicações]", icon="🗑️"
+    ):
+        display_df(
+            state,
+            state.processed_pages.loc[~rows],
+            output_df_key="df_negative",
+        )
+    st.info(
+        "É possível alterar a Classe, caso incorreta, clicando na coluna _Positivo/Negativo_!",
+        icon="✍🏽",
+    )
 
 
 def presentation_page():
@@ -322,3 +342,38 @@ def get_params(state, config):
             help="Tempo de espera para carregar os elementos da página (seg)",
             value=float(config.get(KEYS["timeout"], 1)),
         )
+
+
+# file_path = "C:/streamlit/todo_app/assets/todo_guide.pdf"
+# with open(file_path, "rb") as f:  # pdf file is binary, use rb
+#     bytes_data = f.read()
+# uploaded_file = io.BytesIO(bytes_data)  # this one
+
+
+# from streamlit_pdf_viewer import pdf_viewer
+
+# pdf_path = "F:/Downloads/mm-bradley-terry-1079120141.pdf"
+# with open(pdf_path, "rb") as pdf_ref:
+#     bytes_data = pdf_ref.read()
+# pdf_viewer(input=bytes_data, width=700)
+
+
+# # Create a dataframe
+# df = pd.DataFrame({"col1": ["Item1", "Item2", "Item3", "Item4"], "col2": [1, 2, 3, 4]})
+
+# # Display the dataframe with multi-row selection enabled
+# event = st.dataframe(
+#     df,
+#     on_select="rerun",
+#     selection_mode="multi-row",
+# )
+
+# # Check if any rows are selected
+# if event.selection:
+#     # Get the selected rows
+#     selected_rows = df.iloc[event.selection.rows]
+
+#     # Display the selected rows in a container
+#     with st.container():
+#         st.header("Selected rows")
+#         st.dataframe(selected_rows)

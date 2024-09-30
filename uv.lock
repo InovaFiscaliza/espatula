@@ -183,6 +183,7 @@ dependencies = [
     { name = "pypdf" },
     { name = "seleniumbase" },
     { name = "streamlit" },
+    { name = "streamlit-pdf-viewer" },
 ]
 
 [package.metadata]
@@ -195,6 +196,7 @@ requires-dist = [
     { name = "pypdf", specifier = ">=4.3.1" },
     { name = "seleniumbase", specifier = ">=4.30.1" },
     { name = "streamlit", specifier = ">=1.38.0" },
+    { name = "streamlit-pdf-viewer", specifier = ">=0.0.18" },
 ]
 
 [[package]]
@@ -1305,6 +1307,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/de/dc/c4e77f5855538e11d0675b8f5e8922cb7d4928d8f877988ba1c7c63f02f6/streamlit-1.38.0.tar.gz", hash = "sha256:c4bf36b3ef871499ed4594574834583113f93f077dd3035d516d295786f2ad63", size = 8360969 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7c/2e/60e624bbe16f4baa45cb6e48a1ee05edd48a0a14cceec4d7eec9258755ac/streamlit-1.38.0-py2.py3-none-any.whl", hash = "sha256:0653ecfe86fef0f1608e3e082aef7eb335d8713f6f31e9c3b19486d1c67d7c41", size = 8741278 },
+]
+
+[[package]]
+name = "streamlit-pdf-viewer"
+version = "0.0.18"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "streamlit" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/09/2a/6efda6b77b3410a4d68bf87b6c4cb4642d12a9406812892a19ffca65e67d/streamlit_pdf_viewer-0.0.18.tar.gz", hash = "sha256:d49846c41c6224f25d2f74ecee172f3c0a8b0239950b3704de265712c2334112", size = 2356823 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/1f/43367abd4936842fe53819f80ae41eff68eb625b544ad0c12df38fbdb6c0/streamlit_pdf_viewer-0.0.18-py3-none-any.whl", hash = "sha256:ee5bfb9037a69ed08c7ad22e5d58cb5f3cb6ec3c8c1491e1f78977bdb1fd0aad", size = 2391082 },
 ]
 
 [[package]]

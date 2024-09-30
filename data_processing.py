@@ -22,7 +22,7 @@ def request_table(state, json_path: Path) -> pd.DataFrame | None:
 def manage_screenshots(scraper, state):
     # Copy screenshots to cloud
     if (screenshots := scraper.folder / "screenshots").is_dir():
-        state["screenshots"] = screenshots
+        # state["screenshots"] = screenshots
         cloud_screenshots = Path(f"{state.cloud}/screenshots")
         cloud_screenshots.mkdir(parents=True, exist_ok=True)
         shutil.copytree(
