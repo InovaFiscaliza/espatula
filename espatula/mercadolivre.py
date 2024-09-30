@@ -182,8 +182,21 @@ class MercadoLivreScraper(BaseScraper):
         except:  # noqa: E722
             pass
 
+        características, marca, modelo, ean, certificado = None, None, None, None, None
+        if características_element := get_selector(
+            'div[class="ui-vpp-highlighted-specs__striped-specs"]'
+        ):
+            características = self.parse_specs(características_element)
+            for key, value in características.items():
+                if "marca" in key.lower():
+                    marca = value
+                if "modelo" in key.lower():
+                    modelo = value
+            ean = self.extrair_ean(características)
+            certificado = self.extrair_certificado(características)
+
         try:
-            self.uc_click(driver, 'a[title="Ver descrição completa"]')
+            self.uc_click(driver, "button[data-testid=action-collapsable-target]")
         except:  # noqa: E722
             pass
 
@@ -197,19 +210,7 @@ class MercadoLivreScraper(BaseScraper):
         if product_id_match := re.match(PRODUCT_ID, url):
             product_id = product_id_match[0]
 
-        características, marca, modelo, ean, certificado = None, None, None, None, None
-        if características_element := get_selector(
-            'div[class="ui-vpp-highlighted-specs__striped-specs"]'
-        ):
-            características = self.parse_specs(características_element)
-            for key, value in características.items():
-                if "marca" in key.lower():
-                    marca = value
-                if "modelo" in key.lower():
-                    modelo = value
-            ean = self.extrair_ean(características)
-            certificado = self.extrair_certificado(características)
-        elif descrição:
+        if descrição:
             if certificado is None:
                 certificado = self.match_certificado(descrição)
             if ean is None:
