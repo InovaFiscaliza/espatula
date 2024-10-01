@@ -265,11 +265,7 @@ def is_folders_ok(state):
                     * Copie o caminho da pasta sincronizada e cole no campo abaixo
         """)
 
-        st.text_input(
-            CLOUD,
-            key="_cloud",
-            on_change=_set_cloud,
-        )
+        st.text_input(CLOUD, key="_cloud", on_change=_set_cloud, args=(state,))
         check = False
 
     return check
