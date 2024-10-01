@@ -170,9 +170,13 @@ class BaseScraper:
         url = f"{driver.command_executor._url}/session/{driver.session_id}/chromium/send_command_and_get_result"
         params = {
             "displayHeaderFooter": True,
-            "printBackground": True,
+            "printBackground": False,
             "preferCSSPageSize": False,
-            "scale": 0.8,
+            "scale": 1.0,
+            "paperWidth": 8.27,  # A4 width in inches
+            "paperHeight": 11.69,  # A4 height in inches
+            "marginLeft": 0,
+            "marginRight": 0,
         }
 
         body = json.dumps({"cmd": "Page.printToPDF", "params": params})

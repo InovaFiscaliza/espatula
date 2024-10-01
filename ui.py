@@ -143,9 +143,9 @@ def show_results(state):
     with columns[0]:
         with st.popover("📜Dados do Anúncio"):
             st.markdown("""
-                        * Os registros que compõem a primeira tabela serão salvos em um arquivo Excel e sincronizados com o [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron).
-                        * Todos os dados submetidos são periodicamente mesclados numa base única, que será disponibilizada em [OneDrive DataHub - GET/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20GET/Regulatron).
-                        * :red[Todos os dados brutos do anúncio serão salvos, as colunas acima são apenas um recorte.]
+                        * Os registros são exportados em um arquivo Excel e sincronizados com o [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron).
+                        * Todos os dados enviados são periodicamente mesclados numa base única, que será disponibilizada em [OneDrive DataHub - GET/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20GET/Regulatron).
+                        * :red[Todos os dados brutos do anúncio são salvos, as colunas mostradas são apenas um recorte.]
                         """)
     with columns[1]:
         with st.popover("🗃️Dados de Certificação - SCH"):
@@ -253,11 +253,11 @@ def is_folders_ok(state):
 
     if state.cloud is None or not Path(state.cloud).is_dir():
         st.error(
-            "Insira o caminho para a pasta sincronizada do OneDrive: DataHub - POST/Regulatron !",
+            "Insira o caminho para a pasta sincronizada do OneDrive: DataHub - POST!",
             icon="🚨",
         )
         st.markdown("""
-                    * Para sincronizar, abra o link [OneDrive DataHub - POST/Regulatron](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Regulatron)
+                    * Para sincronizar, abra o link [OneDrive DataHub - POST](https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST)
                     * Clique em __Add shortcut to OneDrive | Adicionar atalho para OneDrive__
                     """)
         st.image("images/onedrive.png", width=720)
