@@ -100,13 +100,6 @@ class AmazonScraper(BaseScraper):
         ):
             extract_tables(tables)
         elif tables := soup.select('table[class="a-keyvalue prodDetTable"]'):
-            self.highlight_element(driver, 'div[id="productDetails"]')
-            try:
-                driver.click_visible_elements(
-                    'a[class^="a-expander-header"]', timeout=self.timeout
-                )
-            except Exception as e:
-                print(e)
             extract_tables(tables)
 
         elif tables := self.get_selector(
@@ -198,6 +191,14 @@ class AmazonScraper(BaseScraper):
         ):
             if hasattr(descrição_secundária, "select"):
                 descrição += md(str(descrição_secundária.select("span")))
+
+        try:
+            driver.click_visible_elements(
+                'a[class^="a-expander-header"]', timeout=self.timeout
+            )
+            self.highlight_element(driver, 'div[id="productDetails"]')
+        except Exception as e:
+            print(e)
 
         modelo, ean, certificado, asin = None, None, None, None
 
