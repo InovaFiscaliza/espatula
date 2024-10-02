@@ -178,7 +178,11 @@ class MercadoLivreScraper(BaseScraper):
                 vendedor = vendedor.get_text().strip()
 
         try:
-            self.uc_click(driver, "button[data-testid=action-collapsable-target]")
+            self.uc_click(
+                driver,
+                "button[data-testid=action-collapsable-target]",
+                timeout=self.timeout,
+            )
         except:  # noqa: E722
             pass
 
@@ -196,7 +200,9 @@ class MercadoLivreScraper(BaseScraper):
             certificado = self.extrair_certificado(características)
 
         try:
-            self.uc_click(driver, "button[data-testid=action-collapsable-target]")
+            self.uc_click(
+                driver, "a[data-testid=action-collapsable-target]", timeout=self.timeout
+            )
         except:  # noqa: E722
             pass
 
