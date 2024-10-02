@@ -170,13 +170,15 @@ class BaseScraper:
         url = f"{driver.command_executor._url}/session/{driver.session_id}/chromium/send_command_and_get_result"
         params = {
             "displayHeaderFooter": True,
-            "printBackground": False,
-            "preferCSSPageSize": False,
-            "scale": 1.0,
+            "printBackground": True,
+            "preferCSSPageSize": True,
+            # "scale": 0.9,
             "paperWidth": 8.27,  # A4 width in inches
             "paperHeight": 11.69,  # A4 height in inches
-            "marginLeft": 0,
-            "marginRight": 0,
+            "marginLeft": 0.2,
+            "marginRight": 0.2,
+            "marginTop": 0.4,
+            "marginBottom": 0.4,
         }
 
         body = json.dumps({"cmd": "Page.printToPDF", "params": params})
@@ -194,6 +196,22 @@ class BaseScraper:
             return response.text
         else:
             return None
+
+    # Function to get the CSS selector from BeautifulSoup element
+    @staticmethod
+    def get_css_selector(element) -> str:
+        parts = []
+        while element.name != "[document]":
+            part = element.name
+            if element.get("id"):
+                part += f"#{element['id']}"
+                parts.insert(0, part)
+                break
+            elif element.get("class"):
+                part += "." + ".".join(element["class"])
+            parts.insert(0, part)
+            element = element.parent
+        return " > ".join(parts)
 
     @staticmethod
     def match_certificado(certificado: str, pattern=CERTIFICADO2) -> str | None:
@@ -249,8 +267,10 @@ class BaseScraper:
             except (NoSuchElementException, ElementNotVisibleException):
                 pass
 
-    def get_selector(self, driver, soup, selector):
+    def get_selector(self, driver, soup, selector, many=False):
         self.highlight_element(driver, selector)
+        if many:
+            return soup.select(selector)
         return soup.select_one(selector)
 
     def uc_click(self, driver, selector, timeout=None):
