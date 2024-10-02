@@ -327,7 +327,7 @@ def get_params(state, config):
             step=0.1,
             key="reconnect",
             help="Tempo de espera para o driver se conectar ao navegador (seg)",
-            value=float(config.get(KEYS["reconnect"], 5)),
+            value=float(config.get(KEYS["reconnect"], 4)),
         )
         st.number_input(
             TIMEOUT,
@@ -336,7 +336,7 @@ def get_params(state, config):
             step=0.1,
             key="timeout",
             help="Tempo de espera para carregar os elementos da página (seg)",
-            value=float(config.get(KEYS["timeout"], 1)),
+            value=float(config.get(KEYS["timeout"], 0.5)),
         )
 
 

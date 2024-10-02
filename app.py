@@ -247,7 +247,7 @@ else:
             key="_keyword",
             on_change=set_keyword,
             value=STATE.keyword or "",
-            help="Termo a ser pesquisado no site. \n Exemplos: smartphone, drone, wifi, bluetooth, powerbank, wireless, bloqueador de sinal, jammer, etc.",
+            help="Termo a ser pesquisado no site. \n Exemplos: smartphone, drone, tv-box, wifi, bluetooth, powerbank, wireless, bloqueador de sinal, jammer, transceptor, etc.",
         )
 
         if STATE.keyword:
