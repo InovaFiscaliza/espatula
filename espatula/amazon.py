@@ -193,11 +193,11 @@ class AmazonScraper(BaseScraper):
             ]
 
         descrição = ""
-        if descrição_principal := self.get_selector(
-            driver, soup, 'div[id="feature-bullets"]'
+        if descrição_secundária := self.get_selector(
+            driver, soup, 'div[id="productDescription"]'
         ):
-            if hasattr(descrição_principal, "select"):
-                descrição = md(str(descrição_principal.select("span")))
+            if hasattr(descrição_secundária, "select"):
+                descrição += md(str(descrição_secundária.select("span")))
 
         modelo, ean, certificado, asin = None, None, None, None
 
@@ -217,11 +217,11 @@ class AmazonScraper(BaseScraper):
             modelo = extrair_modelo(características)
             asin = características.pop("ASIN", None)
 
-        if descrição_secundária := self.get_selector(
-            driver, soup, 'div[id="productDescription"]'
+        if descrição_principal := self.get_selector(
+            driver, soup, 'div[id="feature-bullets"]'
         ):
-            if hasattr(descrição_secundária, "select"):
-                descrição += md(str(descrição_secundária.select("span")))
+            if hasattr(descrição_principal, "select"):
+                descrição = md(str(descrição_principal.select("span")))
 
         if descrição:
             if certificado is None:
