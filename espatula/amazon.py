@@ -83,7 +83,8 @@ class AmazonScraper(BaseScraper):
     def parse_tables(self, driver, soup) -> dict:
         """Extrai o conteúdo da tabela com dados do produto e transforma em um dict"""
         table_data = {}
-        if tables := self.get_selector(driver, soup, 'table[id^="productDetails"]'):
+
+        def extract_tables(tables):
             for table in tables:
                 if hasattr(table, "select"):
                     for row in table.select("tr"):
@@ -93,8 +94,23 @@ class AmazonScraper(BaseScraper):
                             table_data[key.text.strip()] = value.text.strip().replace(
                                 "\u200e", ""
                             )
+
+        if tables := self.get_selector(
+            driver, soup, 'table[id^="productDetails"]', True
+        ):
+            extract_tables(tables)
+        elif tables := soup.select('table[class="a-keyvalue prodDetTable"]'):
+            self.highlight_element(driver, 'div[id="productDetails"]')
+            try:
+                driver.click_visible_elements(
+                    'a[class^="a-expander-header"]', timeout=self.timeout
+                )
+            except Exception as e:
+                print(e)
+            extract_tables(tables)
+
         elif tables := self.get_selector(
-            driver, soup, 'table[class="a-bordered"]'
+            driver, soup, 'table[class="a-bordered"]', True
         ):  # special pages like iphone
             for table in tables:
                 if hasattr(table, "select"):
@@ -177,18 +193,11 @@ class AmazonScraper(BaseScraper):
             ]
 
         descrição = ""
-
         if descrição_principal := self.get_selector(
             driver, soup, 'div[id="feature-bullets"]'
         ):
             if hasattr(descrição_principal, "select"):
                 descrição = md(str(descrição_principal.select("span")))
-
-        if descrição_secundária := self.get_selector(
-            driver, soup, 'div[id="productDescription"]'
-        ):
-            if hasattr(descrição_secundária, "select"):
-                descrição += md(str(descrição_secundária.select("span")))
 
         modelo, ean, certificado, asin = None, None, None, None
 
@@ -207,6 +216,12 @@ class AmazonScraper(BaseScraper):
 
             modelo = extrair_modelo(características)
             asin = características.pop("ASIN", None)
+
+        if descrição_secundária := self.get_selector(
+            driver, soup, 'div[id="productDescription"]'
+        ):
+            if hasattr(descrição_secundária, "select"):
+                descrição += md(str(descrição_secundária.select("span")))
 
         if descrição:
             if certificado is None:
