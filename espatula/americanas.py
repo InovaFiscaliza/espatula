@@ -106,6 +106,14 @@ class AmericanasScraper(BaseScraper):
         if nota := get_selector('div[class*="Rating"]'):
             nota = nota.get_text().strip()
 
+        try:
+            driver.click_visible_elements(
+                'button[class*="accordion-box-expand-button"]',
+                timeout=self.timeout,
+            )
+        except Exception as e:
+            print(e)
+
         if descrição := get_selector('div[data-testid="rich-content-container"]'):
             descrição = md(str(descrição))
 
