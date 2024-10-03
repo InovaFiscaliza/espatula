@@ -267,8 +267,8 @@ else:
                 container.success(cache_info)
                 left_tab, right_tab = st.tabs(
                     [
-                        "Dado Processado",
-                        "Dado Bruto",
+                        "Dados Processados",
+                        "Dados Brutos",
                     ]
                 )
                 with right_tab:
