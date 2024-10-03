@@ -78,7 +78,6 @@ KEYS = {
     "max_search": MAX_SEARCH,
     "max_pages": MAX_PAGES,
     "shuffle": SHUFFLE,
-    # "screenshot": SCREENSHOT,
     "reconnect": RECONNECT,
     "timeout": TIMEOUT,
 }
@@ -112,7 +111,10 @@ def init_session_state(STATE: dict, CONFIG: dict) -> None:
                 case "keyword":
                     STATE[key] = CONFIG.get(KEYS[key], "")
                 case "folder":
-                    folder = Path(__file__).parent / "data"
+                    if (folder := CONFIG.get(KEYS[key])) and Path(folder).is_dir():
+                        folder = Path(folder)
+                    else:
+                        folder = Path(__file__).parent / "data"
                     folder.mkdir(parents=True, exist_ok=True)
                     STATE[key] = rf"{folder}"
                 case "cloud":

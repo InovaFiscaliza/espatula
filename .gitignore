@@ -164,6 +164,7 @@ cython_debug/
 #.idea/
 
 data/
+data
 downloaded_files/
 latest_logs/
 modelos/
