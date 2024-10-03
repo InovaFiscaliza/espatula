@@ -54,11 +54,9 @@ def _set_processed_pages(state):
 
     if excel_file.is_file():
         try:
-            df = pd.read_excel(excel_file)
-            df["passível?"] = (
-                df["passível?"]
-                .astype("string")
-                .map({"True": True, "False": False, pd.NA: False})
+            df = pd.read_excel(excel_file, dtype="string")
+            df["passível?"] = df["passível?"].map(
+                {"True": True, "False": False, pd.NA: False}
             )
             df.sort_values(
                 by=["modelo_score", "nome_score", "passível?", "probabilidade"],
