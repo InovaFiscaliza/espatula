@@ -50,7 +50,7 @@ $destinationFolder = "D:\OneDrive - ANATEL\Regulatron\app"
 # Create the destination folder if it doesn't exist
 New-Item -ItemType Directory -Force -Path $destinationFolder
 
-(Get-Item $destinationFolder -Force).Attributes = [System.IO.FileAttributes]::Hidden
+# (Get-Item $destinationFolder -Force).Attributes = [System.IO.FileAttributes]::Hidden
 
 Copy-FilesToDestination -filesToCopy $filesToCopy -destinationFolder $destinationFolder
 
@@ -61,7 +61,15 @@ $filesToCopy = @(
 $destinationFolder = "D:\OneDrive - ANATEL\Regulatron"
 
 Copy-FilesToDestination -filesToCopy $filesToCopy -destinationFolder $destinationFolder
- 
 
 Write-Host "Created app folder with the required contents"
+
+# Compact the destination folder as a zip
+$zipPath = "D:\OneDrive - ANATEL\Regulatron\Regulatron.zip"
+
+Compress-Archive -Path "$destinationFolder\*" -DestinationPath $zipPath -Force
+
+Write-Host "Created zip file: $zipPath"
+
+
 
