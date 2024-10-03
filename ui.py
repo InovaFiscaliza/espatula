@@ -231,12 +231,13 @@ def presentation_page():
             """
             **Características**:
             * 👨🏻‍💻 Pesquisa por palavra-chave.
-            * 👾 Implementação de mecanismos anti-bot sofisticados.
             * 🤖 Automação da busca de produtos e navegação de páginas.
+            * 👾 Implementação de mecanismos anti-bot, simulando usuário humano.
             * 🖼️ Captura de página completa do anúncio em pdf otimizado.
             * 🗄️ Mesclagem dos dados de certificação da base da Anatel e sobreposição de strings.
             * 📊 Classificação binária baseada em treinamento nos dados anotados pelos fiscais.
             * 📈 Exportação de dados processados para Excel.
+            * 📦 Exportação e consolidação dos dados processados no OneDrive.
             """
         )
 
