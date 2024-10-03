@@ -178,12 +178,11 @@ class MercadoLivreScraper(BaseScraper):
                 vendedor = vendedor.get_text().strip()
 
         try:
-            self.uc_click(
-                driver,
-                "button[data-testid=action-collapsable-target]",
+            driver.click_visible_elements(
+                "[data-testid=action-collapsable-target]",
                 timeout=self.timeout,
             )
-        except:  # noqa: E722
+        except Exception:
             pass
 
         características, marca, modelo, ean, certificado = None, None, None, None, None
@@ -198,13 +197,6 @@ class MercadoLivreScraper(BaseScraper):
                     modelo = value
             ean = self.extrair_ean(características)
             certificado = self.extrair_certificado(características)
-
-        try:
-            self.uc_click(
-                driver, "a[data-testid=action-collapsable-target]", timeout=self.timeout
-            )
-        except:  # noqa: E722
-            pass
 
         descrição = None
         if descrição_element := get_selector("p[class=ui-pdp-description__content]"):
