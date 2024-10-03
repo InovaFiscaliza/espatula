@@ -25,6 +25,94 @@ from config import (
 from callbacks import _set_folder, _set_cloud
 from data_processing import update_processed_pages
 
+column_config = (
+    {
+        "url": st.column_config.LinkColumn(
+            "URL",
+            width=None,
+            display_text="Link",
+            help="📜Dados do Anúncio",
+            disabled=True,
+        ),
+        "pdf": st.column_config.LinkColumn(
+            "PDF",
+            width=None,
+            display_text="PDF",
+            help="📜Dados do Anúncio",
+            disabled=True,
+        ),
+        "imagem": st.column_config.ImageColumn(
+            "Imagem", width="small", help="📜Dados do Anúncio"
+        ),
+        "nome": st.column_config.TextColumn(
+            "Título", width=None, help="📜Dados do Anúncio", disabled=True
+        ),
+        "fabricante": st.column_config.TextColumn(
+            "Fabricante", width=None, help="📜Dados do Anúncio", disabled=True
+        ),
+        "modelo": st.column_config.TextColumn(
+            "Modelo", width=None, help="📜Dados do Anúncio", disabled=True
+        ),
+        "certificado": st.column_config.TextColumn(
+            "Certificado", width=None, help="📜Dados do Anúncio", disabled=True
+        ),
+        "ean_gtin": st.column_config.TextColumn(
+            "EAN/GTIN", width=None, help="📜Dados do Anúncio", disabled=True
+        ),
+        "subcategoria": st.column_config.TextColumn(
+            "Categoria", width=None, help="📜Dados do Anúncio", disabled=True
+        ),
+        "nome_sch": st.column_config.SelectboxColumn(
+            "SCH - Nome Comercial",
+            width=None,
+            help="🗃️Dados de Certificação - SCH",
+            disabled=True,
+        ),
+        "fabricante_sch": st.column_config.SelectboxColumn(
+            "SCH - Fabricante",
+            width=None,
+            help="🗃️Dados de Certificação - SCH",
+            disabled=True,
+        ),
+        "modelo_sch": st.column_config.SelectboxColumn(
+            "SCH - Modelo",
+            width=None,
+            help="🗃️Dados de Certificação - SCH",
+            disabled=True,
+        ),
+        "tipo_sch": st.column_config.SelectboxColumn(
+            "SCH - Tipo de Produto",
+            width=None,
+            help="🗃️Dados de Certificação - SCH",
+            disabled=True,
+        ),
+        "modelo_score": st.column_config.ProgressColumn(
+            "Modelo x SCH - Modelo (%)",
+            width=None,
+            help="🖇️Comparação de Strings - Anúncio x SCH",
+        ),
+        "nome_score": st.column_config.ProgressColumn(
+            "Título x SCH - Nome Comercial (%)",
+            width=None,
+            help="🖇️Comparação de Strings - Anúncio x SCH",
+        ),
+        "passível?": st.column_config.CheckboxColumn(
+            "Positivo/Negativo",
+            width=None,
+            help="📌Classe do Produto considerando a probabilidade retornada pelo modelo",
+            disabled=False,
+            required=True,
+        ),
+        "probabilidade": st.column_config.ProgressColumn(
+            "Homologação Compulsória (%)",
+            format="%.2f%%",
+            min_value=0,
+            max_value=100,
+            help="📌Classificador - Probabilidade de Homologação Compulsória",
+        ),
+    },
+)
+
 
 def display_df(state, df, output_df_key):
     # Generate a unique key for the edited rows state to avoid conflicts
@@ -38,91 +126,7 @@ def display_df(state, df, output_df_key):
         height=720 if len(df) >= 20 else None,
         use_container_width=True,
         column_order=colunas,
-        column_config={
-            "url": st.column_config.LinkColumn(
-                "URL",
-                width=None,
-                display_text="Link",
-                help="📜Dados do Anúncio",
-                disabled=True,
-            ),
-            "pdf": st.column_config.LinkColumn(
-                "PDF",
-                width=None,
-                display_text="PDF",
-                help="📜Dados do Anúncio",
-                disabled=True,
-            ),
-            "imagem": st.column_config.ImageColumn(
-                "Imagem", width="small", help="📜Dados do Anúncio"
-            ),
-            "nome": st.column_config.TextColumn(
-                "Título", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "fabricante": st.column_config.TextColumn(
-                "Fabricante", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "modelo": st.column_config.TextColumn(
-                "Modelo", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "certificado": st.column_config.TextColumn(
-                "Certificado", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "ean_gtin": st.column_config.TextColumn(
-                "EAN/GTIN", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "subcategoria": st.column_config.TextColumn(
-                "Categoria", width=None, help="📜Dados do Anúncio", disabled=True
-            ),
-            "nome_sch": st.column_config.SelectboxColumn(
-                "SCH - Nome Comercial",
-                width=None,
-                help="🗃️Dados de Certificação - SCH",
-                disabled=True,
-            ),
-            "fabricante_sch": st.column_config.SelectboxColumn(
-                "SCH - Fabricante",
-                width=None,
-                help="🗃️Dados de Certificação - SCH",
-                disabled=True,
-            ),
-            "modelo_sch": st.column_config.SelectboxColumn(
-                "SCH - Modelo",
-                width=None,
-                help="🗃️Dados de Certificação - SCH",
-                disabled=True,
-            ),
-            "tipo_sch": st.column_config.SelectboxColumn(
-                "SCH - Tipo de Produto",
-                width=None,
-                help="🗃️Dados de Certificação - SCH",
-                disabled=True,
-            ),
-            "modelo_score": st.column_config.ProgressColumn(
-                "Modelo x SCH - Modelo (%)",
-                width=None,
-                help="🖇️Comparação de Strings - Anúncio x SCH",
-            ),
-            "nome_score": st.column_config.ProgressColumn(
-                "Título x SCH - Nome Comercial (%)",
-                width=None,
-                help="🖇️Comparação de Strings - Anúncio x SCH",
-            ),
-            "passível?": st.column_config.CheckboxColumn(
-                "Positivo/Negativo",
-                width=None,
-                help="📌Classe do Produto considerando a probabilidade retornada pelo modelo",
-                disabled=False,
-                required=True,
-            ),
-            "probabilidade": st.column_config.ProgressColumn(
-                "Homologação Compulsória (%)",
-                format="%.2f%%",
-                min_value=0,
-                max_value=100,
-                help="📌Classificador - Probabilidade de Homologação Compulsória",
-            ),
-        },
+        column_config=column_config,
         hide_index=True,
         disabled=False,
         on_change=update_processed_pages,
@@ -340,7 +344,7 @@ def get_params(state, config):
             step=0.1,
             key="timeout",
             help="Tempo de espera para carregar os elementos da página (seg)",
-            value=float(config.get(KEYS["timeout"], 0.5)),
+            value=float(config.get(KEYS["timeout"], 2)),
         )
 
 
