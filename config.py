@@ -49,6 +49,7 @@ LOGOS = {
     "Americanas": "images/americanas.png",
     "Casas Bahia": "images/casas_bahia.svg",
     "Carrefour": "images/carrefour.jpg",
+    "Video": "images/video.webm",
 }
 
 # Constants for string literals
@@ -147,4 +148,4 @@ def save_config(state) -> None:
     )
 
 
-CLOUD_PATH = "https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST%2FRegulatron%2Fscreenshots"
+CLOUD_PATH = "https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20GET%2FRegulatron%2FScreenshots"

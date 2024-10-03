@@ -210,13 +210,16 @@ def show_results(state):
 
 def presentation_page():
     st.title(TITLE)
-    columns = st.columns(2, vertical_alignment="center")
+    columns = st.columns(2, vertical_alignment="top")
 
-    columns[0].image(
-        LOGOS["Espatula"],
-        width=480,
-        caption="Espátula raspando dados de E-commerce",
-    )
+    with columns[0]:
+        st.image(
+            LOGOS["Espatula"],
+            width=480,
+            caption="Espátula raspando dados de E-commerce",
+        )
+        # st.video(LOGOS["Video"], autoplay=True, muted=True, loop=True)
+
     with columns[1]:
         st.info("""
         Essa aplicação efetua a raspagem de dados _(webscraping)_ de
@@ -234,6 +237,7 @@ def presentation_page():
             * 📈 Exportação de dados processados para Excel.
             """
         )
+
     st.sidebar.info(
         "Por favor, selecione uma plataforma para iniciar a pesquisa.",
         icon="👆🏾",
