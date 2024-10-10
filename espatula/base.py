@@ -236,9 +236,9 @@ class BaseScraper:
     @staticmethod
     def match_ean(string: str) -> str | None:
         if match := re.search(EAN, string):
-            if match[2]:
+            if match[1]:
                 # Remove all non-digit characters
-                return re.sub(r"\D", "", match[2])
+                return re.sub(r"\D", "", match[1])
         return None
 
     @staticmethod
@@ -277,7 +277,10 @@ class BaseScraper:
         self.highlight_element(driver, selector)
         if timeout is None:
             timeout = self.reconnect
-        driver.uc_click(selector, timeout=timeout, reconnect_time=timeout)
+        try:
+            driver.uc_click(selector, timeout=timeout, reconnect_time=timeout)
+        except Exception as e:
+            print(e)
 
     def _save_screenshot(self, driver: SB, filename: str):
         folder = self.folder / "screenshots"
@@ -413,6 +416,9 @@ class BaseScraper:
                     return False
         return False
 
+    def wait_for_pagination(self, driver):
+        pass
+
     def search(
         self, keyword: str, max_pages: int = 10, overwrite: bool = False
     ) -> Generator[dict, None, None]:
@@ -422,6 +428,8 @@ class BaseScraper:
         with self.browser() as driver:
             try:
                 self.input_search_params(driver, keyword)
+                driver.wait_for_ready_state_complete(timeout=None)
+                self.wait_for_pagination(driver)
                 driver.set_messenger_theme(location="top_center")
                 while True:
                     soup = driver.get_beautiful_soup()

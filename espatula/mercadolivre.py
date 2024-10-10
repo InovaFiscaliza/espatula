@@ -13,14 +13,32 @@ CATEGORIES = {
 }
 
 URL = re.compile(
-    r"https://(?:produto\.|www\.)mercadolivre\.com\.br.*?(?:-_JM|(?=\?)|(?=#))"
+    r"""
+        https://(?:produto\.|www\.)mercadolivre\.com\.br  # Matches the domain, allowing for 'produto.' or 'www.' subdomains
+        .*?                                               # Matches any characters (non-greedy) after the domain
+        (                                               # Non-capturing group for the end of the URL
+            -_JM                                          # Matches '-_JM' at the end of the URL
+            |                                             # OR
+            (?=\?)                                        # Positive lookahead for '?' (start of query parameters)
+            |                                             # OR
+            (?=#)                                         # Positive lookahead for '#' (start of fragment identifier)
+        )
+    """,
+    re.MULTILINE,
 )
+
+URL = re.compile(
+    r"https://(?:produto\.|www\.)mercadolivre\.com\.br.*?(-_JM|(?=\?)|(?=#))"
+)
+
 
 PRODUCT_ID = re.compile(r"(MLB-?\d+)")
 
 
 @dataclass
 class MercadoLivreScraper(BaseScraper):
+    browser_initialized: bool = False
+
     @property
     def name(self) -> str:
         return "ml"
@@ -39,32 +57,28 @@ class MercadoLivreScraper(BaseScraper):
 
     @staticmethod
     def find_single_url(text):
-        match = re.search(URL, text)
-
-        # Return the first non-empty match
-        return match[0] if match else text
+        if match := re.search(URL, text):
+            return match.group(0)
+        return text
 
     def extract_search_data(self, item):
         if url := item.select_one("a.ui-search-link"):
             url = self.find_single_url(url.get("href"))
 
-        if imagem := item.select_one("img.ui-search-result-image__element"):
+        if imagem := item.select_one("img"):
             imagem = imagem.get("src")
 
-        if nome := item.select_one("h2.ui-search-item__title"):
+        if nome := item.select_one("h2"):
             nome = nome.get_text().strip()
 
-        if preço := item.select_one("span.andes-money-amount__fraction"):
-            preço = preço.get_text().strip()
+        if preço := item.select_one('div[class*="price"]'):
+            preço = preço.select_one("span").get_text().replace("R$", "").strip()
 
-        if avaliações := item.select_one("span.ui-search-reviews__amount"):
+        if avaliações := item.select_one('span[class$="reviews__total"]'):
             avaliações = avaliações.get_text().strip()
 
-        if nota := item.select_one("span.ui-search-reviews__rating-number"):
+        if nota := item.select_one('span[class$="rating"]'):
             nota = nota.get_text().strip()
-
-        if not all([url, nome, preço, imagem]):
-            return False
 
         return {
             "nome": nome,
@@ -78,7 +92,7 @@ class MercadoLivreScraper(BaseScraper):
 
     def discover_product_urls(self, soup, keyword):
         results = {}
-        for item in soup.select("li.ui-search-layout__item"):
+        for item in soup.select('li[class^="ui-search-layout"]'):
             if product_data := self.extract_search_data(item):
                 product_data["palavra_busca"] = keyword
                 results[product_data["url"]] = product_data
@@ -115,6 +129,24 @@ class MercadoLivreScraper(BaseScraper):
                     k, v = item.get_text().strip().split(":", 1)
                     items[k.strip()] = v.strip()
         return items
+
+    def dismiss_dialogs(self, driver):
+        self.uc_click(driver, 'button[data-js="onboarding-cp-close"]', self.timeout)
+        self.uc_click(
+            driver, 'button[data-testid="action:understood-button"]', self.timeout
+        )
+        self.browser_initialized = True
+
+    def process_url(self, driver, url: str) -> dict:
+        if not self.browser_initialized:
+            self.dismiss_dialogs(driver)
+        driver.uc_open_with_reconnect(url, reconnect_time=self.reconnect)
+        if result_page := self.extract_item_data(driver):
+            if not result_page.get("categoria"):
+                if not self.headless:
+                    driver.post_message("Anúncio com dados incompletos - 🚮")
+                return {}
+        return result_page
 
     def extract_item_data(self, driver):
         soup = driver.get_beautiful_soup()
@@ -236,8 +268,12 @@ class MercadoLivreScraper(BaseScraper):
             "vendedor": vendedor,
         }
 
+    def wait_for_pagination(self, driver):
+        driver.assert_element('nav[aria-label="Paginação"]')
+
     def input_search_params(self, driver, keyword):
         driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
+        self.dismiss_dialogs(driver)
         for attempt in range(self.retries):
             try:
                 if department := CATEGORIES.get(keyword):
@@ -245,7 +281,8 @@ class MercadoLivreScraper(BaseScraper):
                         department, reconnect_time=self.reconnect
                     )
                 self.highlight_element(driver, self.input_field)
-                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                driver.type(self.input_field, keyword, timeout=self.timeout)
+                self.uc_click(driver, 'button[class="nav-search-btn"]')
                 break
             except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < self.retries - 1:  # if it's not the last attempt

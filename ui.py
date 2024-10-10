@@ -319,12 +319,6 @@ def get_params(state, config):
             help="Seleciona aleatoriamente os links para navegação de páginas",
             value=config.get(KEYS["shuffle"], True),
         )
-        # st.checkbox(
-        #     SCREENSHOT,
-        #     key="screenshot",
-        #     help="Captura a página completa do anúncio em pdf otimizado",
-        #     value=config.get(KEYS["screenshot"], True),
-        # )
 
     with st.expander("CONFIGURAÇÕES - BROWSER", expanded=False):
         st.number_input(
