@@ -116,6 +116,20 @@ class MercadoLivreScraper(BaseScraper):
                     items[k.strip()] = v.strip()
         return items
 
+    def dismiss_dialogs(self, driver):
+        self.uc_click(driver, 'button[data-js="onboarding-cp-close"]')
+        self.uc_click(driver, 'button[data-testid="action:understood-button"]')
+
+    def process_url(self, driver, url: str) -> dict:
+        self.dismiss_dialogs(driver)
+        driver.uc_open_with_reconnect(url, reconnect_time=self.reconnect)
+        if result_page := self.extract_item_data(driver):
+            if not result_page.get("categoria"):
+                if not self.headless:
+                    driver.post_message("Anúncio com dados incompletos - 🚮")
+                return {}
+        return result_page
+
     def extract_item_data(self, driver):
         soup = driver.get_beautiful_soup()
 
@@ -238,6 +252,7 @@ class MercadoLivreScraper(BaseScraper):
 
     def input_search_params(self, driver, keyword):
         driver.uc_open_with_reconnect(self.url, reconnect_time=self.reconnect)
+        self.dismiss_dialogs(driver)
         for attempt in range(self.retries):
             try:
                 if department := CATEGORIES.get(keyword):
@@ -245,7 +260,8 @@ class MercadoLivreScraper(BaseScraper):
                         department, reconnect_time=self.reconnect
                     )
                 self.highlight_element(driver, self.input_field)
-                driver.type(self.input_field, keyword + "\n", timeout=self.timeout)
+                driver.type(self.input_field, keyword, timeout=self.timeout)
+                self.uc_click(driver, 'button[class="nav-search-btn"]')
                 break
             except (NoSuchElementException, ElementNotVisibleException):
                 if attempt < self.retries - 1:  # if it's not the last attempt
