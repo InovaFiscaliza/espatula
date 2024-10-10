@@ -23,13 +23,8 @@ def manage_screenshots(scraper, state):
     # Copy screenshots to cloud
     if (screenshots := scraper.folder / "screenshots").is_dir():
         # state["screenshots"] = screenshots
-        cloud_screenshots = Path(f"{state.cloud}/screenshots")
-        cloud_screenshots.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(
-            str(screenshots),
-            str(cloud_screenshots),
-            dirs_exist_ok=True,
-        )
+        cloud = Path(f"{state.cloud}")
+        cloud.mkdir(parents=True, exist_ok=True)
 
         # Sort Delete screenshots from local
         files_in_session = pd.concat(
@@ -43,6 +38,11 @@ def manage_screenshots(scraper, state):
         screenshots.ls().filter(lambda p: p.name not in files_in_session).map(
             lambda p: p.unlink(missing_ok=True)
         )
+        for file in screenshots.ls().filter(lambda p: p.suffix == ".pdf"):
+            shutil.move(
+                str(file),
+                str(cloud),
+            )
 
 
 def save_table(state: dict, subset_df: pd.DataFrame = None) -> bool:
