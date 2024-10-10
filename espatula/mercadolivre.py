@@ -16,7 +16,7 @@ URL = re.compile(
     r"""
         https://(?:produto\.|www\.)mercadolivre\.com\.br  # Matches the domain, allowing for 'produto.' or 'www.' subdomains
         .*?                                               # Matches any characters (non-greedy) after the domain
-        (?:                                               # Non-capturing group for the end of the URL
+        (                                               # Non-capturing group for the end of the URL
             -_JM                                          # Matches '-_JM' at the end of the URL
             |                                             # OR
             (?=\?)                                        # Positive lookahead for '?' (start of query parameters)
@@ -25,6 +25,10 @@ URL = re.compile(
         )
     """,
     re.MULTILINE,
+)
+
+URL = re.compile(
+    r"https://(?:produto\.|www\.)mercadolivre\.com\.br.*?(-_JM|(?=\?)|(?=#))"
 )
 
 
