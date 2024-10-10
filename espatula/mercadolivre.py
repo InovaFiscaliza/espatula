@@ -131,15 +131,23 @@ class MercadoLivreScraper(BaseScraper):
         return items
 
     def dismiss_dialogs(self, driver):
-        self.uc_click(driver, 'button[data-js="onboarding-cp-close"]', self.timeout)
-        self.uc_click(
-            driver, 'button[data-testid="action:understood-button"]', self.timeout
-        )
-        self.browser_initialized = True
+        if not self.browser_initialized:
+            try:
+                self.uc_click(
+                    driver, 'button[data-js="onboarding-cp-close"]', self.timeout
+                )
+                self.uc_click(
+                    driver,
+                    'button[data-testid="action:understood-button"]',
+                    self.timeout,
+                )
+                self.browser_initialized = True
+            except Exception as e:
+                print(e)
+                self.browser_initialized = False
 
     def process_url(self, driver, url: str) -> dict:
-        if not self.browser_initialized:
-            self.dismiss_dialogs(driver)
+        self.dismiss_dialogs(driver)
         driver.uc_open_with_reconnect(url, reconnect_time=self.reconnect)
         if result_page := self.extract_item_data(driver):
             if not result_page.get("categoria"):
