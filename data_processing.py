@@ -22,7 +22,6 @@ def request_table(state, json_path: Path) -> pd.DataFrame | None:
 def manage_screenshots(scraper, state):
     # Copy screenshots to cloud
     if (screenshots := scraper.folder / "screenshots").is_dir():
-        # state["screenshots"] = screenshots
         cloud = Path(f"{state.cloud}")
         cloud.mkdir(parents=True, exist_ok=True)
 
@@ -41,7 +40,7 @@ def manage_screenshots(scraper, state):
         for file in screenshots.ls().filter(lambda p: p.suffix == ".pdf"):
             shutil.move(
                 str(file),
-                str(cloud),
+                str(cloud / file.name),
             )
 
 
