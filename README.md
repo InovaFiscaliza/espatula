@@ -8,7 +8,7 @@ Implementação de raspagem de dados de marketplaces utilizando SeleniumBase com
 
 
 <p align="center">
-  <video autoplay loop muted playsinline>
+  <video autoplay loop muted>
     <source src="images/video.webm" type="video/webm">
     Your browser does not support the video tag.
   </video>
