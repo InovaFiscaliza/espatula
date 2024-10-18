@@ -8,7 +8,6 @@ from streamlit_pdf_viewer import pdf_viewer
 
 
 from config import (
-    COLUNAS,
     CLOUD_PATH,
     LOGOS,
     TITLE,
@@ -39,6 +38,9 @@ COLUMN_CONFIG = {
         display_text="PDF",
         help="📜Dados do Anúncio",
         disabled=True,
+    ),
+    "data": st.column_config.DatetimeColumn(
+        "Data", width=None, help="📜Data da Extração", disabled=True
     ),
     "imagem": st.column_config.ImageColumn(
         "Imagem", width="small", help="📜Dados do Anúncio"
@@ -85,18 +87,20 @@ COLUMN_CONFIG = {
         help="🗃️Dados de Certificação - SCH",
         disabled=True,
     ),
-    "modelo_score": st.column_config.ProgressColumn(
-        "Modelo x SCH - Modelo (%)",
+    "modelo_match": st.column_config.CheckboxColumn(
+        "Modelo Confere?",
         width=None,
         help="🖇️Comparação de Strings - Anúncio x SCH",
+        disabled=True,
     ),
-    "nome_score": st.column_config.ProgressColumn(
-        "Título x SCH - Nome Comercial (%)",
+    "nome_match": st.column_config.CheckboxColumn(
+        "Nome Confere?",
         width=None,
         help="🖇️Comparação de Strings - Anúncio x SCH",
+        disabled=True,
     ),
     "passível?": st.column_config.CheckboxColumn(
-        "Positivo/Negativo",
+        "Relevante?",
         width=None,
         help="📌Classe do Produto considerando a probabilidade retornada pelo modelo",
         disabled=False,
@@ -111,16 +115,36 @@ COLUMN_CONFIG = {
     ),
 }
 
+ARRANJO_COLUNAS = [
+    "passível?",
+    "modelo_match",
+    "nome_match",
+    "imagem",
+    "data",
+    "nome",
+    "subcategoria",
+    "fabricante",
+    "modelo",
+    "certificado",
+    "ean_gtin",
+    "modelo_sch",
+    "nome_sch",
+    "fabricante_sch",
+    "tipo_sch",
+    "url",
+]
+
 
 def display_df(state, df, output_df_key):
     # Generate a unique key for the edited rows state to avoid conflicts
     edited_key = f"{output_df_key}_{uuid.uuid4()}"
     # The index in df should be in the default numeric order
     df.loc[:, ["pdf"]] = f"{CLOUD_PATH}/" + df.loc[:, "screenshot"].astype("string")
-    colunas = list(COLUNAS.keys())
-    colunas.insert(1, "pdf")
+    df.loc[:, ["modelo_match"]] = (df.loc[:, "modelo_score"] == 100).astype("bool")
+    df.loc[:, ["nome_match"]] = (df.loc[:, "nome_score"] == 100).astype("bool")
+    colunas = ARRANJO_COLUNAS + ["pdf"]
     state[output_df_key] = st.data_editor(
-        df,
+        df.style.highlight_null(color="yellow"),
         height=720 if len(df) >= 20 else None,
         use_container_width=True,
         column_order=colunas,
@@ -141,7 +165,6 @@ def pdf_container(pdf_path):
 
 def show_results(state):
     columns = st.columns(4, gap="small", vertical_alignment="top")
-
     with columns[0]:
         with st.popover("📜Dados do Anúncio"):
             st.markdown("""

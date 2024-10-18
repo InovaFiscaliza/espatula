@@ -291,7 +291,7 @@ else:
                 )
 
             with st.sidebar:
-                with st.form("config", border=False):
+                with st.form("config", border=False, enter_to_submit=False):
                     get_params(STATE, CONFIG)
                     st.form_submit_button(
                         START, on_click=run, type="primary", use_container_width=True
